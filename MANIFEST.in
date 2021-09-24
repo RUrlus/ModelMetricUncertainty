@@ -1,0 +1,7 @@
+include NOTICE
+include LICENSE
+
+global-include README.md
+exclude docs tests .readthedocs.yml
+recursive-exclude tests *.py
+recursive-exclude docs *
