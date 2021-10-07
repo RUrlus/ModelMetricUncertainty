@@ -36,6 +36,7 @@ SET(EXT_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/extern)
 
 pybind11_add_module(${MODNAME}
     MODULE
+        ${PROJ_INCLUDE_DIR}/metrics/metrics.hpp
         ${PROJ_INCLUDE_DIR}/metrics/confusion_matrix.hpp
         ${PROJECT_SOURCE_DIR}/mmu/bindings.cpp
 )
