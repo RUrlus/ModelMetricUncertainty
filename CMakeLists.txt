@@ -1,0 +1,49 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
+
+IF (NOT DEFINED MMU_CORE_VERSION_INFO)
+    SET(MMU_CORE_VERSION_INFO "0.1.0")
+ENDIF ()
+
+PROJECT(
+    mmu_core
+    VERSION ${MMU_CORE_VERSION_INFO}
+    DESCRIPTION "Fast binary metrics"
+    LANGUAGES CXX
+)
+
+SET(CMAKE_MODULE_PATH_SAVED ${CMAKE_MODULE_PATH})
+LIST(INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/../cmake")
+################################################################################
+#                                   SETTINGS                                   #
+################################################################################
+SET(CMAKE_CXX_STANDARD 14)
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
+
+FIND_PACKAGE(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
+FIND_PACKAGE(OpenMP)
+
+# Needed to ensure the same Python executable is found by Pybind11
+IF (NOT DEFINED PYTHON_EXECUTABLE)
+    SET(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
+ENDIF ()
+
+FIND_PACKAGE(pybind11 CONFIG REQUIRED)
+
+SET(MODNAME "mmu_core")
+ADD_DEFINITIONS(-DEXTENSION_MODULE_NAME=${MODNAME})
+SET(PROJ_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/mmu)
+SET(EXT_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/extern)
+
+pybind11_add_module(${MODNAME}
+    MODULE
+        ${PROJ_INCLUDE_DIR}/metrics/confusion_matrix.hpp
+        ${PROJECT_SOURCE_DIR}/mmu/bindings.cpp
+)
+
+TARGET_LINK_LIBRARIES(${MODNAME} PUBLIC pybind11::pybind11 OpenMP::OpenMP_CXX)
+TARGET_INCLUDE_DIRECTORIES(${MODNAME} PUBLIC ${PROJ_INCLUDE_DIR})
+TARGET_COMPILE_DEFINITIONS(${MODNAME} PRIVATE VERSION_INFO=${MMU_VERSION_INFO})
+
+
+INSTALL(TARGETS ${MODNAME} DESTINATION ${PROJECT_SOURCE_DIR}/mmu)
+INSTALL(TARGETS ${MODNAME} DESTINATION ${PROJECT_SOURCE_DIR}/tests)
