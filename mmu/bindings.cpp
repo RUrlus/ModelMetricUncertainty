@@ -2,6 +2,7 @@
  * Copyright 2021 Ralph Urlus
  */
 #include <pybind11/pybind11.h>
+#include "metrics/metrics.hpp"
 #include "metrics/confusion_matrix.hpp"
 
 #define STRINGIFY(x) #x
@@ -14,6 +15,9 @@ namespace bindings {
 
 PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_confusion_matrix(m);
+    bind_binary_metrics(m);
+    bind_binary_metrics_proba(m);
+    bind_binary_metrics_thresholds(m);
 
 #ifdef VERSION_INFO
     m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
