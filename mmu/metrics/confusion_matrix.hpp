@@ -15,6 +15,8 @@
 #include <cinttypes>
 #include <type_traits>
 
+#include "commons/utils.hpp"
+
 namespace py = pybind11;
 
 /*                  pred
@@ -31,21 +33,6 @@ namespace py = pybind11;
 
 namespace mmu {
 namespace details {
-
-template <typename T>
-void check_1d_soft(const py::array_t<T>& arr, const std::string& name) {
-    if (arr.ndim() > 1 && arr.shape(1) > 1) {
-        throw std::runtime_error(name + " should be one dimensional");
-    }
-}
-
-template <typename T, typename V>
-void check_equal_length(const py::array_t<T>& x, const py::array_t<V>& y) {
-    if (x.shape(0) != y.shape(0)) {
-        throw std::runtime_error("arrays should have equal number of rows");
-    }
-}
-
 
 // --- from yhat ---
 template<class T, std::enable_if_t<std::is_integral<T>::value, int> = 0>
