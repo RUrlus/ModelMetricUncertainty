@@ -16,6 +16,7 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include "commons/utils.hpp"
 #include "metrics/confusion_matrix.hpp"
 
 
