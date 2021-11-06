@@ -14,22 +14,15 @@ LICENSE.
 """
 
 import re
-import os
 import sys
-import glob
-import shutil
-import subprocess
 from pathlib import Path
-from warnings import warn
-from setuptools import find_packages
-from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext
-from distutils.errors import CompileError, DistutilsExecError, DistutilsPlatformError
+from setuptools import setup
+from cmake_build_extension import BuildExtension, CMakeExtension
 
 NAME = 'mmu'
 
 MAJOR = 0
-REVISION = 0
+REVISION = 1
 PATCH = 0
 DEV = True
 
@@ -39,24 +32,6 @@ VERSION = '{major}.{revision}.{patch}'.format(major=MAJOR, revision=REVISION, pa
 FULL_VERSION = VERSION
 if DEV:
     FULL_VERSION += '.dev'
-
-TEST_REQUIREMENTS = ['pytest>=4.0.2',]
-
-REQUIREMENTS = [
-    'numpy>=1.18.0',
-    'scipy>=1.5.2',
-    'pandas>=0.25.1',
-    'matplotlib>=2.2.3',
-]
-
-EXTRA_REQUIREMENTS = {
-    'test': TEST_REQUIREMENTS,
-}
-
-if DEV:
-    REQUIREMENTS += TEST_REQUIREMENTS
-
-EXCLUDE_PACKAGES = []
 
 # read the contents of readme file
 with open("README.md", encoding="utf-8") as f:
@@ -88,34 +63,28 @@ release = {is_release!s}
         )
 
 
-setup_args = {
-    'name': NAME,
-    'version': FULL_VERSION,
-    'url': 'https://github.com/RUrlus/ModelMetricUncertainty',
-    'license': 'Apache-2',
-    'author': 'Ralph Urlus',
-    'author_email': 'rurlus.dev@gmail.com',
-    'description': "ModelMetricUncertainty library",
-    'long_description': long_description,
-    'long_description_content_type': "text/x-rst",
-    'python_requires': '>=3.7',
-    'packages': find_packages(exclude=EXCLUDE_PACKAGES),
-    # Setuptools requires that package data are located inside the package.
-    # This is a feature and not a bug, see
-    # http://setuptools.readthedocs.io/en/latest/setuptools.html#non-package-data-files
-    'package_data': {NAME.lower(): []},
-    'include_package_data': True,
-    'install_requires': REQUIREMENTS,
-    'extras_require': EXTRA_REQUIREMENTS,
-    'tests_require': TEST_REQUIREMENTS,
-    'zip_safe': False,
-    'classifiers': [
-        "Programming Language :: Python :: 3",
-        "Operating System :: OS Independent",
-        "License :: OSI Approved :: Apache Software License",
-    ],
-}
-
 if __name__ == '__main__':
     write_version_py()
-    setup(**setup_args)
+    setup(
+        version=FULL_VERSION,
+        ext_modules=[
+            CMakeExtension(
+                name="CMakeProject",
+                install_prefix="mmu/lib",
+                cmake_depends_on=["pybind11"],
+                disable_editable=False,
+                cmake_configure_options=[
+                    "-DCALL_FROM_SETUP_PY:BOOL=ON",
+                    "-DBUILD_PYTHON_BINDINGS:BOOL=ON",
+                    f"-DPython3_EXECUTABLE:STRING={sys.executable}",
+                    f"-DMMU_CORE_VERSION_INFO:STRING={VERSION}",
+                ],
+            )
+        ],
+        cmdclass=dict(build_ext=BuildExtension),
+    )
+    # Fix CMake cache issue with in-place builds
+    cmake_cache_path = (Path(__file__).resolve().parent / "build")
+    pip_env_re = "^//.*$\n^[^#].*pip-build-env.*$"
+    for i in cmake_cache_path.rglob("CMakeCache.txt"):
+        i.write_text(re.sub(pip_env_re, "", i.read_text(), flags=re.M))
