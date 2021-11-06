@@ -131,17 +131,17 @@ inline void binary_metrics(
     // metrics[4]  - Negative F1 score
     if (N_nonzero || TN_FN_nonzero) {
         tmp = 2 * TN;
-        metrics[5] = tmp / (tmp + FP_FN);
+        metrics[4] = tmp / (tmp + FP_FN);
     } else {
-        metrics[5] = fill;
+        metrics[4] = fill;
     }
 
     // metrics[5]  - Positive F1 score
     if (P_nonzero || TP_FP_nonzero) {
         tmp = 2 * TP;
-        metrics[4] = tmp / (tmp + FP_FN);
+        metrics[5] = tmp / (tmp + FP_FN);
     } else {
-        metrics[4] = fill;
+        metrics[5] = fill;
     }
 
     // metrics[8]  - Accuracy
