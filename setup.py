@@ -75,9 +75,8 @@ if __name__ == '__main__':
                 disable_editable=False,
                 cmake_configure_options=[
                     "-DCALL_FROM_SETUP_PY:BOOL=ON",
-                    "-DBUILD_PYTHON_BINDINGS:BOOL=ON",
-                    f"-DPython3_EXECUTABLE:STRING={sys.executable}",
                     f"-DMMU_CORE_VERSION_INFO:STRING={VERSION}",
+                    f"-DPython3_EXECUTABLE:STRING={sys.executable}",
                 ],
             )
         ],
