@@ -136,3 +136,16 @@ dmypy.json
 *.aux
 *.out
 *.txt
+
+# notebooks
+*.ipynb
+
+# plots
+*.jpg
+*.jpeg
+
+# LateX related files
+*.bbl
+*.bcf
+*.blg
+*.xml
