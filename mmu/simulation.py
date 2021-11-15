@@ -846,6 +846,13 @@ class ModelGenerator:
                 quantile=quantile,
                 seed=input_seed
             )
+            # shuffle the data
+            idx = np.random.choice(
+                np.arange(X.shape[0]), X.shape[0], replace=False
+            )
+            X_orig = X_orig[idx, :]
+            X = X[idx, :]
+            y = y[idx]
 
             ground_truth = pd.DataFrame(X_orig, columns=gt_x_cols)
         else:
@@ -853,6 +860,12 @@ class ModelGenerator:
                 n_samples=n_samples,
                 n_samples_per_cluster=n_samples_per_cluster
             )
+            # shuffle the data
+            idx = self._gen.choice(
+                np.arange(X.shape[0]), X.shape[0], replace=False
+            )
+            X = X[idx, :]
+            y = y[idx]
             ground_truth = pd.DataFrame(X, columns=gt_x_cols)
 
         n_train_samples = np.floor(n_samples * train_frac).astype(int)
