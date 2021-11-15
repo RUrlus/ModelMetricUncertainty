@@ -8,7 +8,6 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 
-#include <iostream>  // FIXME
 #include <cmath>
 #include <string>
 #include <limits>
@@ -17,6 +16,7 @@
 #include <type_traits>
 
 #include "commons/utils.hpp"
+#include "commons/numpy.hpp"
 #include "metrics/confusion_matrix.hpp"
 
 
@@ -135,14 +135,16 @@ namespace bindings {
 
 
 template <typename T>
-py::tuple binary_metrics(
+inline py::tuple binary_metrics(
     const py::array_t<T>& y,
     const py::array_t<T>& yhat,
     const double fill
 ) {
     // condition checks
+    details::check_contiguous<T>(y, "y");
     details::check_1d_soft(y, "y");
     details::check_1d_soft(yhat, "yhat");
+    details::check_contiguous<T>(yhat, "yhat");
     details::check_equal_length<T, T>(y, yhat);
 
     size_t n_obs = y.size();
@@ -262,7 +264,7 @@ void bind_binary_metrics(py::module &m) {
 }
 
 template <typename T>
-py::tuple binary_metrics_proba(
+inline py::tuple binary_metrics_proba(
     const py::array_t<T>& y,
     const py::array_t<double>& proba,
     const double threshold,
@@ -270,7 +272,9 @@ py::tuple binary_metrics_proba(
 ) {
     // condition checks
     details::check_1d_soft(y, "y");
+    details::check_contiguous<T>(y, "y");
     details::check_1d_soft(proba, "proba");
+    details::check_contiguous<double>(proba, "proba");
     details::check_equal_length(y, proba);
 
     size_t n_obs = y.size();
@@ -363,7 +367,7 @@ void bind_binary_metrics_proba(py::module &m) {
         ) {
             return binary_metrics_proba<float>(y, proba, threshold, fill);
         },
-        R"pbdoc(Compute binary classification metrics.
+        R"pbdoc(Compute binary classification metrics for a given threshold.
 
         Computes the following metrics:
             0 - neg.precision aka Negative Predictive Value (NPV)
@@ -402,7 +406,7 @@ void bind_binary_metrics_proba(py::module &m) {
 }
 
 template <typename T>
-py::tuple binary_metrics_thresholds(
+inline py::tuple binary_metrics_thresholds(
     const py::array_t<T>& y,
     const py::array_t<double>& proba,
     const py::array_t<double>& thresholds,
@@ -410,8 +414,11 @@ py::tuple binary_metrics_thresholds(
 ) {
     // condition checks
     details::check_1d_soft(y, "y");
+    details::check_contiguous<T>(y, "y");
     details::check_1d_soft(proba, "proba");
+    details::check_contiguous<double>(proba, "proba");
     details::check_1d_soft(thresholds, "thresholds");
+    details::check_contiguous<double>(thresholds, "thresholds");
     details::check_equal_length(y, proba);
 
     const size_t n_obs = y.size();
@@ -455,14 +462,14 @@ void bind_binary_metrics_thresholds(py::module &m) {
         [](
             const py::array_t<bool>& y,
             const py::array_t<double>& proba,
-            const py::array_t<double>& threshold,
+            const py::array_t<double>& thresholds,
             const double fill
         ) {
-            return binary_metrics_thresholds<bool>(y, proba, threshold, fill);
+            return binary_metrics_thresholds<bool>(y, proba, thresholds, fill);
         },
         py::arg("y"),
         py::arg("proba"),
-        py::arg("threshold"),
+        py::arg("thresholds"),
         py::arg("fill") = 0.
     );
     m.def(
@@ -470,14 +477,14 @@ void bind_binary_metrics_thresholds(py::module &m) {
         [](
             const py::array_t<int64_t>& y,
             const py::array_t<double>& proba,
-            const py::array_t<double>& threshold,
+            const py::array_t<double>& thresholds,
             const double fill
         ) {
-            return binary_metrics_thresholds<int64_t>(y, proba, threshold, fill);
+            return binary_metrics_thresholds<int64_t>(y, proba, thresholds, fill);
         },
         py::arg("y"),
         py::arg("proba"),
-        py::arg("threshold"),
+        py::arg("thresholds"),
         py::arg("fill") = 0.
     );
     m.def(
@@ -485,14 +492,14 @@ void bind_binary_metrics_thresholds(py::module &m) {
         [](
             const py::array_t<double>& y,
             const py::array_t<double>& proba,
-            const py::array_t<double>& threshold,
+            const py::array_t<double>& thresholds,
             const double fill
         ) {
-            return binary_metrics_thresholds<double>(y, proba, threshold, fill);
+            return binary_metrics_thresholds<double>(y, proba, thresholds, fill);
         },
         py::arg("y"),
         py::arg("proba"),
-        py::arg("threshold"),
+        py::arg("thresholds"),
         py::arg("fill") = 0.
     );
     m.def(
@@ -500,14 +507,14 @@ void bind_binary_metrics_thresholds(py::module &m) {
         [](
             const py::array_t<int>& y,
             const py::array_t<double>& proba,
-            const py::array_t<double>& threshold,
+            const py::array_t<double>& thresholds,
             const double fill
         ) {
-            return binary_metrics_thresholds<int>(y, proba, threshold, fill);
+            return binary_metrics_thresholds<int>(y, proba, thresholds, fill);
         },
         py::arg("y"),
         py::arg("proba"),
-        py::arg("threshold"),
+        py::arg("thresholds"),
         py::arg("fill") = 0.
     );
     m.def(
@@ -515,12 +522,12 @@ void bind_binary_metrics_thresholds(py::module &m) {
         [](
             const py::array_t<float>& y,
             const py::array_t<double>& proba,
-            const py::array_t<double>& threshold,
+            const py::array_t<double>& thresholds,
             const double fill
         ) {
-            return binary_metrics_thresholds<float>(y, proba, threshold, fill);
+            return binary_metrics_thresholds<float>(y, proba, thresholds, fill);
         },
-        R"pbdoc(Compute binary classification metrics.
+        R"pbdoc(Compute binary classification metrics over thresholds.
 
         Computes the following metrics:
             0 - neg.precision aka Negative Predictive Value (NPV)
@@ -540,7 +547,7 @@ void bind_binary_metrics_thresholds(py::module &m) {
             the ground truth labels
         proba : np.array[np.float64]
             the predicted probability
-        threshold : np.array[np.float64]
+        thresholds : np.array[np.float64]
             classification thresholds
         fill : double, optional
             value to fill when a metric is not defined, e.g. divide by zero.
@@ -553,7 +560,7 @@ void bind_binary_metrics_thresholds(py::module &m) {
         )pbdoc",
         py::arg("y"),
         py::arg("proba"),
-        py::arg("threshold"),
+        py::arg("thresholds"),
         py::arg("fill") = 0.
     );
 }
