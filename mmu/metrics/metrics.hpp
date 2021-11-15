@@ -4,6 +4,14 @@
 #ifndef MMU_METRICS_METRICS_HPP_
 #define MMU_METRICS_METRICS_HPP_
 
+/* TODO *
+ *
+ * - Add function over runs for yhat
+ * - Add function over runs for proba with single threshold
+ * - Add support for int type in binary_metrics_confusion [requires]
+ *
+ * TODO */
+
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
@@ -176,6 +184,35 @@ void bind_binary_metrics(py::module &m) {
         ) {
             return binary_metrics<bool>(y, yhat, fill);
         },
+        R"pbdoc(Compute binary classification metrics.
+
+        Computes the following metrics:
+            0 - neg.precision aka Negative Predictive Value (NPV)
+            1 - pos.precision aka Positive Predictive Value (PPV)
+            2 - neg.recall aka True Negative Rate (TNR) aka Specificity
+            3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+            4 - neg.f1 score
+            5 - pos.f1 score
+            6 - False Positive Rate (FPR)
+            7 - False Negative Rate (FNR)
+            8 - Accuracy
+            9 - MCC
+
+        Parameters
+        ----------
+        y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
+            the ground truth labels
+        yhat : np.array[np.bool / np.int[32/64] / np.float[32/64]]
+            the predicted labels
+        fill : double, optional
+            value to fill when a metric is not defined, e.g. divide by zero.
+            Default is 0.
+
+        Returns
+        -------
+        tuple[np.array[np.int64], np.array[np.float64]]
+            confusion matrix and metrics array
+        )pbdoc",
         py::arg("y"),
         py::arg("yhat"),
         py::arg("fill") = 0.
@@ -191,7 +228,7 @@ void bind_binary_metrics(py::module &m) {
         },
         py::arg("y"),
         py::arg("yhat"),
-        py::arg("fill") = 0.0
+        py::arg("fill") = 0.
     );
     m.def(
         "binary_metrics",
@@ -228,35 +265,6 @@ void bind_binary_metrics(py::module &m) {
         ) {
             return binary_metrics<float>(y, yhat, fill);
         },
-        R"pbdoc(Compute binary classification metrics.
-
-        Computes the following metrics:
-            0 - neg.precision aka Negative Predictive Value (NPV)
-            1 - pos.precision aka Positive Predictive Value (PPV)
-            2 - neg.recall aka True Negative Rate (TNR) aka Specificity
-            3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
-            4 - neg.f1 score
-            5 - pos.f1 score
-            6 - False Positive Rate (FPR)
-            7 - False Negative Rate (FNR)
-            8 - Accuracy
-            9 - MCC
-
-        Parameters
-        ----------
-        y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
-            the ground truth labels
-        yhat : np.array[np.bool / np.int[32/64] / np.float[32/64]]
-            the predicted labels
-        fill : double, optional
-            value to fill when a metric is not defined, e.g. divide by zero.
-            Default is 0.
-
-        Returns
-        -------
-        tuple[np.array[np.int64], np.array[np.float64]]
-            confusion matrix and metrics array
-        )pbdoc",
         py::arg("y"),
         py::arg("yhat"),
         py::arg("fill") = 0.
@@ -307,6 +315,37 @@ void bind_binary_metrics_proba(py::module &m) {
         ) {
             return binary_metrics_proba<bool>(y, proba, threshold, fill);
         },
+        R"pbdoc(Compute binary classification metrics for a given threshold.
+
+        Computes the following metrics:
+            0 - neg.precision aka Negative Predictive Value (NPV)
+            1 - pos.precision aka Positive Predictive Value (PPV)
+            2 - neg.recall aka True Negative Rate (TNR) aka Specificity
+            3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+            4 - neg.f1 score
+            5 - pos.f1 score
+            6 - False Positive Rate (FPR)
+            7 - False Negative Rate (FNR)
+            8 - Accuracy
+            9 - MCC
+
+        Parameters
+        ----------
+        y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
+            the ground truth labels
+        proba : np.array[np.float64]
+            the predicted probability
+        threshold : float
+            classification threshold
+        fill : double, optional
+            value to fill when a metric is not defined, e.g. divide by zero.
+            Default is 0.
+
+        Returns
+        -------
+        tuple[np.array[np.int64], np.array[np.float64]]
+            confusion matrix and metrics array
+        )pbdoc",
         py::arg("y"),
         py::arg("proba"),
         py::arg("threshold"),
@@ -367,37 +406,6 @@ void bind_binary_metrics_proba(py::module &m) {
         ) {
             return binary_metrics_proba<float>(y, proba, threshold, fill);
         },
-        R"pbdoc(Compute binary classification metrics for a given threshold.
-
-        Computes the following metrics:
-            0 - neg.precision aka Negative Predictive Value (NPV)
-            1 - pos.precision aka Positive Predictive Value (PPV)
-            2 - neg.recall aka True Negative Rate (TNR) aka Specificity
-            3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
-            4 - neg.f1 score
-            5 - pos.f1 score
-            6 - False Positive Rate (FPR)
-            7 - False Negative Rate (FNR)
-            8 - Accuracy
-            9 - MCC
-
-        Parameters
-        ----------
-        y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
-            the ground truth labels
-        proba : np.array[np.float64]
-            the predicted probability
-        threshold : float
-            classification threshold
-        fill : double, optional
-            value to fill when a metric is not defined, e.g. divide by zero.
-            Default is 0.
-
-        Returns
-        -------
-        tuple[np.array[np.int64], np.array[np.float64]]
-            confusion matrix and metrics array
-        )pbdoc",
         py::arg("y"),
         py::arg("proba"),
         py::arg("threshold"),
@@ -467,6 +475,37 @@ void bind_binary_metrics_thresholds(py::module &m) {
         ) {
             return binary_metrics_thresholds<bool>(y, proba, thresholds, fill);
         },
+        R"pbdoc(Compute binary classification metrics over thresholds.
+
+        Computes the following metrics:
+            0 - neg.precision aka Negative Predictive Value (NPV)
+            1 - pos.precision aka Positive Predictive Value (PPV)
+            2 - neg.recall aka True Negative Rate (TNR) aka Specificity
+            3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+            4 - neg.f1 score
+            5 - pos.f1 score
+            6 - False Positive Rate (FPR)
+            7 - False Negative Rate (FNR)
+            8 - Accuracy
+            9 - MCC
+
+        Parameters
+        ----------
+        y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
+            the ground truth labels
+        proba : np.array[np.float64]
+            the predicted probability
+        thresholds : np.array[np.float64]
+            classification thresholds
+        fill : double, optional
+            value to fill when a metric is not defined, e.g. divide by zero.
+            Default is 0.
+
+        Returns
+        -------
+        tuple[np.array[np.int64], np.array[np.float64]]
+            confusion matrix and metrics array
+        )pbdoc",
         py::arg("y"),
         py::arg("proba"),
         py::arg("thresholds"),
@@ -527,37 +566,6 @@ void bind_binary_metrics_thresholds(py::module &m) {
         ) {
             return binary_metrics_thresholds<float>(y, proba, thresholds, fill);
         },
-        R"pbdoc(Compute binary classification metrics over thresholds.
-
-        Computes the following metrics:
-            0 - neg.precision aka Negative Predictive Value (NPV)
-            1 - pos.precision aka Positive Predictive Value (PPV)
-            2 - neg.recall aka True Negative Rate (TNR) aka Specificity
-            3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
-            4 - neg.f1 score
-            5 - pos.f1 score
-            6 - False Positive Rate (FPR)
-            7 - False Negative Rate (FNR)
-            8 - Accuracy
-            9 - MCC
-
-        Parameters
-        ----------
-        y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
-            the ground truth labels
-        proba : np.array[np.float64]
-            the predicted probability
-        thresholds : np.array[np.float64]
-            classification thresholds
-        fill : double, optional
-            value to fill when a metric is not defined, e.g. divide by zero.
-            Default is 0.
-
-        Returns
-        -------
-        tuple[np.array[np.int64], np.array[np.float64]]
-            confusion matrix and metrics array
-        )pbdoc",
         py::arg("y"),
         py::arg("proba"),
         py::arg("thresholds"),
@@ -639,7 +647,7 @@ inline py::tuple binary_metrics_runs_thresholds(
 
 void bind_binary_metrics_runs_thresholds(py::module &m) {
     m.def(
-        "_binary_metrics_run_thresholds",
+        "_binary_metrics_runs_thresholds",
         [](
             const py::array_t<bool>& y,
             const py::array_t<double>& proba,
@@ -648,139 +656,6 @@ void bind_binary_metrics_runs_thresholds(py::module &m) {
             const double fill
         ) {
             return binary_metrics_runs_thresholds<bool, double>(
-                y, proba, thresholds, n_obs, fill
-            );
-        },
-        py::arg("y"),
-        py::arg("proba"),
-        py::arg("thresholds"),
-        py::arg("n_obs"),
-        py::arg("fill")
-    );
-    m.def(
-        "_binary_metrics_run_thresholds",
-        [](
-            const py::array_t<int64_t>& y,
-            const py::array_t<double>& proba,
-            const py::array_t<double>& thresholds,
-            const py::array_t<int64_t>& n_obs,
-            const double fill
-        ) {
-            return binary_metrics_runs_thresholds<int64_t, double>(
-                y, proba, thresholds, n_obs, fill
-            );
-        },
-        py::arg("y"),
-        py::arg("proba"),
-        py::arg("thresholds"),
-        py::arg("n_obs"),
-        py::arg("fill")
-    );
-    m.def(
-        "_binary_metrics_run_thresholds",
-        [](
-            const py::array_t<double>& y,
-            const py::array_t<double>& proba,
-            const py::array_t<double>& thresholds,
-            const py::array_t<int64_t>& n_obs,
-            const double fill
-        ) {
-            return binary_metrics_runs_thresholds<double, double>(
-                y, proba, thresholds, n_obs, fill
-            );
-        },
-        py::arg("y"),
-        py::arg("proba"),
-        py::arg("thresholds"),
-        py::arg("n_obs"),
-        py::arg("fill")
-    );
-    m.def(
-        "_binary_metrics_run_thresholds",
-        [](
-            const py::array_t<int>& y,
-            const py::array_t<double>& proba,
-            const py::array_t<double>& thresholds,
-            const py::array_t<int64_t>& n_obs,
-            const double fill
-        ) {
-            return binary_metrics_runs_thresholds<int, double>(
-                y, proba, thresholds, n_obs, fill
-            );
-        },
-        py::arg("y"),
-        py::arg("proba"),
-        py::arg("thresholds"),
-        py::arg("n_obs"),
-        py::arg("fill")
-    );
-    m.def(
-        "_binary_metrics_run_thresholds",
-        [](
-            const py::array_t<bool>& y,
-            const py::array_t<float>& proba,
-            const py::array_t<float>& thresholds,
-            const py::array_t<int64_t>& n_obs,
-            const double fill
-        ) {
-            return binary_metrics_runs_thresholds<bool, float>(
-                y, proba, thresholds, n_obs, fill
-            );
-        },
-        py::arg("y"),
-        py::arg("proba"),
-        py::arg("thresholds"),
-        py::arg("n_obs"),
-        py::arg("fill")
-    );
-    m.def(
-        "_binary_metrics_run_thresholds",
-        [](
-            const py::array_t<int64_t>& y,
-            const py::array_t<float>& proba,
-            const py::array_t<float>& thresholds,
-            const py::array_t<int64_t>& n_obs,
-            const double fill
-        ) {
-            return binary_metrics_runs_thresholds<int64_t, float>(
-                y, proba, thresholds, n_obs, fill
-            );
-        },
-        py::arg("y"),
-        py::arg("proba"),
-        py::arg("thresholds"),
-        py::arg("n_obs"),
-        py::arg("fill")
-    );
-    m.def(
-        "_binary_metrics_run_thresholds",
-        [](
-            const py::array_t<int>& y,
-            const py::array_t<float>& proba,
-            const py::array_t<float>& thresholds,
-            const py::array_t<int64_t>& n_obs,
-            const double fill
-        ) {
-            return binary_metrics_runs_thresholds<int, float>(
-                y, proba, thresholds, n_obs, fill
-            );
-        },
-        py::arg("y"),
-        py::arg("proba"),
-        py::arg("thresholds"),
-        py::arg("n_obs"),
-        py::arg("fill")
-    );
-    m.def(
-        "_binary_metrics_run_thresholds",
-        [](
-            const py::array_t<float>& y,
-            const py::array_t<float>& proba,
-            const py::array_t<float>& thresholds,
-            const py::array_t<int64_t>& n_obs,
-            const double fill
-        ) {
-            return binary_metrics_runs_thresholds<float, float>(
                 y, proba, thresholds, n_obs, fill
             );
         },
@@ -820,7 +695,140 @@ void bind_binary_metrics_runs_thresholds(py::module &m) {
         py::arg("proba"),
         py::arg("thresholds"),
         py::arg("n_obs"),
-        py::arg("fill")
+        py::arg("fill") = 0.
+    );
+    m.def(
+        "_binary_metrics_runs_thresholds",
+        [](
+            const py::array_t<int64_t>& y,
+            const py::array_t<double>& proba,
+            const py::array_t<double>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<int64_t, double>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill") = 0.
+    );
+    m.def(
+        "_binary_metrics_runs_thresholds",
+        [](
+            const py::array_t<double>& y,
+            const py::array_t<double>& proba,
+            const py::array_t<double>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<double, double>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill") = 0.
+    );
+    m.def(
+        "_binary_metrics_runs_thresholds",
+        [](
+            const py::array_t<int>& y,
+            const py::array_t<double>& proba,
+            const py::array_t<double>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<int, double>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill") = 0.
+    );
+    m.def(
+        "_binary_metrics_runs_thresholds",
+        [](
+            const py::array_t<bool>& y,
+            const py::array_t<float>& proba,
+            const py::array_t<float>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<bool, float>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill") = 0.
+    );
+    m.def(
+        "_binary_metrics_runs_thresholds",
+        [](
+            const py::array_t<int64_t>& y,
+            const py::array_t<float>& proba,
+            const py::array_t<float>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<int64_t, float>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill") = 0.
+    );
+    m.def(
+        "_binary_metrics_runs_thresholds",
+        [](
+            const py::array_t<int>& y,
+            const py::array_t<float>& proba,
+            const py::array_t<float>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<int, float>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill") = 0.
+    );
+    m.def(
+        "_binary_metrics_runs_thresholds",
+        [](
+            const py::array_t<float>& y,
+            const py::array_t<float>& proba,
+            const py::array_t<float>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<float, float>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill") = 0.
     );
 }
 
@@ -895,7 +903,7 @@ void bind_binary_metrics_confusion(py::module &m) {
             metrics array
         )pbdoc",
         py::arg("conf_mat"),
-        py::arg("fill")
+        py::arg("fill") = 0.
     );
 }
 
