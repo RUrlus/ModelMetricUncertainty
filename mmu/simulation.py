@@ -202,6 +202,7 @@ class ModelGenerator:
 
         # statefull random number generator
         self._gen = check_random_state(random_state)
+        self._gen_orig = copy.deepcopy(self._gen)
 
     def _generate_centroids(self):
         """Generate the centroids which position the clusters in X.
@@ -770,6 +771,8 @@ class ModelGenerator:
             ground truth model
 
         """
+        # reset the random state to it's original position
+        self._gen = self._gen_orig
         random_samples_per_class = False
         weights = weights or self.weights
         if weights is None:
