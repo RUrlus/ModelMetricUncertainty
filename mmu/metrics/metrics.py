@@ -127,38 +127,47 @@ def binary_metrics_runs_thresholds(y, proba, thresholds, n_obs=None, fill=0.0):
 
     y = _check_shape_order(y, 'y')
     proba = _check_shape_order(proba, 'proba')
+    n_runs = min(proba.shape)
 
     if y.shape[1] < proba.shape[1]:
         y = np.tile(y, (y.shape[0], proba.shape[1]))
 
-    n_runs = min(y.shape)
     n_thresholds = thresholds.size
     if n_obs is None:
         max_obs = max(y.shape)
         n_obs = np.repeat(max_obs, n_runs)
-    cm, mtr = _core._binary_metrics_run_thresholds(
+
+    cm, mtr = _core._binary_metrics_runs_thresholds(
         y, proba, thresholds, n_obs, fill
     )
     # cm and mtr are both flat arrays with order conf_mat, thresholds, runs
     # as this is fastest to create. However, how the cubes will be sliced
     # later doesn't align with this. So we incur a copy such that the cubes
     # have the optimal strides for further processing
-
-    # create cube from flat array
-    cm = cm.reshape(n_runs, n_thresholds, 4, order='C')
-    # reorder such that with F-order we get from smallest to largest
-    # strides: conf_mat, runs, thresholds
-    cm = np.swapaxes(np.swapaxes(cm, 0, 2), 1, 2)
-    # make values over the confusion matrix and runs contiguous
-    cm = np.asarray(cm, order='F')
-    # change order s.t. we have thresholds, conf_mat, runs
-    cm = np.swapaxes(cm.T, 1, 2)
+    if n_thresholds == 1:
+        # create cube from flat array
+        cm = cm.reshape(n_runs, 4, order='C')
+    else:
+        # create cube from flat array
+        cm = cm.reshape(n_runs, n_thresholds, 4, order='C')
+        # reorder such that with F-order we get from smallest to largest
+        # strides: conf_mat, runs, thresholds
+        cm = np.swapaxes(np.swapaxes(cm, 0, 2), 1, 2)
+        # make values over the confusion matrix and runs contiguous
+        cm = np.asarray(cm, order='F')
+        # change order s.t. we have thresholds, conf_mat, runs
+        cm = np.swapaxes(cm.T, 1, 2)
 
     # create cube from flat array
     # order is runs, thresholds, metrics
-    mtr = mtr.reshape(n_runs, n_thresholds, 10, order='C')
-    # make values over the runs contiguous
-    mtr = np.asarray(mtr, order='F')
-    # change order s.t. we have thresholds, metrics, runs
-    mtr = np.swapaxes(mtr.T, 0, 1)
+    if n_thresholds == 1:
+        mtr = mtr.reshape(n_runs, 10, order='C')
+        # make values over the runs contiguous
+        mtr = np.asarray(mtr, order='F')
+    else:
+        mtr = mtr.reshape(n_runs, n_thresholds, 10, order='C')
+        # make values over the runs contiguous
+        mtr = np.asarray(mtr, order='F')
+        # change order s.t. we have thresholds, metrics, runs
+        mtr = np.swapaxes(mtr.T, 0, 1)
     return cm, mtr
