@@ -18,6 +18,6 @@ def generate_test_labels(N, dtype=np.int64):
 
     """
     proba = np.random.beta(5, 3, size=N)
-    yhat = np.rint(proba).astype(np.int64)
-    y = np.random.binomial(1, np.mean(proba), N)
-    return proba, yhat.astype(dtype), y.astype(dtype)
+    yhat = np.rint(proba).astype(dtype)
+    y = np.random.binomial(1, np.mean(proba), N).astype(dtype)
+    return (proba, yhat, y)
