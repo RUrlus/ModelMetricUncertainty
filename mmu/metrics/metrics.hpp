@@ -558,46 +558,264 @@ void bind_binary_metrics_thresholds(py::module &m) {
     );
 }
 
-template <typename T>
-py::tuple binary_metrics_runs_thresholds(
+template <typename T, typename A>
+inline py::tuple binary_metrics_runs_thresholds(
     const py::array_t<T>& y,
-    const py::array_t<double>& proba,
-    const py::array_t<double>& thresholds,
+    const py::array_t<A>& proba,
+    const py::array_t<A>& thresholds,
+    const py::array_t<int64_t>& n_obs,
     const double fill
 ) {
     // condition checks
     details::check_1d_soft(thresholds, "thresholds");
-    details::check_equal_length(y, proba);
-
-    const size_t n_dim_y = y.ndim();
-    const size_t n_dim_proba = proba.ndim();
-
-    size_t n_obs;
-    size_t n_runs = 1;
-    if (n_dim_proba == 2) {
-        n_obs = proba.shape(0);
-        n_runs = proba.shape(1);
-    } else if (n_dim_proba > 2) {
-        throw std::runtime_error("`proba` must be at most two dimensional");
-    }
-    if (n_dim_y > 2) {
-        throw std::runtime_error("`y` must be at most two dimensional");
-    }
-    const size_t n_labels = y.shape(0);
-    const ssize_t n_thresholds = thresholds.size();
+    details::check_contiguous(thresholds, "thresholds");
+    details::check_contiguous(y, "y");
+    details::check_contiguous(proba, "proba");
+    details::check_contiguous(n_obs, "n_obs");
+    details::check_equal_shape(y, proba, "y", "proba");
 
     // get ptr
     auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
-    auto proba_ptr = reinterpret_cast<double*>(proba.request().ptr);
-    auto thresholds_ptr = reinterpret_cast<double*>(thresholds.request().ptr);
+    auto proba_ptr = reinterpret_cast<A*>(proba.request().ptr);
+    auto thresholds_ptr = reinterpret_cast<A*>(thresholds.request().ptr);
+    auto n_obs_ptr = reinterpret_cast<int64_t*>(n_obs.request().ptr);
+
+    const ssize_t n_runs = n_obs.size();
+    const ssize_t n_thresholds = thresholds.shape(0);
+    const ssize_t max_obs = *std::max_element(n_obs_ptr, n_obs_ptr + n_runs);
 
     // allocate memory confusion_matrix
-    auto conf_mat = py::array_t<int64_t>({n_thresholds, static_cast<ssize_t>(4)});
+    const ssize_t n_run_tresholds = n_thresholds *  n_runs;
+    auto conf_mat = py::array_t<int64_t>(n_run_tresholds * static_cast<ssize_t>(4));
     int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
     static constexpr size_t block_size = sizeof(int64_t) * 4;
     // initialise confusion_matrix to zeros
-    memset(cm_ptr, 0, n_thresholds * block_size);
+    memset(cm_ptr, 0, n_run_tresholds * block_size);
 
+    // allocate memory for metrics; are all set so don't rely on initialisation
+    auto metrics = py::array_t<double>(n_run_tresholds * static_cast<ssize_t>(10));
+    double* const metrics_ptr = reinterpret_cast<double*>(metrics.request().ptr);
+
+    // Bookkeeping variables
+    const ssize_t cm_offset = n_thresholds * 4;
+    const ssize_t metrics_offset = n_thresholds * 10;
+
+    T* outer_y_ptr;
+    A* outer_proba_ptr;
+    ssize_t outer_n_obs;
+    int64_t* outer_cm_ptr;
+    double* outer_metrics_ptr;
+    double* inner_metrics_ptr;
+    int64_t* inner_cm_ptr;
+
+
+    #pragma omp parallel for private(outer_n_obs, outer_y_ptr, outer_metrics_ptr, outer_cm_ptr, inner_cm_ptr, inner_metrics_ptr)
+    for (ssize_t r = 0; r < n_runs; r++) {
+        outer_n_obs = n_obs_ptr[r];
+        outer_y_ptr = y_ptr + (r * max_obs);
+        outer_proba_ptr = proba_ptr + (r * max_obs);
+        outer_cm_ptr = cm_ptr + (r * cm_offset);
+        outer_metrics_ptr = metrics_ptr + (r * metrics_offset);
+        for (ssize_t i = 0; i < n_thresholds; i++) {
+            inner_cm_ptr = outer_cm_ptr + (i * 4);
+            inner_metrics_ptr = outer_metrics_ptr + (i * 10);
+            // fill confusion matrix
+            details::confusion_matrix<T>(
+                outer_n_obs, outer_y_ptr, outer_proba_ptr, thresholds_ptr[i], inner_cm_ptr
+            );
+            // compute metrics
+            details::binary_metrics(inner_cm_ptr, inner_metrics_ptr, fill);
+        }
+    }
+    return py::make_tuple(conf_mat, metrics);
+}
+
+void bind_binary_metrics_runs_thresholds(py::module &m) {
+    m.def(
+        "_binary_metrics_run_thresholds",
+        [](
+            const py::array_t<bool>& y,
+            const py::array_t<double>& proba,
+            const py::array_t<double>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<bool, double>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill")
+    );
+    m.def(
+        "_binary_metrics_run_thresholds",
+        [](
+            const py::array_t<int64_t>& y,
+            const py::array_t<double>& proba,
+            const py::array_t<double>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<int64_t, double>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill")
+    );
+    m.def(
+        "_binary_metrics_run_thresholds",
+        [](
+            const py::array_t<double>& y,
+            const py::array_t<double>& proba,
+            const py::array_t<double>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<double, double>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill")
+    );
+    m.def(
+        "_binary_metrics_run_thresholds",
+        [](
+            const py::array_t<int>& y,
+            const py::array_t<double>& proba,
+            const py::array_t<double>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<int, double>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill")
+    );
+    m.def(
+        "_binary_metrics_run_thresholds",
+        [](
+            const py::array_t<bool>& y,
+            const py::array_t<float>& proba,
+            const py::array_t<float>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<bool, float>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill")
+    );
+    m.def(
+        "_binary_metrics_run_thresholds",
+        [](
+            const py::array_t<int64_t>& y,
+            const py::array_t<float>& proba,
+            const py::array_t<float>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<int64_t, float>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill")
+    );
+    m.def(
+        "_binary_metrics_run_thresholds",
+        [](
+            const py::array_t<int>& y,
+            const py::array_t<float>& proba,
+            const py::array_t<float>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<int, float>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill")
+    );
+    m.def(
+        "_binary_metrics_run_thresholds",
+        [](
+            const py::array_t<float>& y,
+            const py::array_t<float>& proba,
+            const py::array_t<float>& thresholds,
+            const py::array_t<int64_t>& n_obs,
+            const double fill
+        ) {
+            return binary_metrics_runs_thresholds<float, float>(
+                y, proba, thresholds, n_obs, fill
+            );
+        },
+        R"pbdoc(Compute binary classification metrics over runs and thresholds.
+
+        Computes the following metrics:
+            0 - neg.precision aka Negative Predictive Value (NPV)
+            1 - pos.precision aka Positive Predictive Value (PPV)
+            2 - neg.recall aka True Negative Rate (TNR) aka Specificity
+            3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+            4 - neg.f1 score
+            5 - pos.f1 score
+            6 - False Positive Rate (FPR)
+            7 - False Negative Rate (FNR)
+            8 - Accuracy
+            9 - MCC
+
+        Parameters
+        ----------
+        y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
+            the ground truth labels
+        proba : np.array[np.float[32/64]]
+            the predicted probability
+        thresholds : np.array[np.float[32/64]]
+            classification thresholds
+        n_obs : np.array[np.int64]
+            the number of observations per run
+        fill : double
+            value to fill when a metric is not defined, e.g. divide by zero.
+
+        Returns
+        -------
+        tuple[np.array[np.int64], np.array[np.float64]]
+            confusion matrix and metrics array
+        )pbdoc",
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("thresholds"),
+        py::arg("n_obs"),
+        py::arg("fill")
+    );
+}
     // metrics are all set so don't rely on initialisation
     auto metrics = py::array_t<double>({n_thresholds, static_cast<ssize_t>(10)});
     double* const metrics_ptr = reinterpret_cast<double*>(metrics.request().ptr);
