@@ -4,11 +4,19 @@
 #ifndef MMU_METRICS_CONFUSION_MATRIX_HPP_
 #define MMU_METRICS_CONFUSION_MATRIX_HPP_
 
+/* TODO *
+ *
+ * - Add function over runs for yhat
+ * - Add function over runs for proba with single threshold
+ * - Add function over runs for proba over multiple thresholds
+ * - Add support for int confusion_matrices
+ *
+ * TODO */
+
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 
-#include <iostream>  // FIXME
 #include <cmath>
 #include <string>
 #include <limits>
@@ -46,25 +54,6 @@ template<class T, std::enable_if_t<std::is_floating_point<T>::value, int> = 1>
 inline void confusion_matrix(const size_t n_obs, T* y,  T* yhat, int64_t* const conf_mat) {
     for (size_t i = 0; i < n_obs; i++) {
         conf_mat[(*y > 1e-12) * 2 + (*yhat > 1e-12)]++; yhat++; y++;
-    }
-}
-
-// --- from proba and threshold ---
-template<class T, std::enable_if_t<std::is_integral<T>::value, int> = 0>
-inline void confusion_matrix(
-    const size_t n_obs, T* y, double* proba, const double threshold, int64_t* const conf_mat
-) {
-    for (size_t i = 0; i < n_obs; i++) {
-        conf_mat[static_cast<bool>(*y) * 2 + (*proba > threshold)]++; proba++; y++;
-    }
-}
-
-template<class T, std::enable_if_t<std::is_floating_point<T>::value, int> = 1>
-inline void confusion_matrix(
-    const size_t n_obs, T* y, double* proba, const double threshold, int64_t* const conf_mat
-) {
-    for (size_t i = 0; i < n_obs; i++) {
-        conf_mat[(*y > 1e-12) * 2 + (*proba > threshold)]++; proba++; y++;
     }
 }
 
@@ -119,6 +108,20 @@ void bind_confusion_matrix(py::module &m) {
         [](const py::array_t<bool>& y, const py::array_t<bool>& yhat) {
             return confusion_matrix<bool>(y, yhat);
         },
+        R"pbdoc(Compute binary Confusion Matrix.
+
+        Parameters
+        ----------
+        y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
+            the ground truth labels
+        yhat : np.array[np.bool / np.int[32/64] / np.float[32/64]]
+            the predicted labels
+
+        Returns
+        -------
+        confusion_matrix : np.array[np.int64]
+            confusion matrix
+        )pbdoc",
         py::arg("y"),
         py::arg("yhat")
     );
@@ -151,27 +154,15 @@ void bind_confusion_matrix(py::module &m) {
         [](const py::array_t<float>& y, const py::array_t<float>& yhat) {
             return confusion_matrix<float>(y, yhat);
         },
-        R"pbdoc(Compute binary Confusion Matrix.
-
-        Parameters
-        ----------
-        y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
-            the ground truth labels
-        yhat : np.array[np.bool / np.int[32/64] / np.float[32/64]]
-            the predicted labels
-
-        Returns
-        -------
-        confusion_matrix : np.array[np.int64]
-            confusion matrix
-        )pbdoc",
         py::arg("y"),
         py::arg("yhat")
     );
 }
 
 template <typename T>
-py::array_t<int64_t> confusion_matrix(const py::array_t<T>& y, const py::array_t<double>& proba, const double threshold) {
+py::array_t<int64_t> confusion_matrix(
+    const py::array_t<T>& y, const py::array_t<double>& proba, const double threshold
+) {
     details::check_1d_soft(y, "y");
     details::check_contiguous(y, "y");
     details::check_1d_soft(proba, "proba");
@@ -197,6 +188,22 @@ void bind_confusion_matrix_proba(py::module &m) {
         [](const py::array_t<bool>& y, const py::array_t<double>& proba, const double threshold) {
             return confusion_matrix<bool>(y, proba, threshold);
         },
+        R"pbdoc(Compute binary Confusion Matrix given probabilities.
+
+        Parameters
+        ----------
+        y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
+            the ground truth labels
+        proba : np.array[np.float64]
+            the estimted probabilities
+        threshold : double
+            classification threshold
+
+        Returns
+        -------
+        confusion_matrix : np.array[np.int64]
+            confusion matrix
+        )pbdoc",
         py::arg("y"),
         py::arg("proba"),
         py::arg("threshold")
@@ -233,22 +240,6 @@ void bind_confusion_matrix_proba(py::module &m) {
         [](const py::array_t<float>& y, const py::array_t<double>& proba, const double threshold) {
             return confusion_matrix<float>(y, proba, threshold);
         },
-        R"pbdoc(Compute binary Confusion Matrix given probabilities.
-
-        Parameters
-        ----------
-        y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
-            the ground truth labels
-        proba : np.array[np.float64]
-            the estimted probabilities
-        threshold : double
-            classification threshold
-
-        Returns
-        -------
-        confusion_matrix : np.array[np.int64]
-            confusion matrix
-        )pbdoc",
         py::arg("y"),
         py::arg("proba"),
         py::arg("threshold")
