@@ -70,7 +70,7 @@ inline void binary_metrics(
     // real false/negative observations [TN + FP]
     int64_t iN = conf_mat[0] + conf_mat[1];
     bool N_nonzero = iN > 0;
-    auto N = static_cast<double>(conf_mat[0] + conf_mat[1]);
+    auto N = static_cast<double>(iN);
 
     auto TN = static_cast<double>(conf_mat[0]);
     auto FP = static_cast<double>(conf_mat[1]);
@@ -81,80 +81,50 @@ inline void binary_metrics(
     bool TP_FP_nonzero = iTP_FP > 0;
     auto TP_FP = static_cast<double>(iTP_FP);
 
-    double TP_FN = P;
     auto TP_TN = static_cast<double>(conf_mat[3] + conf_mat[0]);
-    double TN_FP = N;
 
     int64_t iTN_FN = conf_mat[0] + conf_mat[2];
     bool TN_FN_nonzero = iTN_FN > 0;
     auto TN_FN = static_cast<double>(iTN_FN);
     auto FP_FN = static_cast<double>(conf_mat[1] + conf_mat[2]);
 
-    double tmp = 0.0;
-
+    double itm = 0.0;
+    double itm_alt = 0.0;
     // metrics 0 - neg.precision aka Negative Predictive Value (NPV)
-    if (TN_FN_nonzero) {
-        metrics[0] = TN / TN_FN;
-    } else {
-        metrics[0] = fill;
-    }
+    metrics[0] = TN_FN_nonzero ? TN / TN_FN : fill;
 
     // metrics[1]  - pos.precision aka Positive Predictive Value (PPV)
-    if (TP_FP_nonzero) {
-        metrics[1] = TP / TP_FP;
-    } else {
-        metrics[1] = fill;
-    }
+    metrics[1] = TP_FP_nonzero ? TP / TP_FP : fill;
 
     // metrics[2]  - neg.recall aka True Negative Rate (TNR) & Specificity
     // metrics[6]  - False positive Rate (FPR)
-    if (N_nonzero) {
-        tmp = TN / N;
-        metrics[2] = tmp;
-        metrics[6] = 1.0 - tmp;
-    } else {
-        metrics[2] = fill;
-        metrics[6] = 1.0;
-    }
+    itm = TN / N;
+    metrics[2] = N_nonzero ? itm : fill;
+    metrics[6] = N_nonzero ? (1 - itm) : 1.0;
 
     // metrics[3]  - pos.recall aka True Positive Rate (TPR) aka Sensitivity
     // metrics[7]  - False Negative Rate (FNR)
-    if (P_nonzero) {
-        tmp = TP / P;
-        metrics[3] = tmp;
-        metrics[7] = 1.0 - tmp;
-    } else {
-        metrics[3] = fill;
-        metrics[7] = 1.0;
-    }
+    itm = TP / P;
+    metrics[3] = P_nonzero ? itm : fill;
+    metrics[7] = P_nonzero ? (1 - itm) : 1.0;
 
     // metrics[4]  - Negative F1 score
-    if (N_nonzero || TN_FN_nonzero) {
-        tmp = 2 * TN;
-        metrics[4] = tmp / (tmp + FP_FN);
-    } else {
-        metrics[4] = fill;
-    }
+    itm_alt = 2 * TN;
+    itm = itm_alt / (itm_alt + FP_FN);
+    metrics[4] = (N_nonzero || TN_FN_nonzero) ? itm : fill;
 
     // metrics[5]  - Positive F1 score
-    if (P_nonzero || TP_FP_nonzero) {
-        tmp = 2 * TP;
-        metrics[5] = tmp / (tmp + FP_FN);
-    } else {
-        metrics[5] = fill;
-    }
+    itm_alt = 2 * TP;
+    itm = itm_alt / (itm_alt + FP_FN);
+    metrics[5] = (P_nonzero || TP_FP_nonzero) ? itm : fill;
 
     // metrics[8]  - Accuracy
     metrics[8] = TP_TN / T;
 
     // metrics[9]  - MCC
     static constexpr double limit = std::numeric_limits<double>::epsilon();
-    double denom = TP_FP * TP_FN * TN_FP * TN_FN;
-    if (denom > limit) {
-        metrics[9] = (TP * TN - FP * FN) / std::sqrt(denom);
-    } else {
-        metrics[9] = fill;
-    }
+    itm = TP_FP * P * N * TN_FN;
+    metrics[9] = (itm > limit) ? (TP * TN - FP * FN) / std::sqrt(itm) : fill;
 }  // binary_metrics
 
 
