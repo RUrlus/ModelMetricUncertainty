@@ -823,23 +823,80 @@ void bind_binary_metrics_runs_thresholds(py::module &m) {
         py::arg("fill")
     );
 }
+
+py::array_t<double> binary_metrics_confusion(
+    const py::array_t<int64_t>& conf_mat,
+    const double fill
+) {
+
+    // condition checks
+    if ((conf_mat.ndim() != 2) || (conf_mat.shape(1) != 4)) {
+        throw std::runtime_error("``conf_mat`` should have shape (n, 4)");
+    }
+    if (!details::is_c_contiguous(conf_mat)) {
+        throw std::runtime_error("``conf_mat`` should be C-order");
+    }
+
+    // number of confusion matrices
+    const ssize_t n_obs = conf_mat.shape(0);
+
+    // get conf_mat memory ptr
+    int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
+
+    // allocate memory for metrics
     // metrics are all set so don't rely on initialisation
-    auto metrics = py::array_t<double>({n_thresholds, static_cast<ssize_t>(10)});
+    auto metrics = py::array_t<double>({n_obs, static_cast<ssize_t>(10)});
     double* const metrics_ptr = reinterpret_cast<double*>(metrics.request().ptr);
 
     int64_t* p_cm_ptr;
     double* p_metrics_ptr;
 
     #pragma omp parallel for private(p_cm_ptr, p_metrics_ptr)
-    for (ssize_t i = 0; i < n_thresholds; i++) {
+    for (ssize_t i = 0; i < n_obs; i++) {
         p_cm_ptr = cm_ptr + (i * 4);
         p_metrics_ptr = metrics_ptr + (i * 10);
-        // fill confusion matrix
-        details::confusion_matrix<T>(n_obs, y_ptr, proba_ptr, thresholds_ptr[i], p_cm_ptr);
         // compute metrics
         details::binary_metrics(p_cm_ptr, p_metrics_ptr, fill);
     }
-    return py::make_tuple(conf_mat, metrics);
+    return metrics;
+}
+
+void bind_binary_metrics_confusion(py::module &m) {
+    m.def(
+        "binary_metrics_confusion",
+        &binary_metrics_confusion,
+        R"pbdoc(Compute binary classification metrics over a set of confusion matrices.
+
+        Computes the following metrics:
+            0 - neg.precision aka Negative Predictive Value (NPV)
+            1 - pos.precision aka Positive Predictive Value (PPV)
+            2 - neg.recall aka True Negative Rate (TNR) aka Specificity
+            3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+            4 - neg.f1 score
+            5 - pos.f1 score
+            6 - False Positive Rate (FPR)
+            7 - False Negative Rate (FNR)
+            8 - Accuracy
+            9 - MCC
+
+        Parameters
+        ----------
+        conf_mat : np.array[np.int64]
+            the confusion matrices where the rows are the different confusion matrices
+            and the columns the entries of the matrix. Array should have C-order.
+            Note that the entries are assumed to have the following order:
+            [TN, FP, FN, TP]
+        fill : double
+            value to fill when a metric is not defined, e.g. divide by zero.
+
+        Returns
+        -------
+        np.array[np.float64]
+            metrics array
+        )pbdoc",
+        py::arg("conf_mat"),
+        py::arg("fill")
+    );
 }
 
 }  // namespace bindings
