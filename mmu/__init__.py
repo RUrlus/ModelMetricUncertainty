@@ -1,6 +1,5 @@
 import mmu.metrics as metrics
 import mmu.simulation as simulation
-import mmu.viz as viz
 
 from mmu.metrics import binary_metrics
 from mmu.metrics import binary_metrics_proba
@@ -25,7 +24,6 @@ __all__ = [
     'confusion_matrix_proba',
     'confusion_matrix_to_dataframe',
     "simulation",
-    "viz",
     "metrics",
     "metrics_to_dataframe",
     "ModelGenerator"
