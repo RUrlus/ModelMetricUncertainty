@@ -12,6 +12,7 @@ from mmu.metrics import confusion_matrix_to_dataframe
 from mmu.metrics import metrics_to_dataframe
 
 from mmu.simulation import ModelGenerator
+from mmu.simulation import LogisticGenerator
 
 
 __all__ = [
@@ -23,8 +24,9 @@ __all__ = [
     'confusion_matrix',
     'confusion_matrix_proba',
     'confusion_matrix_to_dataframe',
-    "simulation",
-    "metrics",
-    "metrics_to_dataframe",
-    "ModelGenerator"
+    'LogisticGenerator',
+    'metrics',
+    'metrics_to_dataframe',
+    'ModelGenerator',
+    'simulation',
 ]

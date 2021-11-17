@@ -57,6 +57,165 @@ def _generate_hypercube(samples, dimensions, rng):
     return out
 
 
+class LogisticGenerator:
+    """Generates binary classification models based on LogisticRegression.
+
+    Parameters
+    ----------
+
+    We use the same X; y for the test set
+
+    """
+
+    def __init__(
+        self,
+        betas=None,
+        train_frac=0.7,
+        noise_sigma=1.0,
+        random_state=None
+    ):
+        """Initialise the class."""
+        # statefull random number generator
+        self.betas = betas or np.array((0.5, 1.2))
+        self.train_frac = train_frac
+        self.noise_sigma = noise_sigma
+        self._pgen = np.random.default_rng(random_state)
+        self._pseed = self._pgen.integers(low=0, high=np.iinfo(np.int64).max)
+        self._gen = self._get_generator()
+
+    def _get_generator(self, reset=True):
+        if reset:
+            return np.random.default_rng(self._pseed)
+        seed = self._pgen.integers(low=0, high=np.iinfo(np.int64).max)
+        return np.random.default_rng(seed)
+
+    def _reset_generator(self):
+        """Reset generator to it's original state."""
+        self._gen = np.random.default_rng(self._pseed)
+
+    def _generate_X(self, n_samples):
+        X = np.ones((n_samples, 2))
+        X[:, 1] = self._gen.uniform(-10., 10.1, size=n_samples)
+        return X
+
+    def _compute_linear_estimate(self, X, betas):
+        """Generate noise-free input samples."""
+        return X.dot(betas)[:, None]
+
+    def _generate_train_test_index(self, n_samples, n_models, train_frac, dummy):
+        """Create index for train_test splits."""
+        index = np.arange(n_samples)
+        n_train = int(np.floor(train_frac * n_samples))
+
+        if dummy:
+            train_idx = np.tile(index[:n_train][:, None], (n_train, n_models))
+            test_idx = np.tile(index[n_train:][:, None], (n_train, n_models))
+            return train_idx, test_idx, n_train
+
+        indices = np.empty((n_samples, n_models), dtype=np.int64)
+        for i in range(n_models):
+            lgen = self._get_generator(reset=False)
+            indices[:, i] = lgen.choice(index, size=(n_samples), replace=False)
+        return indices[:n_train], indices[n_train:], n_train
+
+    def _fit_and_predict_proba(self, X_train, y_train, X_test):
+        """Fit a LR model on the various X_trains.
+
+        Parameters
+        ----------
+        X_train : np.ndarray
+            the train set input features, where the third dimension represents
+            the different models
+        y_train : np.ndarray
+            the train set labels, where the second dimension represents
+            the different models
+
+        Returns
+        -------
+        models : List[LogisticRegression]
+            a list containing the fitted models
+        train_proba : np.ndarray
+            probabilities for train set
+        test_proba : np.ndarray
+            probabilities for test set
+
+        """
+        n_models = y_train.shape[1]
+        models = []
+        train_proba = np.zeros((X_train.shape[0], n_models))
+        test_proba = np.zeros((X_test.shape[0], n_models))
+        for i in range(n_models):
+            model = LogisticRegression(penalty='none')
+            fit = model.fit(X_train[:, i, :], y_train[:, i].flatten())
+            train_proba[:, i] = fit.predict_proba(X_train[:, i, :])[:, 1]
+            test_proba[:, i] = fit.predict_proba(X_test[:, i, :])[:, 1]
+            models.append(fit)
+        return models, train_proba, test_proba
+
+    def transform(
+        self,
+        n_models=100,
+        n_samples=10000,
+        enable_sample_noise=True,
+        enable_measurement_noise=False,
+        betas=None,
+        train_frac=None,
+        noise_sigma=None,
+    ):
+        """Generate binary classification models."""
+        betas = betas or self.betas
+        train_frac = train_frac or self.train_frac
+        noise_sigma = noise_sigma or self.noise_sigma
+
+        # ensure consistent behaviour for samples
+        self._reset_generator()
+        # ground truth inputs
+        X = self._generate_X(n_samples)
+        linear_estimate = self._compute_linear_estimate(X, betas)
+        gt_proba = expit(linear_estimate)
+        gt_y = self._gen.binomial(1, gt_proba)
+
+        ground_truth = pd.DataFrame()
+        ground_truth['proba'] = gt_proba.flatten()
+        ground_truth['y'] = gt_y.flatten()
+        ground_truth['linear_estimate'] = linear_estimate.flatten()
+        ground_truth['X_0'] = X[:, 0]
+        ground_truth['X_1'] = X[:, 1]
+
+        if enable_sample_noise:
+            train_idx, test_idx, n_train = self._generate_train_test_index(
+                n_samples, n_models, train_frac, dummy=False
+            )
+        else:
+            train_idx, test_idx, n_train = self._generate_train_test_index(
+                n_samples, n_models, train_frac, dummy=True
+            )
+
+        y_test = gt_y[test_idx]
+        X_test = X[test_idx]
+        X_train = X[train_idx]
+
+        if enable_measurement_noise:
+            noise = self._gen.normal(0, noise_sigma, (n_samples, n_models))
+            linear_estimates = linear_estimate + noise
+            probas = expit(linear_estimates)
+            y_train = self._gen.binomial(1, probas[train_idx])
+        else:
+            y_train = self._gen.binomial(1, gt_proba[train_idx])
+
+        models, train_proba, test_proba = self._fit_and_predict_proba(
+            X_train, y_train, X_test
+        )
+        train_mask = np.ones(n_samples, dtype=np.bool_)
+        train_mask[n_train:] = False;
+
+        X = np.vstack((X_train, X_test))
+        labels = np.vstack((y_train, y_test))
+        probas = np.vstack((train_proba, test_proba))
+        indices = np.vstack((train_idx, test_idx))
+        return train_mask, indices, labels, probas, X, models, ground_truth
+
+
 class ModelGenerator:
     """Generates binary classification models that allow different types of
     uncertainty to be injected.
