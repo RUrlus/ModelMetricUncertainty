@@ -102,6 +102,14 @@ class LogisticGenerator:
         """Generate noise-free input samples."""
         return X.dot(betas)[:, None]
 
+    def _select_observations(self, X, idx):
+        """Select the observations from X based on idx."""
+        rows, cols = idx.shape
+        out = np.empty((rows, cols), order='F')
+        for i in range(cols):
+            out[:, i] = X[idx[:, i]].flatten()
+        return out
+
     def _generate_train_test_index(self, n_samples, n_models, train_frac, dummy):
         """Create index for train_test splits."""
         index = np.arange(n_samples)
@@ -191,7 +199,7 @@ class LogisticGenerator:
                 n_samples, n_models, train_frac, dummy=True
             )
 
-        y_test = gt_y[test_idx]
+        y_test = self._select_observations(gt_y, test_idx)
         X_test = X[test_idx]
         X_train = X[train_idx]
 
@@ -199,9 +207,11 @@ class LogisticGenerator:
             noise = self._gen.normal(0, noise_sigma, (n_samples, n_models))
             linear_estimates = linear_estimate + noise
             probas = expit(linear_estimates)
-            y_train = self._gen.binomial(1, probas[train_idx])
+            train_probas = self._select_observations(probas, train_idx)
+            y_train = self._gen.binomial(1, train_probas)
         else:
-            y_train = self._gen.binomial(1, gt_proba[train_idx])
+            train_probas = self._select_observations(gt_proba, train_idx)
+            y_train = self._gen.binomial(1, train_probas)
 
         models, train_proba, test_proba = self._fit_and_predict_proba(
             X_train, y_train, X_test
