@@ -4,6 +4,7 @@ include CMakeLists.txt
 global-include CMakeLists.txt
 recursive-include mmu *.hpp
 recursive-include mmu *.cpp
+recursive-include mmu *.stan
 
 global-include README.md
 exclude docs tests .readthedocs.yml
