@@ -414,6 +414,191 @@ void bind_binary_metrics_proba(py::module &m) {
 }
 
 template <typename T>
+inline py::tuple binary_metrics_runs(
+    py::array_t<T>& y,
+    py::array_t<double>& proba,
+    const double threshold,
+    const double fill,
+    const int obs_axis
+) {
+    // condition checks
+    y = details::check_shape_order(y, "y", obs_axis);
+    proba = details::check_shape_order(proba, "proba", obs_axis);
+    details::check_equal_length(y, proba);
+
+    size_t n_obs;
+    ssize_t n_runs;
+    const ssize_t n_dim = y.ndim();
+
+    if (n_dim == 2) {
+        n_obs = y.shape(obs_axis);
+        n_runs = y.shape(1-obs_axis);
+    } else {
+        n_obs = y.shape(0);
+        n_runs = 1;
+    }
+
+    // get ptr
+    auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
+    auto proba_ptr = reinterpret_cast<double*>(proba.request().ptr);
+
+    // allocate memory confusion_matrix
+    auto conf_mat = py::array_t<int64_t>({n_runs, static_cast<ssize_t>(4)});
+    int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
+    static constexpr size_t block_size = sizeof(int64_t) * 4;
+    // initialise confusion_matrix to zeros
+    memset(cm_ptr, 0, n_runs * block_size);
+
+    // metrics are all set so don't rely on initialisation
+    auto metrics = py::array_t<double>({n_runs, static_cast<ssize_t>(10)});
+    double* const metrics_ptr = reinterpret_cast<double*>(metrics.request().ptr);
+
+    int64_t* p_cm_ptr;
+    double* p_metrics_ptr;
+
+    T* p_y_ptr;
+    double* p_proba_ptr;
+
+    #pragma omp parallel for private(p_cm_ptr, p_metrics_ptr, p_y_ptr, p_proba_ptr)
+    for (ssize_t i = 0; i < n_runs; i++) {
+        p_y_ptr = y_ptr + (i * n_obs);
+        p_proba_ptr = proba_ptr + (i * n_obs);
+        p_cm_ptr = cm_ptr + (i * 4);
+        p_metrics_ptr = metrics_ptr + (i * 10);
+        // fill confusion matrix
+        details::confusion_matrix<T>(
+            n_obs, p_y_ptr, p_proba_ptr, threshold, p_cm_ptr
+        );
+        // compute metrics
+        details::binary_metrics(p_cm_ptr, p_metrics_ptr, fill);
+    }
+    return py::make_tuple(conf_mat, metrics);
+}
+
+void bind_binary_metrics_runs(py::module &m) {
+    m.def(
+        "binary_metrics_runs",
+        [](
+            py::array_t<bool>& y,
+            py::array_t<double>& proba,
+            double threshold,
+            const double fill,
+            const int obs_axis
+        ) {
+            return binary_metrics_runs<bool>(y, proba, threshold, fill, obs_axis);
+        },
+        R"pbdoc(Compute binary classification metrics over thresholds.
+
+        Computes the following metrics:
+            0 - neg.precision aka Negative Predictive Value (NPV)
+            1 - pos.precision aka Positive Predictive Value (PPV)
+            2 - neg.recall aka True Negative Rate (TNR) aka Specificity
+            3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+            4 - neg.f1 score
+            5 - pos.f1 score
+            6 - False Positive Rate (FPR)
+            7 - False Negative Rate (FNR)
+            8 - Accuracy
+            9 - MCC
+
+        Parameters
+        ----------
+        y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
+            the ground truth labels
+        proba : np.array[np.float64]
+            the predicted probability
+        threshold : float
+            classification threshold
+        fill : double, optional
+            value to fill when a metric is not defined, e.g. divide by zero.
+            Default is 0.
+        obs_axis : int
+            the axis containing the observations
+
+        Returns
+        -------
+        tuple[np.array[np.int64], np.array[np.float64]]
+            confusion matrix and metrics array
+        )pbdoc",
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("threshold"),
+        py::arg("fill") = 0.,
+        py::arg("obs_axis") = 0
+    );
+    m.def(
+        "binary_metrics_runs",
+        [](
+            py::array_t<int64_t>& y,
+            py::array_t<double>& proba,
+            double threshold,
+            const double fill,
+            const int obs_axis
+        ) {
+            return binary_metrics_runs<int64_t>(y, proba, threshold, fill, obs_axis);
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("threshold"),
+        py::arg("fill") = 0.,
+        py::arg("obs_axis") = 0
+
+    );
+    m.def(
+        "binary_metrics_runs",
+        [](
+            py::array_t<double>& y,
+            py::array_t<double>& proba,
+            double threshold,
+            const double fill,
+            const int obs_axis
+        ) {
+            return binary_metrics_runs<double>(y, proba, threshold, fill, obs_axis);
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("threshold"),
+        py::arg("fill") = 0.,
+        py::arg("obs_axis") = 0
+    );
+    m.def(
+        "binary_metrics_runs",
+        [](
+            py::array_t<int>& y,
+            py::array_t<double>& proba,
+            double threshold,
+            const double fill,
+            const int obs_axis
+        ) {
+            return binary_metrics_runs<int>(y, proba, threshold, fill, obs_axis);
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("threshold"),
+        py::arg("fill") = 0.,
+        py::arg("obs_axis") = 0
+
+    );
+    m.def(
+        "binary_metrics_runs",
+        [](
+            py::array_t<float>& y,
+            py::array_t<double>& proba,
+            double threshold,
+            const double fill,
+            const int obs_axis
+        ) {
+            return binary_metrics_runs<float>(y, proba, threshold, fill, obs_axis);
+        },
+        py::arg("y"),
+        py::arg("proba"),
+        py::arg("threshold"),
+        py::arg("fill") = 0.,
+        py::arg("obs_axis") = 0
+    );
+}
+
+template <typename T>
 inline py::tuple binary_metrics_thresholds(
     const py::array_t<T>& y,
     const py::array_t<double>& proba,
@@ -462,7 +647,6 @@ inline py::tuple binary_metrics_thresholds(
     }
     return py::make_tuple(conf_mat, metrics);
 }
-
 
 void bind_binary_metrics_thresholds(py::module &m) {
     m.def(
