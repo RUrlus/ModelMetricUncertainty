@@ -2,6 +2,7 @@ import mmu.metrics as metrics
 import mmu.models as models
 
 from mmu.metrics import binary_metrics
+from mmu.metrics import binary_metrics_runs
 from mmu.metrics import binary_metrics_proba
 from mmu.metrics import binary_metrics_confusion
 from mmu.metrics import binary_metrics_thresholds
@@ -18,6 +19,7 @@ from mmu.models.dirichlet_multinomial import DirichletMultinomialMultiConfusionM
 __all__ = [
     'BetaBinomialConfusionMatrix',
     'binary_metrics',
+    'binary_metrics_runs',
     'binary_metrics_proba',
     'binary_metrics_confusion',
     'binary_metrics_thresholds',

@@ -81,6 +81,8 @@ def confusion_matrix_to_dataframe(conf_mat):
 
 
 def binary_metrics_runs_thresholds(y, proba, thresholds, n_obs=None, fill=0.0):
+def binary_metrics_runs_thresholds(
+    y, proba, thresholds, n_obs=None, fill=0.0, obs_axis=0):
     """Compute binary classification metrics over runs and thresholds.
 
     Computes the following metrics:
@@ -113,6 +115,9 @@ def binary_metrics_runs_thresholds(y, proba, thresholds, n_obs=None, fill=0.0):
         observations are assumed exist for each run.
     fill : double
         value to fill when a metric is not defined, e.g. divide by zero.
+    obs_axis : {0, 1}, default=0
+        0 if the observations for a single run is a column (e.g. from
+        pd.DataFrame) and 1 otherwhise
 
     Returns
     -------
@@ -125,16 +130,16 @@ def binary_metrics_runs_thresholds(y, proba, thresholds, n_obs=None, fill=0.0):
     y = check_array(y, accept_large_sparse=False)
     proba = check_array(proba, accept_large_sparse=False)
 
-    y = _check_shape_order(y, 'y')
-    proba = _check_shape_order(proba, 'proba')
-    n_runs = min(proba.shape)
+    y = _check_shape_order(y, 'y', obs_axis)
+    proba = _check_shape_order(proba, 'proba', obs_axis)
+    n_runs = proba.shape[1 - obs_axis]
+    max_obs = proba.shape[obs_axis]
 
-    if y.shape[1] < proba.shape[1]:
-        y = np.tile(y, (y.shape[0], proba.shape[1]))
+    if y.shape[1] < 2:
+        y = np.tile(y, (y.shape[0], n_runs))
 
     n_thresholds = thresholds.size
     if n_obs is None:
-        max_obs = max(y.shape)
         n_obs = np.repeat(max_obs, n_runs)
 
     cm, mtr = _core._binary_metrics_runs_thresholds(
