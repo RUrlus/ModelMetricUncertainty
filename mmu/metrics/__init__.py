@@ -13,6 +13,7 @@ from mmu.lib._mmu_core import confusion_matrix_proba
 
 __all__ = [
     'binary_metrics',
+    'binary_metrics_runs',
     'binary_metrics_proba',
     'binary_metrics_confusion',
     'binary_metrics_thresholds',
