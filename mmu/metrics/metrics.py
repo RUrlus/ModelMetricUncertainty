@@ -8,13 +8,17 @@ from mmu.commons import _check_shape_order
 
 col_index = {
     'neg.precision': 0,
+    'neg.prec': 0,
     'npv': 0,
     'pos.precision': 1,
+    'pos.prec': 1,
     'ppv': 1,
     'neg.recall': 2,
+    'neg.rec': 2,
     'tnr': 2,
     'specificity': 2,
     'pos.recall': 3,
+    'pos.rec': 3,
     'tpr': 3,
     'sensitivity': 3,
     'neg.f1': 4,
@@ -42,7 +46,7 @@ col_names = [
 ]
 
 
-def metrics_to_dataframe(metrics):
+def metrics_to_dataframe(metrics, metric_names=None):
     """Return DataFrame with metrics.
 
     Parameters
@@ -50,6 +54,9 @@ def metrics_to_dataframe(metrics):
     metrics : np.ndarray
         metrics where the rows are the metrics for various runs or
         classification thresholds and the columns are the metrics.
+    metric_names : str, list[str], default=None
+        if you computed a subset of the metrics you should set the column
+        names here
 
     Returns
     -------
@@ -57,9 +64,18 @@ def metrics_to_dataframe(metrics):
         the metrics as a DataFrame
 
     """
+    if metric_names is None:
+        metric_names = col_names
+    elif isinstance(metric_names, str):
+        metric_names = [metric_names]
+    elif isinstance(metric_names, (tuple, list, np.ndarray)):
+        if not isinstance(metric_names[0], str):
+            raise TypeError('``metrics_names`` should contain strings.')
+    else:
+        raise TypeError('``metrics_names`` has an unsupported type.')
     if metrics.ndim == 1:
-        return pd.DataFrame(metrics[None, :], columns=col_names)
-    return pd.DataFrame(metrics, columns=col_names)
+        return pd.DataFrame(metrics[None, :], columns=metric_names)
+    return pd.DataFrame(metrics, columns=metric_names)
 
 
 def confusion_matrix_to_dataframe(conf_mat):
@@ -78,6 +94,8 @@ def confusion_matrix_to_dataframe(conf_mat):
     """
     index = (('observed', 'negative'), ('observed', 'positive'))
     cols = (('estimated', 'negative'), ('estimated', 'positive'))
+    if conf_mat.size == 4:
+        conf_mat = conf_mat.reshape(2, 2)
     return pd.DataFrame(conf_mat, index=index, columns=cols)
 
 
