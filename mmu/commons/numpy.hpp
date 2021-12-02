@@ -12,6 +12,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 
+#include <string>
+
 namespace py = pybind11;
 
 namespace mmu {
@@ -75,6 +77,41 @@ inline bool is_contiguous(const py::array_t<T>& arr) {
     return ccore::is_contiguous(arr.ptr());
 }
 
+/*
+ * Check if order matches shape of the array.
+ * We expect the observations (rows or columns) to be contiguous in memory.
+ *
+ * Parameters
+ * ----------
+ * arr : the array to validate
+ * name : the name of the parameter
+ *
+ * Returns
+ * -------
+ * the input array or the input array with the correct memory order
+ */
+template <typename T>
+inline py::array_t<T> check_shape_order(
+    py::array_t<T>& arr, const std::string name, const int obs_axis = 0
+) {
+    const ssize_t n_dim = arr.ndim();
+    if (n_dim > 2) {
+        throw std::runtime_error(name + " must be at most two dimensional.");
+    }
+    if (obs_axis == 0) {
+        if (!is_f_contiguous(arr)) {
+            return py::array_t<T, py::array::f_style | py::array::forcecast>(arr);
+        }
+        return arr;
+    } else if (obs_axis == 1) {
+        if (!is_c_contiguous(arr)) {
+            return py::array_t<T, py::array::c_style | py::array::forcecast>(arr);
+        }
+        return arr;
+    } else {
+        throw std::runtime_error("``obs_axis`` must be one or two.");
+    }
+} // check_shape_order
 
 }  // namespace details
 }  // namespace mmu

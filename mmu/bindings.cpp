@@ -20,6 +20,7 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_binary_metrics_proba(m);
     bind_binary_metrics_thresholds(m);
     bind_binary_metrics_confusion(m);
+    bind_binary_metrics_runs(m);
     bind_binary_metrics_runs_thresholds(m);
 
 #ifdef VERSION_INFO

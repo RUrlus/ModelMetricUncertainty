@@ -4,6 +4,7 @@ from mmu.metrics.metrics import col_names
 from mmu.metrics.metrics import confusion_matrix_to_dataframe
 from mmu.metrics.metrics import metrics_to_dataframe
 from mmu.lib._mmu_core import binary_metrics
+from mmu.lib._mmu_core import binary_metrics_runs
 from mmu.lib._mmu_core import binary_metrics_proba
 from mmu.lib._mmu_core import binary_metrics_confusion
 from mmu.lib._mmu_core import binary_metrics_thresholds
