@@ -149,3 +149,5 @@ dmypy.json
 *.bcf
 *.blg
 *.xml
+
+*version.py
