@@ -169,10 +169,10 @@ inline py::tuple binary_metrics(
 ) {
     // condition checks
     details::check_contiguous<T>(y, "y");
-    details::check_1d_soft(y, "y");
-    details::check_1d_soft(yhat, "yhat");
+    int y_obs_axis = details::check_1d_soft(y, "y");
     details::check_contiguous<T>(yhat, "yhat");
-    details::check_equal_length<T, T>(y, yhat);
+    int yhat_obs_axis = details::check_1d_soft(yhat, "yhat");
+    details::check_equal_length<T, T>(y, yhat, "y", "yhat", y_obs_axis, yhat_obs_axis);
 
     size_t n_obs = y.size();
     // allocate memory confusion_matrix
@@ -201,11 +201,11 @@ inline py::tuple binary_metrics_proba(
     const double fill
 ) {
     // condition checks
-    details::check_1d_soft(y, "y");
+    int y_obs_axis = details::check_1d_soft(y, "y");
     details::check_contiguous<T>(y, "y");
-    details::check_1d_soft(proba, "proba");
+    int proba_obs_axis = details::check_1d_soft(proba, "proba");
     details::check_contiguous<double>(proba, "proba");
-    details::check_equal_length(y, proba);
+    details::check_equal_length(y, proba, "y", "proba", y_obs_axis, proba_obs_axis);
 
     size_t n_obs = y.size();
     // allocate memory confusion_matrix
@@ -236,7 +236,7 @@ py::array_t<double> binary_metrics_confusion(
     details::assert_shape_order(conf_mat, "conf_mat", 4);
 
     // number of confusion matrices
-    const ssize_t n_obs = conf_mat.shape(0);
+    const ssize_t n_obs = conf_mat.size() / 4;
 
     // get conf_mat memory ptr
     T* const cm_ptr = reinterpret_cast<T*>(conf_mat.request().ptr);
@@ -270,7 +270,7 @@ inline py::tuple binary_metrics_runs(
     // condition checks
     y = details::check_shape_order(y, "y", obs_axis);
     proba = details::check_shape_order(proba, "proba", obs_axis);
-    details::check_equal_length(y, proba);
+    details::check_equal_length(y, proba, "y", "proba", obs_axis, obs_axis);
 
     size_t n_obs;
     ssize_t n_runs;
@@ -329,13 +329,13 @@ inline py::tuple binary_metrics_thresholds(
     const double fill
 ) {
     // condition checks
-    details::check_1d_soft(y, "y");
+    int y_obs_axis = details::check_1d_soft(y, "y");
     details::check_contiguous<T>(y, "y");
-    details::check_1d_soft(proba, "proba");
+    int proba_obs_axis = details::check_1d_soft(proba, "proba");
     details::check_contiguous<double>(proba, "proba");
     details::check_1d_soft(thresholds, "thresholds");
     details::check_contiguous<double>(thresholds, "thresholds");
-    details::check_equal_length(y, proba);
+    details::check_equal_length(y, proba, "y", "proba", y_obs_axis, proba_obs_axis);
 
     const size_t n_obs = y.size();
     const ssize_t n_thresholds = thresholds.size();
@@ -394,7 +394,7 @@ inline py::tuple binary_metrics_runs_thresholds(
     auto n_obs_ptr = reinterpret_cast<int64_t*>(n_obs.request().ptr);
 
     const ssize_t n_runs = n_obs.size();
-    const ssize_t n_thresholds = thresholds.shape(0);
+    const ssize_t n_thresholds = thresholds.size();
     const ssize_t max_obs = *std::max_element(n_obs_ptr, n_obs_ptr + n_runs);
 
     // allocate memory confusion_matrix
