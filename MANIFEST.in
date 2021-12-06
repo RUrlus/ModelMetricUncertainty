@@ -1,12 +1,15 @@
 include NOTICE
 include LICENSE
 include CMakeLists.txt
-global-include CMakeLists.txt
-recursive-include mmu *.hpp
-recursive-include mmu *.cpp
+include cpp/CMakeLists.txt
+recursive-include cpp *.hpp
+recursive-include cpp *.cpp
 recursive-include mmu *.stan
+recursive-include cmake *.cmake
 
 global-include README.md
+global-include CMakeLists.txt
+
 exclude docs tests .readthedocs.yml
 recursive-exclude tests *.py
 recursive-exclude docs *
