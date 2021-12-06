@@ -9,8 +9,6 @@
  * - Add function over runs for yhat
  * - Add function over runs for proba with single threshold
  * - Add function over runs for proba over multiple thresholds
- * - Add support for int confusion_matrices
- *
  * TODO */
 
 #include <pybind11/pybind11.h>
@@ -83,11 +81,11 @@ namespace bindings {
 
 template <typename T>
 py::array_t<int64_t> confusion_matrix(const py::array_t<T>& y, const py::array_t<T>& yhat) {
-    details::check_1d_soft(y, "y");
+    int y_obs_axis = details::check_1d_soft(y, "y");
     details::check_contiguous(y, "y");
-    details::check_1d_soft(yhat, "yhat");
+    int yhat_obs_axis = details::check_1d_soft(yhat, "yhat");
     details::check_contiguous(yhat, "yhat");
-    details::check_equal_length(y, yhat);
+    details::check_equal_length(y, yhat, "y", "yhat", y_obs_axis, yhat_obs_axis);
 
     // note memory is uninitialised
     auto conf_mat = py::array_t<int64_t>({2, 2}, {16, 8});
@@ -106,11 +104,11 @@ template <typename T>
 py::array_t<int64_t> confusion_matrix(
     const py::array_t<T>& y, const py::array_t<double>& proba, const double threshold
 ) {
-    details::check_1d_soft(y, "y");
+    int y_obs_axis = details::check_1d_soft(y, "y");
     details::check_contiguous(y, "y");
-    details::check_1d_soft(proba, "proba");
+    int proba_obs_axis = details::check_1d_soft(proba, "proba");
     details::check_contiguous(proba, "proba");
-    details::check_equal_length(y, proba);
+    details::check_equal_length(y, proba, "y", "proba", y_obs_axis, proba_obs_axis);
 
     // note memory is uninitialised
     auto conf_mat = py::array_t<int64_t>({2, 2}, {16, 8});
