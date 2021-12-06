@@ -1,15 +1,15 @@
 /* metrics.hpp -- Implementation of binary classification metrics
  * Copyright 2021 Ralph Urlus
  */
-#ifndef MMU_COMMONS_UTILS_HPP_
-#define MMU_COMMONS_UTILS_HPP_
+#ifndef CPP_INCLUDE_MMU_UTILS_HPP_
+#define CPP_INCLUDE_MMU_UTILS_HPP_
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 
 #include <string>
 
-#include "numpy.hpp"
+#include <mmu/numpy.hpp>
 
 namespace py = pybind11;
 
@@ -57,4 +57,4 @@ inline void check_equal_shape(const py::array_t<T>& x, const py::array_t<V>& y, 
 }  // namespace details
 }  // namespace mmu
 
-#endif  // MMU_COMMONS_UTILS_HPP_
+#endif  // CPP_INCLUDE_MMU_UTILS_HPP_

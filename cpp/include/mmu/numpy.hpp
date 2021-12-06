@@ -1,8 +1,8 @@
 /* numpy.hpp -- Utility functions used to inferace with Numpy arrays
  * Copyright 2021 Ralph Urlus
  */
-#ifndef MMU_COMMONS_NUMPY_HPP_
-#define MMU_COMMONS_NUMPY_HPP_
+#ifndef CPP_INCLUDE_MMU_NUMPY_HPP_
+#define CPP_INCLUDE_MMU_NUMPY_HPP_
 
 #define NPY_NO_DEPRECATED_API NPY_1_18_API_VERSION
 #include <Python.h>
@@ -109,11 +109,33 @@ inline py::array_t<T> check_shape_order(
         }
         return arr;
     } else {
-        throw std::runtime_error("``obs_axis`` must be one or two.");
+        throw std::runtime_error("``obs_axis`` must be zero or one.");
     }
 } // check_shape_order
+
+template <typename T>
+inline void assert_shape_order(
+    const py::array_t<T>& arr, const std::string name, ssize_t expected
+) {
+    ssize_t n_dim = arr.ndim();
+    int bad_state = 1;
+    if ((n_dim == 1) && arr.size() == expected) {
+        bad_state -= details::is_c_contiguous(arr);
+    } else if (n_dim == 2) {
+        if (arr.shape(1) == expected) {
+            bad_state -= details::is_c_contiguous(arr);
+        } else if (arr.shape(0) == expected) {
+            bad_state -= details::is_f_contiguous(arr);
+        }
+    }
+    if (bad_state != 0) {
+        throw std::runtime_error(
+            "``" + name + "`` should be C-contiguous and have shape (n, 4) or F-contiguous with shape (4, n)"
+        );
+    }
+}  // check_shape_order
 
 }  // namespace details
 }  // namespace mmu
 
-#endif  // MMU_COMMONS_NUMPY_HPP_
+#endif  // CPP_INCLUDE_MMU_NUMPY_HPP_

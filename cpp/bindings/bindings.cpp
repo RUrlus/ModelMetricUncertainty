@@ -2,8 +2,8 @@
  * Copyright 2021 Ralph Urlus
  */
 #include <pybind11/pybind11.h>
-#include "metrics/metrics.hpp"
-#include "metrics/confusion_matrix.hpp"
+#include "metrics.hpp"
+#include "confusion_matrix.hpp"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
