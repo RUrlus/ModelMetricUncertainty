@@ -71,6 +71,7 @@ class ConfusionMatrixBase:
         n_samples,
         sample_factor,
         n_cores,
+        n_warmup=500,
         sampling_kwargs=None,
     ):
         """Fit model and sample confusion matrices from the posterior.
@@ -90,6 +91,10 @@ class ConfusionMatrixBase:
             the number of cores to use during fit and sampling. Default's
             4 cores if present other the number of cores available. Setting it
             to -1 will use all cores available - 1.
+        n_warmup : int, default=500
+            number of warmup itertations used during fitting of Stan model
+        sampling_kwargs : dict, default=None
+            keyword arguments passed to sample function of Stan
 
         """
         if not isinstance(n_samples, int):
@@ -130,6 +135,7 @@ class ConfusionMatrixBase:
         n_samples_per_chain = total_samples // n_cores
 
         self.fit_ = self.model.sample(
+            num_warmup=n_warmup,
             num_samples=n_samples_per_chain,
             num_chains=n_cores,
             **sampling_kwargs

@@ -21,7 +21,9 @@ class BetaBinomialConfusionMatrix(ConfusionMatrixBase):
         sample_factor=1.5,
         total_count=None,
         n_cores=None,
+        n_warmup=500,
         threshold=0.5,
+        sampling_kwargs=None,
     ):
         """Fit Beta Binomial model and sample from the posterior.
 
@@ -48,9 +50,13 @@ class BetaBinomialConfusionMatrix(ConfusionMatrixBase):
             the number of cores to use during fit and sampling. Default's
             4 cores if present other the number of cores available. Setting it
             to -1 will use all cores available - 1.
+        n_warmup : int, default=500
+            number of warmup itertations used during fitting of Stan model
         threshold : float, default=0.5
             the classification threshold used to compute the confusion matrix
             is ``y`` is not None
+        sampling_kwargs : dict, default=None
+            keyword arguments passed to sample function of Stan
 
         """
         if y is not None:
@@ -75,4 +81,6 @@ class BetaBinomialConfusionMatrix(ConfusionMatrixBase):
             'tnr_prior': np.ones(2),
             'phi_prior': np.ones(2),
         }
-        return self._fit_predict(data, n_samples, sample_factor, n_cores)
+        return self._fit_predict(
+            data, n_samples, sample_factor, n_cores, n_warmup, sampling_kwargs
+        )
