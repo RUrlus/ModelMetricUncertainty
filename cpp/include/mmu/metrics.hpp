@@ -152,7 +152,7 @@ inline void binary_metrics(
     // metrics[9]  - MCC
     static constexpr double limit = std::numeric_limits<double>::epsilon();
     itm = TP_FP * P * N * TN_FN;
-    metrics[9] = (itm > limit) ? (TP * TN - FP * FN) / std::sqrt(itm) : fill;
+    metrics[9] = (itm > limit) ? (TP * TN - FP * FN) / std::sqrt(itm) : 0.0;
 }  // binary_metrics
 
 
