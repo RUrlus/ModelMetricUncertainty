@@ -2,7 +2,12 @@ import numpy as np
 import sklearn.metrics as skm
 
 
-def generate_test_labels(N, dtype=np.int64):
+def generate_test_labels(
+    N,
+    y_dtype=np.int64,
+    yhat_dtype=np.int64,
+    proba_dtype=np.float64,
+):
     """Generate test data.
 
     Parameters
@@ -18,9 +23,9 @@ def generate_test_labels(N, dtype=np.int64):
         proba, yhat, y
 
     """
-    proba = np.random.beta(5, 3, size=N)
-    yhat = np.rint(proba).astype(dtype)
-    y = np.random.binomial(1, np.mean(proba), N).astype(dtype)
+    proba = np.random.beta(5, 3, size=N).astype(proba_dtype)
+    yhat = np.rint(proba).astype(yhat_dtype)
+    y = np.random.binomial(1, np.mean(proba), N).astype(y_dtype)
     return (proba, yhat, y)
 
 def _compute_reference_metrics(y, yhat=None, proba=None, threshold=None, fill=0):
