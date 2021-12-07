@@ -4,6 +4,15 @@ IF (NOT DEFINED MMU_CORE_VERSION_INFO)
     SET(MMU_CORE_VERSION_INFO "0.1.0")
 ENDIF ()
 
+SET(DEFAULT_BUILD_TYPE Release)
+IF (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  MESSAGE(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified.")
+  SET(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+ENDIF ()
+
 PROJECT(
     mmu_core
     VERSION ${MMU_CORE_VERSION_INFO}
@@ -17,7 +26,7 @@ LIST(INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/cmake")
 #                                   SETTINGS                                   #
 ################################################################################
 SET(CMAKE_CXX_STANDARD 14)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 INCLUDE(MMU_ReleaseFlags)
 
