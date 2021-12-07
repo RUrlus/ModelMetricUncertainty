@@ -28,10 +28,7 @@ void bind_check_1d_soft(py::module &m) {
 void bind_check_equal_length(py::module &m) {
     m.def(
         "check_equal_length",
-        [](
-            const py::array_t<double>& x,
-            const py::array_t<double>& y
-        ) {
+        [](const py::array_t<double>& x, const py::array_t<double>& y) {
             return mmu::details::check_equal_length(x, y, "x", "y");
         }
     );
@@ -40,9 +37,7 @@ void bind_check_equal_length(py::module &m) {
 void bind_check_contiguous(py::module &m) {
     m.def(
         "check_contiguous",
-        [](
-            const py::array_t<double>& x
-        ) {
+        [](const py::array_t<double>& x) {
             return mmu::details::check_contiguous(x, "x");
         }
     );
@@ -51,10 +46,7 @@ void bind_check_contiguous(py::module &m) {
 void bind_check_equal_shape(py::module &m) {
     m.def(
         "check_equal_shape",
-        [](
-            const py::array_t<double>& x,
-            const py::array_t<double>& y
-        ) {
+        []( const py::array_t<double>& x, const py::array_t<double>& y) {
             return mmu::details::check_equal_shape(x, y,  "x", "y");
         }
     );
