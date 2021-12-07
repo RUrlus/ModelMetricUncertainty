@@ -50,27 +50,29 @@ inline void confusion_matrix(const size_t n_obs, T* y, T* yhat, int64_t* const c
 
 template<class T, std::enable_if_t<std::is_floating_point<T>::value, int> = 1>
 inline void confusion_matrix(const size_t n_obs, T* y,  T* yhat, int64_t* const conf_mat) {
+    static constexpr double epsilon = std::numeric_limits<double>::epsilon();
     for (size_t i = 0; i < n_obs; i++) {
-        conf_mat[(*y > 1e-12) * 2 + (*yhat > 1e-12)]++; yhat++; y++;
+        conf_mat[(*y > epsilon) * 2 + (*yhat > epsilon)]++; yhat++; y++;
     }
 }
 
 // --- from proba and threshold ---
-template<class T, typename A, std::enable_if_t<std::is_integral<T>::value, int> = 0>
+template<class T, typename A, std::enable_if_t<std::is_integral<T>::value, int> = 2>
 inline void confusion_matrix(
     const size_t n_obs, T* y, A* proba, const A threshold, int64_t* const conf_mat
 ) {
     for (size_t i = 0; i < n_obs; i++) {
-        conf_mat[static_cast<bool>(*y) * 2 + (*proba > threshold)]++; proba++; y++;
+        conf_mat[static_cast<bool>(*y) * 2 + (*proba >= threshold)]++; proba++; y++;
     }
 }
 
-template<class T, typename A, std::enable_if_t<std::is_floating_point<T>::value, int> = 1>
+template<class T, typename A, std::enable_if_t<std::is_floating_point<T>::value, int> = 3>
 inline void confusion_matrix(
     const size_t n_obs, T* y, A* proba, const A threshold, int64_t* const conf_mat
 ) {
+    static constexpr double epsilon = std::numeric_limits<double>::epsilon();
     for (size_t i = 0; i < n_obs; i++) {
-        conf_mat[(*y > 1e-12) * 2 + (*proba > threshold)]++; proba++; y++;
+        conf_mat[(*y > epsilon) * 2 + (*proba >= threshold)]++; proba++; y++;
     }
 }
 
@@ -91,7 +93,8 @@ py::array_t<int64_t> confusion_matrix(const py::array_t<T>& y, const py::array_t
     auto conf_mat = py::array_t<int64_t>({2, 2}, {16, 8});
     int64_t* cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
     // initialise the memory
-    memset(cm_ptr, 0, sizeof(int64_t) * 4);
+    static constexpr size_t block_size = sizeof(int64_t) * 4;
+    memset(cm_ptr, 0, block_size);
 
     auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
     auto yhat_ptr = reinterpret_cast<T*>(yhat.request().ptr);
@@ -114,7 +117,8 @@ py::array_t<int64_t> confusion_matrix(
     auto conf_mat = py::array_t<int64_t>({2, 2}, {16, 8});
     int64_t* cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
     // initialise the memory
-    memset(cm_ptr, 0, sizeof(int64_t) * 4);
+    static constexpr size_t block_size = sizeof(int64_t) * 4;
+    memset(cm_ptr, 0, block_size);
 
     auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
     auto proba_ptr = reinterpret_cast<double*>(proba.request().ptr);

@@ -179,7 +179,8 @@ inline py::tuple binary_metrics(
     auto conf_mat = py::array_t<int64_t>({2, 2}, {16, 8});
     int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
     // initialise confusion_matrix
-    memset(cm_ptr, 0, sizeof(int64_t) * 4);
+    static constexpr size_t block_size = sizeof(int64_t) * 4;
+    memset(cm_ptr, 0, block_size);
 
     auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
     auto yhat_ptr = reinterpret_cast<T*>(yhat.request().ptr);
@@ -212,7 +213,8 @@ inline py::tuple binary_metrics_proba(
     auto conf_mat = py::array_t<int64_t>({2, 2}, {16, 8});
     int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
     // zero the memory of the confusion_matrix
-    memset(cm_ptr, 0, sizeof(int64_t) * 4);
+    static constexpr size_t block_size = sizeof(int64_t) * 4;
+    memset(cm_ptr, 0, block_size);
 
     auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
     auto proba_ptr = reinterpret_cast<double*>(proba.request().ptr);
