@@ -52,8 +52,7 @@ inline void precision_recall(
     metrics[1] = P_nonzero ? TP / P : fill;
 }  // binary_metrics
 
-/*
- * Sets the following values at metrics index:
+/* Sets the following values at metrics index:
  *    0 - neg.precision aka Negative Predictive Value
  *    1 - pos.precision aka Positive Predictive Value
  *    2 - neg.recall aka True Negative Rate & Specificity
@@ -161,6 +160,17 @@ inline void binary_metrics(
 
 namespace bindings {
 
+/* Compute the binary metrics given true labels y and estimated labels yhat.
+ *
+ * --- Parameters ---
+ * - y : true labels
+ * - yhat : estimated labels
+ *
+ * --- Returns ---
+ * - tuple
+ *   * confusion matrix
+ *   * metrics
+ */
 template <typename T>
 inline py::tuple binary_metrics(
     const py::array_t<T>& y,
@@ -191,6 +201,19 @@ inline py::tuple binary_metrics(
     return py::make_tuple(conf_mat, metrics);
 }
 
+/* Compute the binary metrics given true labels y and estimated probalities proba.
+ *
+ * --- Parameters ---
+ * - y : true labels
+ * - proba : estimated probalities
+ * - threshold : inclusive classification threshold
+ * - fill : values to set when divide by zero is encountered
+ *
+ * --- Returns ---
+ * - tuple
+ *   * confusion matrix
+ *   * metrics
+ */
 template <typename T>
 inline py::tuple binary_metrics_proba(
     const py::array_t<T>& y,
@@ -222,6 +245,17 @@ inline py::tuple binary_metrics_proba(
 }
 
 
+/* Compute the binary metrics given the confusion matrix(ces).
+ *
+ * --- Parameters ---
+ * - conf_mat : confusion matrix with entries as {TN, FP, FN, TP}
+ * - fill : values to set when divide by zero is encountered
+ *
+ * --- Returns ---
+ * - tuple
+ *   * confusion matrix
+ *   * metrics
+ */
 template<class T, std::enable_if_t<std::is_integral<T>::value, int> = 0>
 py::array_t<double> binary_metrics_confusion(
     const py::array_t<T>& conf_mat,
@@ -254,6 +288,21 @@ py::array_t<double> binary_metrics_confusion(
     return metrics;
 }
 
+/* Compute the binary metrics given true labels y and estimated probalities proba.
+ * Where both arrays contain the values for multiple runs/experiments.
+ *
+ * --- Parameters ---
+ * - y : true labels
+ * - proba : estimated probalities
+ * - threshold : inclusive classification threshold
+ * - fill : values to set when divide by zero is encountered
+ * - obs_axis : {0, 1} which axis of the array contains the observations
+ *
+ * --- Returns ---
+ * - tuple
+ *   * confusion matrix
+ *   * metrics
+ */
 template <typename T>
 inline py::tuple binary_metrics_runs(
     py::array_t<T>& y,
@@ -313,6 +362,19 @@ inline py::tuple binary_metrics_runs(
     return py::make_tuple(conf_mat, metrics);
 }
 
+/* Compute the binary metrics given true labels y and estimated probalities proba over a range of thresholds.
+ *
+ * --- Parameters ---
+ * - y : true labels
+ * - proba : estimated probalities
+ * - thresholds : inclusive classification thresholds
+ * - fill : values to set when divide by zero is encountered
+ *
+ * --- Returns ---
+ * - tuple
+ *   * confusion matrix
+ *   * metrics
+ */
 template <typename T>
 inline py::tuple binary_metrics_thresholds(
     const py::array_t<T>& y,
@@ -360,6 +422,21 @@ inline py::tuple binary_metrics_thresholds(
     return py::make_tuple(conf_mat, metrics);
 }
 
+/* Compute the binary metrics given true labels y and estimated probalities proba over a range of thresholds.
+ * Where both arrays contain the values for multiple runs/experiments.
+ *
+ * --- Parameters ---
+ * - y : true labels
+ * - proba : estimated probalities
+ * - thresholds : inclusive classification threshold
+ * - n_obs : array containing the number of observations for each run/experiment
+ * - fill : values to set when divide by zero is encountered
+ *
+ * --- Returns ---
+ * - tuple
+ *   * confusion matrix
+ *   * metrics
+ */
 template <typename T, typename A>
 inline py::tuple binary_metrics_runs_thresholds(
     const py::array_t<T>& y,

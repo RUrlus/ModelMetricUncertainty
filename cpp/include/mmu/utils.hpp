@@ -17,6 +17,18 @@ namespace py = pybind11;
 namespace mmu {
 namespace details {
 
+/* Check if arr is 1D or two 1D with the second axis containing a single index.
+ * I.e. arr.shape ==
+ * * (n, )
+ * * (1, n)
+ * * (n, 1)
+ *
+ * Throws RuntimeError if condition is not met.
+ *
+ * --- Parameters ---
+ * - arr : the array to validate
+ * - name : the name of the parameter
+ */
 template <typename T>
 inline int check_1d_soft(const py::array_t<T>& arr, const std::string& name) {
     ssize_t n_dim = arr.ndim();
@@ -34,6 +46,11 @@ inline int check_1d_soft(const py::array_t<T>& arr, const std::string& name) {
     throw std::runtime_error(name + " should be one dimensional");
 }
 
+/* Check x and y have the same length where we account for row and column orientation.
+ * We only consider the obs_axis_ for each array, the obs_axis_ is the 0 for an array shaped (n, m)
+ *
+ * Throws RuntimeError if condition is not met.
+ */
 template <typename T, typename V>
 inline void check_equal_length(
     const py::array_t<T>& x,
