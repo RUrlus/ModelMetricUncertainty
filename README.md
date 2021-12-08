@@ -33,6 +33,7 @@ To ensure high performance the core computations are performed in a C++ extensio
 This gives significant speed-ups over Scikit-learn (v1.0.1):
 * `confusion matrix`: ~100 times faster than `sklearn.metrics.confusion_matrix`
 * `binary_metrics`: ~600 times faster than Scikit's equivalent
+
 On a 2,3 GHz 8-Core Intel Core i9 with sample size of 1e6
 
 ## Installation
@@ -55,10 +56,7 @@ import mmu
 
 
 # Create some example data
-N = 10000
-proba = np.random.beta(5, 3, size=N)
-yhat = np.rint(proba).astype(np.int64)
-y = np.random.binomial(1, np.mean(proba), N)
+proba, y, yhat = mmu.generate_data(n_samples=1000)
 
 # compute the confusion_matrix
 conf_mat = mmu.confusion_matrix(y, yhat)
@@ -70,6 +68,7 @@ cm_dm = mmu.confusion_matrix_to_dataframe(conf_mat)
 mtr_dm = mmu.metrics_to_dataframe(metrics)
 
 ```
+See [metrics_tutorial](https://github.com/RUrlus/ModelMetricUncertainty/blob/main/notebooks/metrics_tutorial.ipynb) for more examples.
 
 ## Contributing
 
