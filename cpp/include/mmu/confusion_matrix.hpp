@@ -40,7 +40,21 @@ namespace py = pybind11;
 namespace mmu {
 namespace details {
 
-// --- from yhat ---
+/* Fill binary confusion matrix based on true labels y and estimated labels yhat
+ *
+ * --- NOTE ---
+ * - this function:
+ * * does not handle nullptrs
+ * * expects all memory to be contiguous
+ * * expects conf_mat to point to zero'd memory
+ * --- NOTE ---
+ *
+ * --- Parameters ---
+ * n_obs : minimum length of y and yhat
+ * y : true labels
+ * yhat : estimated labels
+ *
+ */
 template<class T, std::enable_if_t<std::is_integral<T>::value, int> = 0>
 inline void confusion_matrix(const size_t n_obs, T* y, T* yhat, int64_t* const conf_mat) {
     for (size_t i = 0; i < n_obs; i++) {
@@ -48,6 +62,21 @@ inline void confusion_matrix(const size_t n_obs, T* y, T* yhat, int64_t* const c
     }
 }
 
+/* Fill binary confusion matrix based on true labels y and estimated labels yhat
+ *
+ * --- NOTE ---
+ * - this function:
+ * * does not handle nullptrs
+ * * expects all memory to be contiguous
+ * * expects conf_mat to point to zero'd memory
+ * --- NOTE ---
+ *
+ * --- Parameters ---
+ * n_obs : minimum length of y and yhat
+ * y : true labels
+ * yhat : estimated labels
+ *
+ */
 template<class T, std::enable_if_t<std::is_floating_point<T>::value, int> = 1>
 inline void confusion_matrix(const size_t n_obs, T* y,  T* yhat, int64_t* const conf_mat) {
     static constexpr double epsilon = std::numeric_limits<double>::epsilon();
@@ -56,7 +85,21 @@ inline void confusion_matrix(const size_t n_obs, T* y,  T* yhat, int64_t* const 
     }
 }
 
-// --- from proba and threshold ---
+/* Fill binary confusion matrix based on true labels y and estimated probalities
+ *
+ * --- NOTE ---
+ * - this function:
+ * * does not handle nullptrs
+ * * expects all memory to be contiguous
+ * * expects conf_mat to point to zero'd memory
+ * --- NOTE ---
+ *
+ * --- Parameters ---
+ * n_obs : minimum length of y and yhat
+ * y : true labels
+ * proba : estimated probalities
+ * threshold : inclusive classification threshold
+ */
 template<class T, typename A, std::enable_if_t<std::is_integral<T>::value, int> = 2>
 inline void confusion_matrix(
     const size_t n_obs, T* y, A* proba, const A threshold, int64_t* const conf_mat
@@ -66,6 +109,21 @@ inline void confusion_matrix(
     }
 }
 
+/* Fill binary confusion matrix based on true labels y and estimated probalities
+ *
+ * --- NOTE ---
+ * - this function:
+ * * does not handle nullptrs
+ * * expects all memory to be contiguous
+ * * expects conf_mat to point to zero'd memory
+ * --- NOTE ---
+ *
+ * --- Parameters ---
+ * n_obs : minimum length of y and yhat
+ * y : true labels
+ * proba : estimated probalities
+ * threshold : inclusive classification threshold
+ */
 template<class T, typename A, std::enable_if_t<std::is_floating_point<T>::value, int> = 3>
 inline void confusion_matrix(
     const size_t n_obs, T* y, A* proba, const A threshold, int64_t* const conf_mat
@@ -81,6 +139,15 @@ inline void confusion_matrix(
 
 namespace bindings {
 
+/* Compute the confusion matrix given true labels y and estimated labels yhat.
+ *
+ * --- Parameters ---
+ * - y : true labels
+ * - yhat : estimated labels
+ *
+ * --- Returns ---
+ * - confusion matrix
+ */
 template <typename T>
 py::array_t<int64_t> confusion_matrix(const py::array_t<T>& y, const py::array_t<T>& yhat) {
     int y_obs_axis = details::check_1d_soft(y, "y");
@@ -99,6 +166,16 @@ py::array_t<int64_t> confusion_matrix(const py::array_t<T>& y, const py::array_t
     return conf_mat;
 }
 
+/* Compute the confusion matrix given true labels y and estimated probalities proba.
+ *
+ * --- Parameters ---
+ * - y : true labels
+ * - proba : estimated probalities
+ * - threshold : inclusive classification threshold
+ *
+ * --- Returns ---
+ * - confusion matrix
+ */
 template <typename T>
 py::array_t<int64_t> confusion_matrix(
     const py::array_t<T>& y, const py::array_t<double>& proba, const double threshold

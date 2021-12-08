@@ -100,18 +100,15 @@ inline py::array_t<T> allocate_confusion_matrix(const ssize_t n_matrices) {
     return conf_mat;
 }
 
-/*
- * Check if order matches shape of the array.
+/* Check if order matches shape of the array and copy otherwhise.
  * We expect the observations (rows or columns) to be contiguous in memory.
  *
- * Parameters
- * ----------
- * arr : the array to validate
- * name : the name of the parameter
+ * --- Parameters ---
+ * - arr : the array to validate
+ * - name : the name of the parameter
  *
- * Returns
- * -------
- * the input array or the input array with the correct memory order
+ * --- Returns ---
+ * - arr : the input array or the input array with the correct memory order
  */
 template <typename T>
 inline py::array_t<T> check_shape_order(
@@ -136,6 +133,25 @@ inline py::array_t<T> check_shape_order(
     }
 } // check_shape_order
 
+/* Check if order matches shape of the array and the shape is as expected.
+ * We expect the observations (rows or columns) to be contiguous in memory.
+ *
+ * Array can be one or two dimensional.
+ * - If 1D it should have size == ``expected``
+ * - If 2D it should be:
+ *     * C-Contiguous if shape (n, ``expected``)
+ *     * F-Contiguous if shape (``expected``, n)
+ *
+ * --- Exceptions ---
+ *
+ * - RuntimeError : throws a runtime error if the array does not have the right shape and or order
+ *
+ *
+ * --- Parameters ---
+ * - arr : the array to validate
+ * - name : the name of the parameter
+ * - expected : the size we expect of one the two dimensions to have
+ */
 template <typename T>
 inline void assert_shape_order(
     const py::array_t<T>& arr, const std::string name, ssize_t expected
