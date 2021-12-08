@@ -89,12 +89,8 @@ py::array_t<int64_t> confusion_matrix(const py::array_t<T>& y, const py::array_t
     details::check_contiguous(yhat, "yhat");
     details::check_equal_length(y, yhat, "y", "yhat", y_obs_axis, yhat_obs_axis);
 
-    // note memory is uninitialised
-    auto conf_mat = py::array_t<int64_t>({2, 2}, {16, 8});
-    int64_t* cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
-    // initialise the memory
-    static constexpr size_t block_size = sizeof(int64_t) * 4;
-    memset(cm_ptr, 0, block_size);
+    auto conf_mat = details::allocate_2d_confusion_matrix<int64_t>();
+    int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
 
     auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
     auto yhat_ptr = reinterpret_cast<T*>(yhat.request().ptr);
@@ -113,12 +109,8 @@ py::array_t<int64_t> confusion_matrix(
     details::check_contiguous(proba, "proba");
     details::check_equal_length(y, proba, "y", "proba", y_obs_axis, proba_obs_axis);
 
-    // note memory is uninitialised
-    auto conf_mat = py::array_t<int64_t>({2, 2}, {16, 8});
-    int64_t* cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
-    // initialise the memory
-    static constexpr size_t block_size = sizeof(int64_t) * 4;
-    memset(cm_ptr, 0, block_size);
+    auto conf_mat = details::allocate_2d_confusion_matrix<int64_t>();
+    int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
 
     auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
     auto proba_ptr = reinterpret_cast<double*>(proba.request().ptr);

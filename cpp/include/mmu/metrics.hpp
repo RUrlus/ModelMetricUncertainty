@@ -176,11 +176,8 @@ inline py::tuple binary_metrics(
 
     size_t n_obs = y.size();
     // allocate memory confusion_matrix
-    auto conf_mat = py::array_t<int64_t>({2, 2}, {16, 8});
+    auto conf_mat = details::allocate_2d_confusion_matrix<int64_t>();
     int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
-    // initialise confusion_matrix
-    static constexpr size_t block_size = sizeof(int64_t) * 4;
-    memset(cm_ptr, 0, block_size);
 
     auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
     auto yhat_ptr = reinterpret_cast<T*>(yhat.request().ptr);
@@ -209,12 +206,8 @@ inline py::tuple binary_metrics_proba(
     details::check_equal_length(y, proba, "y", "proba", y_obs_axis, proba_obs_axis);
 
     size_t n_obs = y.size();
-    // allocate memory confusion_matrix
-    auto conf_mat = py::array_t<int64_t>({2, 2}, {16, 8});
+    auto conf_mat = details::allocate_2d_confusion_matrix<int64_t>();
     int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
-    // zero the memory of the confusion_matrix
-    static constexpr size_t block_size = sizeof(int64_t) * 4;
-    memset(cm_ptr, 0, block_size);
 
     auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
     auto proba_ptr = reinterpret_cast<double*>(proba.request().ptr);
@@ -290,12 +283,9 @@ inline py::tuple binary_metrics_runs(
     auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
     auto proba_ptr = reinterpret_cast<double*>(proba.request().ptr);
 
-    // allocate memory confusion_matrix
-    auto conf_mat = py::array_t<int64_t>({n_runs, static_cast<ssize_t>(4)});
+    // allocate confusion_matrix
+    auto conf_mat = details::allocate_confusion_matrix<int64_t>(n_runs);
     int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
-    static constexpr size_t block_size = sizeof(int64_t) * 4;
-    // initialise confusion_matrix to zeros
-    memset(cm_ptr, 0, n_runs * block_size);
 
     // metrics are all set so don't rely on initialisation
     auto metrics = py::array_t<double>({n_runs, static_cast<ssize_t>(10)});
@@ -347,12 +337,9 @@ inline py::tuple binary_metrics_thresholds(
     auto proba_ptr = reinterpret_cast<double*>(proba.request().ptr);
     auto threshold_ptr = reinterpret_cast<double*>(thresholds.request().ptr);
 
-    // allocate memory confusion_matrix
-    auto conf_mat = py::array_t<int64_t>({n_thresholds, static_cast<ssize_t>(4)});
+    // allocate confusion_matrix
+    auto conf_mat = details::allocate_confusion_matrix<int64_t>(n_thresholds);
     int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
-    static constexpr size_t block_size = sizeof(int64_t) * 4;
-    // initialise confusion_matrix to zeros
-    memset(cm_ptr, 0, n_thresholds * block_size);
 
     // metrics are all set so don't rely on initialisation
     auto metrics = py::array_t<double>({n_thresholds, static_cast<ssize_t>(10)});
@@ -399,13 +386,10 @@ inline py::tuple binary_metrics_runs_thresholds(
     const ssize_t n_thresholds = thresholds.size();
     const ssize_t max_obs = *std::max_element(n_obs_ptr, n_obs_ptr + n_runs);
 
-    // allocate memory confusion_matrix
+    // allocate confusion_matrix
     const ssize_t n_run_tresholds = n_thresholds *  n_runs;
-    auto conf_mat = py::array_t<int64_t>(n_run_tresholds * static_cast<ssize_t>(4));
+    auto conf_mat = details::allocate_confusion_matrix<int64_t>(n_run_tresholds);
     int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
-    static constexpr size_t block_size = sizeof(int64_t) * 4;
-    // initialise confusion_matrix to zeros
-    memset(cm_ptr, 0, n_run_tresholds * block_size);
 
     // allocate memory for metrics; are all set so don't rely on initialisation
     auto metrics = py::array_t<double>(n_run_tresholds * static_cast<ssize_t>(10));
