@@ -64,13 +64,13 @@ inline void check_equal_shape(
 ) {
     size_t x_dim = x.ndim();
     size_t y_dim = y.ndim();
-    bool pass = false;
+    int pass = 0;
     if (x_dim == y_dim) {
         for (size_t i = 0; i < x_dim; i++) {
-            pass = x.shape(i) == y.shape(i);
+            pass += x.shape(i) == y.shape(i);
         }
     }
-    if (pass == 0) {
+    if (pass != x_dim) {
         throw std::runtime_error(x_name + " and " + y_name + " should have equal shape");
     }
 }
