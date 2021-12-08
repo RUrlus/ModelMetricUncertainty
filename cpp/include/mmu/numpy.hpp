@@ -77,6 +77,29 @@ inline bool is_contiguous(const py::array_t<T>& arr) {
     return ccore::is_contiguous(arr.ptr());
 }
 
+
+/* allocate 2x2 shaped array and zero it*/
+template <typename T>
+inline py::array_t<T> allocate_2d_confusion_matrix() {
+    // allocate memory confusion_matrix
+    auto conf_mat = py::array_t<T>({2, 2}, {16, 8});
+    static constexpr size_t block_size = sizeof(T) * 4;
+    // zero the memory of the confusion_matrix
+    memset(reinterpret_cast<T*>(conf_mat.request().ptr), 0, block_size);
+    return conf_mat;
+}
+
+/* allocate n_matrices x 4 shaped array and zero it*/
+template <typename T>
+inline py::array_t<T> allocate_confusion_matrix(const ssize_t n_matrices) {
+    // allocate memory confusion_matrix
+    auto conf_mat = py::array_t<T>({n_matrices, static_cast<ssize_t>(4)});
+    static constexpr size_t block_size = sizeof(T) * 4;
+    // zero the memory of the confusion_matrix
+    memset(reinterpret_cast<T*>(conf_mat.request().ptr), 0, n_matrices * block_size);
+    return conf_mat;
+}
+
 /*
  * Check if order matches shape of the array.
  * We expect the observations (rows or columns) to be contiguous in memory.
