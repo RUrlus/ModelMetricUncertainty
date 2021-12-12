@@ -140,4 +140,4 @@ jobs:
 
       - name: Test
         if: startsWith(matrix.config.os, 'windows')
-        run: python3 -c 'import build.cpp.release._mmu_core as c; print(c.confusion_matrix)'
+        run: python3 -c 'import build.cpp.Release._mmu_core as c; print(c.confusion_matrix)'
