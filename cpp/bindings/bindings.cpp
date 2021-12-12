@@ -5,8 +5,15 @@
 #include "metrics.hpp"
 #include "confusion_matrix.hpp"
 
-#define STRINGIFY(x) #x
-#define MACRO_STRINGIFY(x) STRINGIFY(x)
+#if defined(_WIN32) || defined(WIN32) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__BORLANDC__)
+#define OS_WIN
+#endif
+
+// handle error C2059: syntax error: ';'  on windows for this Macro
+#if not defined OS_WIN
+  #define STRINGIFY(x) #x
+  #define MACRO_STRINGIFY(x) STRINGIFY(x)
+#endif
 
 namespace py = pybind11;
 
@@ -23,10 +30,12 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_binary_metrics_runs(m);
     bind_binary_metrics_runs_thresholds(m);
 
-#ifdef VERSION_INFO
-    m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
-#else
-    m.attr("__version__") = "dev";
+#if not defined OS_WIN
+  #ifdef VERSION_INFO
+      m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
+  #else
+      m.attr("__version__") = "dev";
+  #endif
 #endif
 }
 
