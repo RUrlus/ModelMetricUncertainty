@@ -65,7 +65,10 @@ jobs:
       run: pip install --verbose .
 
     - name: Install test dependencies
-      run: pip install tests/. pytest
+      run: pip install pytest 
 
     - name: Unit test
-      run: pytest tests
+      run: |
+        cd tests
+        pip install --verbose -e .
+        pytest
