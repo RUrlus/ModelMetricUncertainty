@@ -135,4 +135,9 @@ jobs:
               --config ${{ matrix.config.build_type }}
 
       - name: Test
+        if: runner.os == 'Linux' || startsWith(matrix.config.os, 'macos')
         run: python3 -c 'import build.cpp._mmu_core as c; print(c.confusion_matrix)'
+
+      - name: Test
+        if: startsWith(matrix.config.os, 'windows')
+        run: python3 -c 'import build.cpp.release._mmu_core as c; print(c.confusion_matrix)'
