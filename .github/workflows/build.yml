@@ -3,13 +3,7 @@ name: Build and Test Matrix
 on:
   workflow_dispatch:
   pull_request:
-    branches:
-      - main
-      - unstable
   push:
-    branches:
-      - main
-      - unstable
 
 defaults:
   run:
