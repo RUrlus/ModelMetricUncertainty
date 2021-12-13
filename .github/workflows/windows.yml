@@ -31,7 +31,7 @@ jobs:
           do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
   tests:
     runs-on: windows-latest
-    name: Windows (MSVC) Python ${{ matrix.python-version }}
+    name: Windows - Python ${{ matrix.python-version }}
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     strategy:
