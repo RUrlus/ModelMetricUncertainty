@@ -19,9 +19,10 @@
 #include <string>
 #include <limits>
 #include <cinttypes>
+#include <algorithm>
 #include <type_traits>
 
-#include <mmu/utils.hpp>
+#include "mmu/numpy.hpp"
 
 namespace py = pybind11;
 
@@ -150,18 +151,17 @@ namespace bindings {
  */
 template <typename T>
 py::array_t<int64_t> confusion_matrix(const py::array_t<T>& y, const py::array_t<T>& yhat) {
-    int y_obs_axis = details::check_1d_soft(y, "y");
-    details::check_contiguous(y, "y");
-    int yhat_obs_axis = details::check_1d_soft(yhat, "yhat");
-    details::check_contiguous(yhat, "yhat");
-    details::check_equal_length(y, yhat, "y", "yhat", y_obs_axis, yhat_obs_axis);
+    // condition checks
+    if (!(npy::is_well_behaved(y) && npy::is_well_behaved(yhat))) {
+        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    }
+    const size_t n_obs = std::min(y.size(), yhat.size());
+    auto conf_mat = npy::allocate_confusion_matrix<int64_t>();
+    int64_t* const cm_ptr = npy::get_data(conf_mat);
 
-    auto conf_mat = details::allocate_2d_confusion_matrix<int64_t>();
-    int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
-
-    auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
-    auto yhat_ptr = reinterpret_cast<T*>(yhat.request().ptr);
-    details::confusion_matrix<T>(y.size(), y_ptr, yhat_ptr, cm_ptr);
+    auto y_ptr = npy::get_data(y);
+    auto yhat_ptr = npy::get_data(yhat);
+    details::confusion_matrix<T>(n_obs, y_ptr, yhat_ptr, cm_ptr);
 
     return conf_mat;
 }
@@ -176,22 +176,25 @@ py::array_t<int64_t> confusion_matrix(const py::array_t<T>& y, const py::array_t
  * --- Returns ---
  * - confusion matrix
  */
-template <typename T>
+template <
+    typename iT, typename fT, std::enable_if_t<std::is_floating_point<fT>::value, int> = 0
+>
 py::array_t<int64_t> confusion_matrix(
-    const py::array_t<T>& y, const py::array_t<double>& proba, const double threshold
+    const py::array_t<iT>& y, const py::array_t<fT>& proba, const fT threshold
 ) {
-    int y_obs_axis = details::check_1d_soft(y, "y");
-    details::check_contiguous(y, "y");
-    int proba_obs_axis = details::check_1d_soft(proba, "proba");
-    details::check_contiguous(proba, "proba");
-    details::check_equal_length(y, proba, "y", "proba", y_obs_axis, proba_obs_axis);
+    // condition checks
+    if (!(npy::is_well_behaved(y) && npy::is_well_behaved(proba))) {
+        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    }
 
-    auto conf_mat = details::allocate_2d_confusion_matrix<int64_t>();
-    int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
+    // guard against buffer overruns
+    const size_t n_obs = std::min(y.size(), proba.size());
+    auto conf_mat = npy::allocate_confusion_matrix<int64_t>();
+    int64_t* const cm_ptr = npy::get_data(conf_mat);
 
-    auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
-    auto proba_ptr = reinterpret_cast<double*>(proba.request().ptr);
-    details::confusion_matrix<T>(y.size(), y_ptr, proba_ptr, threshold, cm_ptr);
+    iT* y_ptr = npy::get_data(y);
+    fT* proba_ptr = npy::get_data<fT>(proba);
+    details::confusion_matrix<iT>(n_obs, y_ptr, proba_ptr, threshold, cm_ptr);
 
     return conf_mat;
 }

@@ -11,18 +11,17 @@
  *
  * TODO */
 
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-#include <pybind11/stl.h>
+#include <pybind11/pybind11.h> // for py::array
+#include <pybind11/numpy.h>  // for py::array
+#include <pybind11/stl.h>  // for py::tuple
 
-#include <cmath>
-#include <string>
-#include <limits>
-#include <cinttypes>
-#include <stdexcept>
-#include <type_traits>
+#include <cmath>      // for sqrt
+#include <limits>     // for numeric_limits
+#include <cinttypes>  // for int64_t
+#include <algorithm>  // for max/min
+#include <stdexcept>  // for runtime_error
+#include <type_traits>  // for enable_if_t
 
-#include <mmu/utils.hpp>
 #include <mmu/numpy.hpp>
 #include <mmu/confusion_matrix.hpp>
 
@@ -178,23 +177,20 @@ inline py::tuple binary_metrics(
     const double fill
 ) {
     // condition checks
-    details::check_contiguous<T>(y, "y");
-    int y_obs_axis = details::check_1d_soft(y, "y");
-    details::check_contiguous<T>(yhat, "yhat");
-    int yhat_obs_axis = details::check_1d_soft(yhat, "yhat");
-    details::check_equal_length<T, T>(y, yhat, "y", "yhat", y_obs_axis, yhat_obs_axis);
-
-    size_t n_obs = y.size();
+    if (!(npy::is_well_behaved(y) && npy::is_well_behaved(yhat))) {
+        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    }
+    const size_t n_obs = std::min(y.size(), yhat.size());
     // allocate memory confusion_matrix
-    auto conf_mat = details::allocate_2d_confusion_matrix<int64_t>();
-    int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
+    auto conf_mat = npy::allocate_confusion_matrix<int64_t>();
+    int64_t* const cm_ptr = npy::get_data(conf_mat);;
 
-    auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
-    auto yhat_ptr = reinterpret_cast<T*>(yhat.request().ptr);
-    details::confusion_matrix<T>(n_obs, y_ptr, yhat_ptr, cm_ptr);
+    details::confusion_matrix<T>(
+        n_obs, npy::get_data(y), npy::get_data(yhat), cm_ptr
+    );
 
     auto metrics = py::array_t<double>(10);
-    double* const metrics_ptr = reinterpret_cast<double*>(metrics.request().ptr);
+    double* const metrics_ptr = npy::get_data(metrics);
 
     // compute metrics
     details::binary_metrics(cm_ptr, metrics_ptr, fill);
@@ -214,30 +210,28 @@ inline py::tuple binary_metrics(
  *   * confusion matrix
  *   * metrics
  */
-template <typename T>
+template <typename iT, typename fT>
 inline py::tuple binary_metrics_proba(
-    const py::array_t<T>& y,
-    const py::array_t<double>& proba,
-    const double threshold,
+    const py::array_t<iT>& y,
+    const py::array_t<fT>& proba,
+    const fT threshold,
     const double fill
 ) {
     // condition checks
-    int y_obs_axis = details::check_1d_soft(y, "y");
-    details::check_contiguous<T>(y, "y");
-    int proba_obs_axis = details::check_1d_soft(proba, "proba");
-    details::check_contiguous<double>(proba, "proba");
-    details::check_equal_length(y, proba, "y", "proba", y_obs_axis, proba_obs_axis);
+    if (!(npy::is_well_behaved(y) && npy::is_well_behaved(proba))) {
+        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    }
 
-    size_t n_obs = y.size();
-    auto conf_mat = details::allocate_2d_confusion_matrix<int64_t>();
-    int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
-
-    auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
-    auto proba_ptr = reinterpret_cast<double*>(proba.request().ptr);
-    details::confusion_matrix<T>(n_obs, y_ptr, proba_ptr, threshold, cm_ptr);
+    // guard against buffer overruns
+    const size_t n_obs = std::min(y.size(), proba.size());
+    auto conf_mat = npy::allocate_confusion_matrix<int64_t>();
+    int64_t* const cm_ptr = npy::get_data(conf_mat);
+    details::confusion_matrix<iT>(
+        n_obs, npy::get_data(y), npy::get_data(proba), threshold, cm_ptr
+    );
 
     auto metrics = py::array_t<double>(10);
-    double* const metrics_ptr = reinterpret_cast<double*>(metrics.request().ptr);
+    double* const metrics_ptr = npy::get_data(metrics);
 
     // compute metrics
     details::binary_metrics(cm_ptr, metrics_ptr, fill);
@@ -262,18 +256,20 @@ py::array_t<double> binary_metrics_confusion(
     const double fill
 ) {
     // condition checks
-    details::assert_shape_order(conf_mat, "conf_mat", 4);
+    if (!npy::is_well_behaved(conf_mat)) {
+        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    }
 
     // number of confusion matrices
     const ssize_t n_obs = conf_mat.size() / 4;
 
     // get conf_mat memory ptr
-    T* const cm_ptr = reinterpret_cast<T*>(conf_mat.request().ptr);
+    T* const cm_ptr = npy::get_data(conf_mat);
 
     // allocate memory for metrics
     // metrics are all set so don't rely on initialisation
-    auto metrics = py::array_t<double>({n_obs, static_cast<ssize_t>(10)});
-    double* const metrics_ptr = reinterpret_cast<double*>(metrics.request().ptr);
+    py::array_t<double> metrics({n_obs, static_cast<ssize_t>(10)});
+    double* const metrics_ptr = npy::get_data(metrics);
 
     T* p_cm_ptr;
     double* p_metrics_ptr;
@@ -286,6 +282,69 @@ py::array_t<double> binary_metrics_confusion(
         details::binary_metrics<T>(p_cm_ptr, p_metrics_ptr, fill);
     }
     return metrics;
+}
+
+/* Compute the binary metrics given true labels y and estimated probalities proba over a range of thresholds.
+ *
+ * --- Parameters ---
+ * - y : true labels
+ * - proba : estimated probalities
+ * - thresholds : inclusive classification thresholds
+ * - fill : values to set when divide by zero is encountered
+ *
+ * --- Returns ---
+ * - tuple
+ *   * confusion matrix
+ *   * metrics
+ */
+template <
+    typename iT, typename fT, std::enable_if_t<std::is_floating_point<fT>::value, int> = 0
+>
+inline py::tuple binary_metrics_thresholds(
+    const py::array_t<iT>& y,
+    const py::array_t<fT>& proba,
+    const py::array_t<fT>& thresholds,
+    const double fill
+) {
+    // condition checks
+    if (!(
+        npy::is_well_behaved(y)
+        && npy::is_well_behaved(proba)
+        && npy::is_well_behaved(thresholds)
+    )) {
+        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    }
+
+    // guard against buffer overruns
+    const size_t n_obs = std::min(y.size(), proba.size());
+    const ssize_t n_thresholds = thresholds.size();
+
+    // get ptr
+    iT* y_ptr = npy::get_data(y);
+    fT* proba_ptr = npy::get_data(proba);
+    fT* threshold_ptr = npy::get_data(thresholds);
+
+    // allocate confusion_matrix
+    auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_thresholds);
+    int64_t* const cm_ptr = npy::get_data(conf_mat);
+
+    // metrics are all set so don't rely on initialisation
+    auto metrics = py::array_t<double>({n_thresholds, static_cast<ssize_t>(10)});
+    double* const metrics_ptr = npy::get_data(metrics);
+
+    int64_t* p_cm_ptr;
+    double* p_metrics_ptr;
+
+    #pragma omp parallel for private(p_cm_ptr, p_metrics_ptr, y_ptr, proba_ptr)
+    for (ssize_t i = 0; i < n_thresholds; i++) {
+        p_cm_ptr = cm_ptr + (i * 4);
+        p_metrics_ptr = metrics_ptr + (i * 10);
+        // fill confusion matrix
+        details::confusion_matrix<iT>(n_obs, y_ptr, proba_ptr, threshold_ptr[i], p_cm_ptr);
+        // compute metrics
+        details::binary_metrics(p_cm_ptr, p_metrics_ptr, fill);
+    }
+    return py::make_tuple(conf_mat, metrics);
 }
 
 /* Compute the binary metrics given true labels y and estimated probalities proba.
@@ -303,48 +362,54 @@ py::array_t<double> binary_metrics_confusion(
  *   * confusion matrix
  *   * metrics
  */
-template <typename T>
+template <
+    typename iT, typename fT, std::enable_if_t<std::is_floating_point<fT>::value, int> = 0
+>
 inline py::tuple binary_metrics_runs(
-    py::array_t<T>& y,
-    py::array_t<double>& proba,
-    const double threshold,
+    py::array_t<iT>& y,
+    py::array_t<fT>& proba,
+    const fT threshold,
     const double fill,
     const int obs_axis
 ) {
     // condition checks
-    y = details::check_shape_order(y, "y", obs_axis);
-    proba = details::check_shape_order(proba, "proba", obs_axis);
-    details::check_equal_length(y, proba, "y", "proba", obs_axis, obs_axis);
+    if (!(npy::is_well_behaved(y) && npy::is_well_behaved(proba))) {
+        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    }
 
-    size_t n_obs;
-    ssize_t n_runs;
+    ssize_t n_obs_tmp;
+    ssize_t n_runs_tmp;
     const ssize_t n_dim = y.ndim();
 
     if (n_dim == 2) {
-        n_obs = y.shape(obs_axis);
-        n_runs = y.shape(1-obs_axis);
+        n_obs_tmp = y.shape(obs_axis);
+        n_runs_tmp = y.shape(1-obs_axis);
     } else {
-        n_obs = y.shape(0);
-        n_runs = 1;
+        n_obs_tmp = y.shape(0);
+        n_runs_tmp = 1;
     }
 
+    // copy to const help compiler optimisations below
+    const size_t n_obs = n_obs_tmp;
+    const ssize_t n_runs = n_runs_tmp;
+
     // get ptr
-    auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
-    auto proba_ptr = reinterpret_cast<double*>(proba.request().ptr);
+    iT* y_ptr = npy::get_data(y);
+    fT* proba_ptr = npy::get_data(proba);
 
     // allocate confusion_matrix
-    auto conf_mat = details::allocate_confusion_matrix<int64_t>(n_runs);
-    int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
+    auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_runs);
+    int64_t* const cm_ptr = npy::get_data(conf_mat);
 
     // metrics are all set so don't rely on initialisation
     auto metrics = py::array_t<double>({n_runs, static_cast<ssize_t>(10)});
-    double* const metrics_ptr = reinterpret_cast<double*>(metrics.request().ptr);
+    double* const metrics_ptr = npy::get_data(metrics);
 
     int64_t* p_cm_ptr;
     double* p_metrics_ptr;
 
-    T* p_y_ptr;
-    double* p_proba_ptr;
+    iT* p_y_ptr;
+    fT* p_proba_ptr;
 
     #pragma omp parallel for private(p_cm_ptr, p_metrics_ptr, p_y_ptr, p_proba_ptr)
     for (ssize_t i = 0; i < n_runs; i++) {
@@ -353,7 +418,7 @@ inline py::tuple binary_metrics_runs(
         p_cm_ptr = cm_ptr + (i * 4);
         p_metrics_ptr = metrics_ptr + (i * 10);
         // fill confusion matrix
-        details::confusion_matrix<T>(
+        details::confusion_matrix<iT>(
             n_obs, p_y_ptr, p_proba_ptr, threshold, p_cm_ptr
         );
         // compute metrics
@@ -362,65 +427,6 @@ inline py::tuple binary_metrics_runs(
     return py::make_tuple(conf_mat, metrics);
 }
 
-/* Compute the binary metrics given true labels y and estimated probalities proba over a range of thresholds.
- *
- * --- Parameters ---
- * - y : true labels
- * - proba : estimated probalities
- * - thresholds : inclusive classification thresholds
- * - fill : values to set when divide by zero is encountered
- *
- * --- Returns ---
- * - tuple
- *   * confusion matrix
- *   * metrics
- */
-template <typename T>
-inline py::tuple binary_metrics_thresholds(
-    const py::array_t<T>& y,
-    const py::array_t<double>& proba,
-    const py::array_t<double>& thresholds,
-    const double fill
-) {
-    // condition checks
-    int y_obs_axis = details::check_1d_soft(y, "y");
-    details::check_contiguous<T>(y, "y");
-    int proba_obs_axis = details::check_1d_soft(proba, "proba");
-    details::check_contiguous<double>(proba, "proba");
-    details::check_1d_soft(thresholds, "thresholds");
-    details::check_contiguous<double>(thresholds, "thresholds");
-    details::check_equal_length(y, proba, "y", "proba", y_obs_axis, proba_obs_axis);
-
-    const size_t n_obs = y.size();
-    const ssize_t n_thresholds = thresholds.size();
-
-    // get ptr
-    auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
-    auto proba_ptr = reinterpret_cast<double*>(proba.request().ptr);
-    auto threshold_ptr = reinterpret_cast<double*>(thresholds.request().ptr);
-
-    // allocate confusion_matrix
-    auto conf_mat = details::allocate_confusion_matrix<int64_t>(n_thresholds);
-    int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
-
-    // metrics are all set so don't rely on initialisation
-    auto metrics = py::array_t<double>({n_thresholds, static_cast<ssize_t>(10)});
-    double* const metrics_ptr = reinterpret_cast<double*>(metrics.request().ptr);
-
-    int64_t* p_cm_ptr;
-    double* p_metrics_ptr;
-
-    #pragma omp parallel for private(p_cm_ptr, p_metrics_ptr)
-    for (ssize_t i = 0; i < n_thresholds; i++) {
-        p_cm_ptr = cm_ptr + (i * 4);
-        p_metrics_ptr = metrics_ptr + (i * 10);
-        // fill confusion matrix
-        details::confusion_matrix<T>(n_obs, y_ptr, proba_ptr, threshold_ptr[i], p_cm_ptr);
-        // compute metrics
-        details::binary_metrics(p_cm_ptr, p_metrics_ptr, fill);
-    }
-    return py::make_tuple(conf_mat, metrics);
-}
 
 /* Compute the binary metrics given true labels y and estimated probalities proba over a range of thresholds.
  * Where both arrays contain the values for multiple runs/experiments.
@@ -437,27 +443,29 @@ inline py::tuple binary_metrics_thresholds(
  *   * confusion matrix
  *   * metrics
  */
-template <typename T, typename A>
+template <typename iT, typename fT>
 inline py::tuple binary_metrics_runs_thresholds(
-    const py::array_t<T>& y,
-    const py::array_t<A>& proba,
-    const py::array_t<A>& thresholds,
+    const py::array_t<iT>& y,
+    const py::array_t<fT>& proba,
+    const py::array_t<fT>& thresholds,
     const py::array_t<int64_t>& n_obs,
     const double fill
 ) {
     // condition checks
-    details::check_1d_soft(thresholds, "thresholds");
-    details::check_contiguous(thresholds, "thresholds");
-    details::check_contiguous(y, "y");
-    details::check_contiguous(proba, "proba");
-    details::check_contiguous(n_obs, "n_obs");
-    details::check_equal_shape(y, proba, "y", "proba");
+    if (!(
+        npy::is_well_behaved(y)
+        && npy::is_well_behaved(proba)
+        && npy::is_well_behaved(thresholds)
+        && npy::is_well_behaved(n_obs)
+    )) {
+        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    }
 
     // get ptr
-    auto y_ptr = reinterpret_cast<T*>(y.request().ptr);
-    auto proba_ptr = reinterpret_cast<A*>(proba.request().ptr);
-    auto thresholds_ptr = reinterpret_cast<A*>(thresholds.request().ptr);
-    auto n_obs_ptr = reinterpret_cast<int64_t*>(n_obs.request().ptr);
+    iT* y_ptr = npy::get_data<iT>(y);
+    fT* proba_ptr = npy::get_data<fT>(proba);
+    fT* thresholds_ptr = npy::get_data<fT>(thresholds);
+    int64_t* n_obs_ptr = npy::get_data(n_obs);
 
     const ssize_t n_runs = n_obs.size();
     const ssize_t n_thresholds = thresholds.size();
@@ -465,19 +473,19 @@ inline py::tuple binary_metrics_runs_thresholds(
 
     // allocate confusion_matrix
     const ssize_t n_run_tresholds = n_thresholds *  n_runs;
-    auto conf_mat = details::allocate_confusion_matrix<int64_t>(n_run_tresholds);
-    int64_t* const cm_ptr = reinterpret_cast<int64_t*>(conf_mat.request().ptr);
+    auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_run_tresholds);
+    int64_t* const cm_ptr = npy::get_data(conf_mat);
 
     // allocate memory for metrics; are all set so don't rely on initialisation
     auto metrics = py::array_t<double>(n_run_tresholds * static_cast<ssize_t>(10));
-    double* const metrics_ptr = reinterpret_cast<double*>(metrics.request().ptr);
+    double* const metrics_ptr = npy::get_data(metrics);
 
     // Bookkeeping variables
     const ssize_t cm_offset = n_thresholds * 4;
     const ssize_t metrics_offset = n_thresholds * 10;
 
-    T* outer_y_ptr;
-    A* outer_proba_ptr;
+    iT* outer_y_ptr;
+    fT* outer_proba_ptr;
     ssize_t outer_n_obs;
     int64_t* outer_cm_ptr;
     double* outer_metrics_ptr;
@@ -496,7 +504,7 @@ inline py::tuple binary_metrics_runs_thresholds(
             inner_cm_ptr = outer_cm_ptr + (i * 4);
             inner_metrics_ptr = outer_metrics_ptr + (i * 10);
             // fill confusion matrix
-            details::confusion_matrix<T>(
+            details::confusion_matrix<iT>(
                 outer_n_obs, outer_y_ptr, outer_proba_ptr, thresholds_ptr[i], inner_cm_ptr
             );
             // compute metrics
