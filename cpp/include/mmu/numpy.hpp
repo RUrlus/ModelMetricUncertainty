@@ -4,15 +4,18 @@
 #ifndef CPP_INCLUDE_MMU_NUMPY_HPP_
 #define CPP_INCLUDE_MMU_NUMPY_HPP_
 
-#define NPY_NO_DEPRECATED_API NPY_1_18_API_VERSION
-#include <Python.h>
-#include <numpy/arrayobject.h>
-#include <numpy/ndarraytypes.h>
-
+/* pybind11 include required even if not explicitly used
+ * to prevent link with pythonXX_d.lib on Win32
+ * (cf Py_DEBUG defined in numpy headers and https://github.com/pybind/pybind11/issues/1295)
+ */
 #include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
+#include <pybind11/numpy.h>  // for py::array_t
+#define NPY_NO_DEPRECATED_API NPY_1_18_API_VERSION
+#include <Python.h>  // for PyObject
+#include <numpy/arrayobject.h>  // for PyArrayObject
+#include <numpy/ndarraytypes.h> // for PyArray_*
 
-#include <string>
+#include <cstring>  // for memset
 
 namespace py = pybind11;
 
