@@ -51,10 +51,7 @@ jobs:
       run: python -m pip install --upgrade pip wheel setuptools pytest
 
     - name: Build and install
-      run: pip install --verbose .
+      run: MMU_BUILD_TESTS=on pip install --verbose .
 
     - name: Unit test
-      run: |
-        cd tests
-        pip install --verbose -e .
-        pytest
+      run: pytest tests
