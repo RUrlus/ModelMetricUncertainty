@@ -68,9 +68,24 @@ inline bool is_well_behaved(PyObject* src) {
     );
 }
 
+inline bool is_well_behaved(PyArrayObject* arr) {
+    return (
+        PyArray_CHKFLAGS(arr, NPY_ARRAY_ALIGNED & NPY_ARRAY_C_CONTIGUOUS)
+        || PyArray_CHKFLAGS(arr, NPY_ARRAY_ALIGNED & NPY_ARRAY_F_CONTIGUOUS)
+    );
+}
+
+inline void* get_data(PyObject* src) {
+    return PyArray_DATA(reinterpret_cast<PyArrayObject*>(src));
+}
+
+inline void* get_data(PyArrayObject* arr) {
+    return PyArray_DATA(arr);
+}
 }  // namespace npc
 
 namespace npy {
+
 template <typename T>
 inline bool is_f_contiguous(const py::array_t<T>& arr) {
     return npc::is_f_contiguous(arr.ptr());
@@ -86,6 +101,15 @@ inline bool is_contiguous(const py::array_t<T>& arr) {
     return npc::is_contiguous(arr.ptr());
 }
 
+template <typename T>
+inline bool is_well_behaved(const py::array_t<T>& arr) {
+    return npc::is_well_behaved(arr.ptr());
+}
+
+template <typename T>
+inline T* get_data(const py::array_t<T>& arr) {
+    return reinterpret_cast<T*>(npc::get_data(arr.ptr()));
+}
 
 /* allocate 2x2 shaped array and zero it*/
 template <typename T>
