@@ -2,6 +2,19 @@ import numpy as np
 import sklearn.metrics as skm
 
 
+def create_unaligned_array(dtype):
+    if dtype != np.float64 and dtype != np.int64:
+        raise ValueError("Only dtypes np.int64 and np.float64 are supported.")
+    # Allocate 802 bytes of memory (allocated on boundary)
+    a = np.arange(802, dtype=np.uint8)
+
+    # Create an array with boundary offset 4
+    z = np.frombuffer(a.data, offset=2, count=100, dtype=dtype)
+    z.shape = 10, 10
+    z[:] = 0
+    return z
+
+
 def generate_test_labels(
     N,
     y_dtype=np.int64,
@@ -27,6 +40,7 @@ def generate_test_labels(
     yhat = np.rint(proba).astype(yhat_dtype)
     y = np.random.binomial(1, np.mean(proba), N).astype(y_dtype)
     return (proba, yhat, y)
+
 
 def _compute_reference_metrics(y, yhat=None, proba=None, threshold=None, fill=0):
     """Compute the set of metrics based on sklearn's implementation.
