@@ -1,8 +1,8 @@
 import numpy as np
-import pytest
-from mmu_tests.utils import create_unaligned_array
 
-from mmu_tests import _mmu_core_tests
+from mmu.commons._testing import create_unaligned_array
+from mmu.lib import _mmu_core_tests
+
 
 def test_is_contiguous():
     carr = np.ones((10), order='C', dtype=np.float64)

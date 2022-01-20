@@ -5,7 +5,7 @@ import sklearn.metrics as skm
 import numpy as np
 import mmu
 
-from mmu_tests import generate_test_labels
+from mmu.commons._testing import generate_test_labels
 
 Y_DTYPES = [
     bool,

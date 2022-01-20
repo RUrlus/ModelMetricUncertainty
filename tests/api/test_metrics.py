@@ -3,8 +3,8 @@ import pytest
 import numpy as np
 import mmu
 
-from mmu_tests import generate_test_labels
-from mmu_tests import _compute_reference_metrics
+from mmu.commons._testing import generate_test_labels
+from mmu.commons._testing import compute_reference_metrics
 
 Y_DTYPES = [
     bool,
@@ -43,7 +43,7 @@ def test_binary_metrics_yhat():
             y_dtype=y_dtype,
             yhat_dtype=yhat_dtype
         )
-        sk_conf_mat, sk_metrics = _compute_reference_metrics(y, yhat=yhat)
+        sk_conf_mat, sk_metrics = compute_reference_metrics(y, yhat=yhat)
 
         conf_mat, metrics = mmu.binary_metrics(y, yhat)
         assert np.array_equal(conf_mat, sk_conf_mat), (
@@ -56,7 +56,7 @@ def test_binary_metrics_yhat():
 def test_binary_metrics_yhat_shapes():
     """Check if different shapes are handled correctly."""
     _, yhat, y = generate_test_labels(1000)
-    sk_conf_mat, sk_metrics = _compute_reference_metrics(y, yhat=yhat)
+    sk_conf_mat, sk_metrics = compute_reference_metrics(y, yhat=yhat)
 
     y_shapes = [y, y[None, :], y[:, None]]
     yhat_shapes = [yhat, yhat[None, :], yhat[:, None]]
@@ -96,7 +96,7 @@ def test_binary_metrics_yhat_shapes():
 def test_binary_metrics_order():
     """Check that different orders and shapes are handled correctly."""
     _, yhat, y = generate_test_labels(1000)
-    sk_conf_mat, sk_metrics = _compute_reference_metrics(y, yhat=yhat)
+    sk_conf_mat, sk_metrics = compute_reference_metrics(y, yhat=yhat)
 
     y_orders = [
         y.copy(order='C'),
@@ -137,7 +137,7 @@ def test_binary_metrics_proba():
             y_dtype=y_dtype,
             proba_dtype=proba_dtype
         )
-        sk_conf_mat, sk_metrics = _compute_reference_metrics(
+        sk_conf_mat, sk_metrics = compute_reference_metrics(
             y, proba=proba, threshold=threshold
         )
 
@@ -161,7 +161,7 @@ def test_binary_metrics_proba():
         conf_mat, metrics = mmu.binary_metrics_proba(
             y, proba, threshold, fill=fill
         )
-        sk_conf_mat, sk_metrics = _compute_reference_metrics(
+        sk_conf_mat, sk_metrics = compute_reference_metrics(
             y, proba=proba, threshold=threshold, fill=fill
         )
         assert np.array_equal(conf_mat, sk_conf_mat), (
@@ -177,7 +177,7 @@ def test_binary_metrics_proba_shapes():
     y_shapes = [y, y[None, :], y[:, None]]
     proba_shapes = [proba, proba[None, :], proba[:, None]]
 
-    sk_conf_mat, sk_metrics = _compute_reference_metrics(
+    sk_conf_mat, sk_metrics = compute_reference_metrics(
         y, proba=proba, threshold=0.5
     )
 
@@ -234,7 +234,7 @@ def test_binary_metrics_proba_order():
         proba[:, None].copy(order='F'),
     ]
 
-    sk_conf_mat, sk_metrics = _compute_reference_metrics(
+    sk_conf_mat, sk_metrics = compute_reference_metrics(
         y, proba=proba, threshold=0.5
     )
 
