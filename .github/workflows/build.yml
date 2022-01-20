@@ -118,8 +118,9 @@ jobs:
           cmake -G "${{ matrix.config.generators }}"\
             -S . -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
-           -Dpybind11_DIR=$(python3 -c 'import pybind11; print(pybind11.get_cmake_dir())') \
-           -DPython3_EXECUTABLE=$(python3 -c 'import sys; print(sys.executable)')
+            -DMMU_BUILD_TESTS=ON \
+            -Dpybind11_DIR=$(python3 -c 'import pybind11; print(pybind11.get_cmake_dir())') \
+            -DPython3_EXECUTABLE=$(python3 -c 'import sys; print(sys.executable)')
 
       - name: Build
         run: |
@@ -130,8 +131,4 @@ jobs:
 
       - name: Test
         if: runner.os == 'Linux' || startsWith(matrix.config.os, 'macos')
-        run: python3 -c 'import build.cpp._mmu_core as c; print(c.confusion_matrix)'
-
-      - name: Test
-        if: startsWith(matrix.config.os, 'windows')
-        run: python3 -c 'import build.cpp.Release._mmu_core as c; print(c.confusion_matrix)'
+        run: python3 -c 'import build.mmu.core.bindings._mmu_core as c; print(c.confusion_matrix)'
