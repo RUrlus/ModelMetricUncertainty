@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from mmu_tests.utils import create_unaligned_array
 
 from mmu_tests import _mmu_core_tests
 
@@ -55,103 +56,128 @@ def test_is_f_contiguous():
     assert _mmu_core_tests.is_f_contiguous(carr[:, [1, 3]])
     assert _mmu_core_tests.is_f_contiguous(farr[:, [1, 3]])
 
-def test_check_shape_order():
-    """Test check_shape_order.
 
-    check_shape_order checks if the array is contiguous along the obs_axis,
-    if not it will return a copy of the array in the correct order, C for
-    obs_axis == 1 and F order for obs_axis == 2
-    """
-    carr_good = np.zeros((2, 10), order='C', dtype=np.float64)
-    carr_bad = np.zeros((10, 2), order='C', dtype=np.float64)
+def test_is_well_behaved():
+    carr = np.ones((10), order='C', dtype=np.float64)
+    farr = np.ones((10), order='F', dtype=np.float64)
+    assert _mmu_core_tests.is_well_behaved(carr)
+    assert _mmu_core_tests.is_well_behaved(farr)
 
-    arr = _mmu_core_tests.check_shape_order(carr_good, 'x', 0)
-    assert arr.flags['F_CONTIGUOUS']
+    carr = np.ones((10, 4), order='C', dtype=np.float64)
+    farr = np.ones((10, 4), order='F', dtype=np.float64)
+    assert _mmu_core_tests.is_well_behaved(carr)
+    assert _mmu_core_tests.is_well_behaved(farr)
 
-    arr = _mmu_core_tests.check_shape_order(carr_bad, 'x', 0)
-    assert arr.flags['F_CONTIGUOUS']
+    assert _mmu_core_tests.is_well_behaved(carr[:, [1, 3]])
+    assert _mmu_core_tests.is_well_behaved(farr[:, [1, 3]])
+    assert _mmu_core_tests.is_well_behaved(carr[[1, 3], :])
+    assert _mmu_core_tests.is_well_behaved(farr[[1, 3], :])
 
-    arr = _mmu_core_tests.check_shape_order(carr_bad, 'x', 1)
-    assert arr.flags['C_CONTIGUOUS']
+    carr = np.arange(12, dtype=np.float64).reshape((3, 4))
+    farr = carr.copy(order='F')
+    assert not _mmu_core_tests.is_f_contiguous(carr[:, 1:3])
+    assert not _mmu_core_tests.is_c_contiguous(carr[:, 1:3])
+    assert not _mmu_core_tests.is_well_behaved(carr[:, 1:3])
+    assert not _mmu_core_tests.is_well_behaved(farr[1:3, ])
 
-    arr = _mmu_core_tests.check_shape_order(carr_good, 'x', 1)
-    assert arr.flags['C_CONTIGUOUS']
+    # the array being generated is c_contiguous but not aligned
+    carr = create_unaligned_array(np.float64)
+    assert not _mmu_core_tests.is_well_behaved(carr)
 
-    farr_good = np.zeros((10, 2), order='F', dtype=np.float64)
-    farr_bad = np.zeros((2, 10), order='F', dtype=np.float64)
+def test_get_data():
+    assert _mmu_core_tests.test_get_data(np.zeros((10, 10)))
+    assert _mmu_core_tests.test_get_data(np.zeros((10, 10)).view())
+    samples = np.asarray(list(range(100)), dtype=np.float64)
+    assert _mmu_core_tests.test_get_data(samples)
 
-    arr = _mmu_core_tests.check_shape_order(farr_good, 'x', 0)
-    assert arr.flags['F_CONTIGUOUS']
 
-    arr = _mmu_core_tests.check_shape_order(farr_bad, 'x', 0)
-    assert arr.flags['F_CONTIGUOUS']
+def test_zero_array():
+    dtypes = [np.float64, np.int64]
+    for dtype in dtypes:
+        og_arr = np.empty((100, 100), dtype=dtype)
+        arr = og_arr.copy()
+        _mmu_core_tests.zero_array(arr)
+        if dtype == np.int64:
+            assert arr.sum() == 0
+        else:
+            assert np.isclose(arr.sum(), 0.0)
 
-    arr = _mmu_core_tests.check_shape_order(farr_bad, 'x', 1)
-    assert arr.flags['C_CONTIGUOUS']
+        og_arr = np.asarray(
+            np.random.uniform(0, 100, size=100),
+            dtype=dtype
+        )
+        arr = og_arr.copy()
+        _mmu_core_tests.zero_array(arr)
+        if dtype == np.int64:
+            assert arr.sum() == 0
+        else:
+            assert np.isclose(arr.sum(), 0.0)
 
-    arr = _mmu_core_tests.check_shape_order(farr_good, 'x', 1)
-    assert arr.flags['C_CONTIGUOUS']
 
-    # check non-contiguous views
-    inp = np.zeros((10, 100), order='C', dtype=np.float64)[:, :90]
-    arr = _mmu_core_tests.check_shape_order(inp, 'x', 1)
-    assert arr.flags['C_CONTIGUOUS']
-    assert arr.shape == (10, 90), arr.shape
-    assert np.isclose(arr[2, 10], inp[2, 10])
+def test_zero_array_fixed():
+    dtypes = [np.float64, np.int64]
+    for dtype in dtypes:
+        og_arr = np.empty((4, 3), dtype=dtype)
+        arr = og_arr.copy()
+        _mmu_core_tests.zero_array_fixed(arr)
+        if dtype == np.int64:
+            assert arr.sum() == 0
+        else:
+            assert np.isclose(arr.sum(), 0.0)
 
-    inp = np.zeros((10, 100), order='C', dtype=np.float64)[:, :90]
-    arr = _mmu_core_tests.check_shape_order(inp, 'x', 0)
-    assert arr.flags['F_CONTIGUOUS']
-    assert arr.shape == (10, 90), arr.shape
-    assert np.isclose(arr[2, 10], inp[2, 10])
+        og_arr = np.asarray(
+            np.random.uniform(0, 100, size=12),
+            dtype=dtype
+        )
+        arr = og_arr.copy()
+        _mmu_core_tests.zero_array_fixed(arr)
+        if dtype == np.int64:
+            assert arr.sum() == 0
+        else:
+            assert np.isclose(arr.sum(), 0.0)
 
-    inp = np.zeros((100, 10), order='F', dtype=np.float64)[:90, :]
-    arr = _mmu_core_tests.check_shape_order(inp, 'x', 0)
-    assert arr.flags['F_CONTIGUOUS']
-    assert arr.shape == (90, 10), arr.shape
-    assert np.isclose(arr[10, 2], inp[10, 2])
+        # check that only the first 12 elements of the array
+        # are zero'd as we specify this in the template
+        og_arr = np.ones(13, dtype=dtype) * 10
+        arr = og_arr.copy()
+        _mmu_core_tests.zero_array_fixed(arr)
+        if dtype == np.int64:
+            assert not arr.sum() == 0
+            assert arr.sum() == 10
+        else:
+            assert not np.isclose(arr.sum(), 0.0)
+            assert np.isclose(arr.sum(), 10.0)
 
-    inp = np.zeros((100, 10), order='F', dtype=np.float64)[:90, :]
-    arr = _mmu_core_tests.check_shape_order(inp, 'x', 1)
-    assert arr.flags['C_CONTIGUOUS']
-    assert arr.shape == (90, 10), arr.shape
-    assert np.isclose(arr[10, 2], inp[10, 2])
 
-    with pytest.raises(RuntimeError):
-        _mmu_core_tests.check_shape_order(np.zeros((10, 4, 2)), 'arr', 0)
+def test_allocate_confusion_matrix():
+    cm = _mmu_core_tests.allocate_confusion_matrix()
+    assert cm.dtype == np.int64
+    assert cm.shape == (2, 2)
+    assert cm.flags['C_CONTIGUOUS']
+    assert cm.sum() == 0
 
-    with pytest.raises(RuntimeError):
-        _mmu_core_tests.check_shape_order(np.zeros((10, 2)), 'arr', 2)
+    cm = _mmu_core_tests.allocate_confusion_matrix(True)
+    assert cm.dtype == np.float64
+    assert cm.shape == (2, 2)
+    assert cm.flags['C_CONTIGUOUS']
+    assert np.isclose(cm.sum(), 0.0)
 
-def test_assert_shape_order():
-    """Test assrt_shape_order.
 
-    assert_shape_order checks if the array is contiguous along the axis of
-    length ``expected`` if not it will throw a RuntimeError
-    """
-    carr_good = np.zeros((10, 4), order='C', dtype=np.float64)
-    carr_bad = np.zeros((4, 10), order='C', dtype=np.float64)
+def test_allocate_n_confusion_matrices():
+    cm = _mmu_core_tests.allocate_n_confusion_matrices(100)
+    assert cm.dtype == np.int64
+    assert cm.shape == (100, 4)
+    assert cm.flags['C_CONTIGUOUS']
+    assert cm.sum() == 0
 
-    _mmu_core_tests.assert_shape_order(carr_good, 'x', 4)
-    with pytest.raises(RuntimeError):
-        _mmu_core_tests.assert_shape_order(carr_bad, 'x', 4)
+    cm = _mmu_core_tests.allocate_n_confusion_matrices(1)
+    assert cm.shape == (1, 4)
+    cm = _mmu_core_tests.allocate_n_confusion_matrices(0)
+    assert cm.shape == (0, 4)
 
-    farr_good = np.zeros((4, 10), order='F', dtype=np.float64)
-    farr_bad = np.zeros((10, 4), order='F', dtype=np.float64)
 
-    _mmu_core_tests.assert_shape_order(farr_good, 'x', 4)
-    with pytest.raises(RuntimeError):
-        _mmu_core_tests.assert_shape_order(farr_bad, 'x', 4)
-    with pytest.raises(RuntimeError):
-        _mmu_core_tests.assert_shape_order(farr_good[:, [0, 3, 5, 4]], 'x', 4)
-
-    arr_bad = np.zeros((10, 5), dtype=np.float64)
-    with pytest.raises(RuntimeError):
-        _mmu_core_tests.assert_shape_order(arr_bad, 'x', 4)
-
-    arr_bad = np.zeros((10, 4, 2), dtype=np.float64)
-    with pytest.raises(RuntimeError):
-        _mmu_core_tests.assert_shape_order(arr_bad, 'x', 4)
-
-    arr_good = np.zeros((4,), dtype=np.float64)
-    assert _mmu_core_tests.assert_shape_order(arr_good, 'x', 4) is None
+    cm = _mmu_core_tests.allocate_n_confusion_matrices(100, True)
+    assert cm.dtype == np.float64
+    assert cm.shape == (100, 4)
+    assert cm.flags['C_CONTIGUOUS']
+    assert np.isclose(cm.sum(), 0.0)
