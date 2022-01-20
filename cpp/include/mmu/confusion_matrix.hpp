@@ -130,6 +130,58 @@ inline void confusion_matrix(
     const size_t n_obs, T* y, A* proba, const A threshold, int64_t* const conf_mat
 ) {
     static constexpr double epsilon = std::numeric_limits<double>::epsilon();
+
+/* Fill binary confusion matrix based on true labels y and estimated probalities
+ *
+ * --- NOTE ---
+ * - this function:
+ * * does not handle nullptrs
+ * * expects all memory to be contiguous
+ * * expects conf_mat to point to zero'd memory
+ * --- NOTE ---
+ *
+ * --- Parameters ---
+ * - n_obs : minimum length of y and yhat
+ * - y : true labels
+ * - proba : estimated probalities
+ * - threshold : inclusive classification threshold
+ * - conf_mat : allocated and zero'd memory for the confusion matrix
+ */
+template<class fT, std::enable_if_t<std::is_floating_point<fT>::value, int> = 3>
+inline void confusion_matrix(
+    const size_t n_obs, fT* y, float* proba, const float threshold, int64_t* const conf_mat
+) {
+    static constexpr fT epsilon = std::numeric_limits<float>::epsilon();
+    for (size_t i = 0; i < n_obs; i++) {
+        conf_mat[(*y > epsilon) * 2 + (*proba >= threshold)]++; proba++; y++;
+    }
+}
+
+/* Fill binary confusion matrix based on true labels y and estimated probalities
+ *
+ * --- NOTE ---
+ * - this function:
+ * * does not handle nullptrs
+ * * expects all memory to be contiguous
+ * * expects conf_mat to point to zero'd memory
+ * --- NOTE ---
+ *
+ * --- Parameters ---
+ * - n_obs : minimum length of y and yhat
+ * - y : true labels
+ * - proba : estimated probalities
+ * - threshold : inclusive classification threshold
+ * - conf_mat : allocated and zero'd memory for the confusion matrix
+ */
+template<class fT, std::enable_if_t<std::is_floating_point<fT>::value, int> = 3>
+inline void confusion_matrix(
+    const size_t n_obs,
+    fT* y,
+    double* proba,
+    const double threshold,
+    int64_t* const conf_mat
+) {
+    static constexpr fT epsilon = std::numeric_limits<float>::epsilon();
     for (size_t i = 0; i < n_obs; i++) {
         conf_mat[(*y > epsilon) * 2 + (*proba >= threshold)]++; proba++; y++;
     }
