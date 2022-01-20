@@ -1,8 +1,8 @@
 /* numpy.hpp -- Utility functions used to inferace with Numpy arrays
  * Copyright 2021 Ralph Urlus
  */
-#ifndef CPP_INCLUDE_MMU_NUMPY_HPP_
-#define CPP_INCLUDE_MMU_NUMPY_HPP_
+#ifndef MMU_CORE_INCLUDE_MMU_NUMPY_HPP_
+#define MMU_CORE_INCLUDE_MMU_NUMPY_HPP_
 
 /* pybind11 include required even if not explicitly used
  * to prevent link with pythonXX_d.lib on Win32
@@ -146,4 +146,4 @@ inline py::array_t<T> allocate_n_confusion_matrices(
 }  // namespace npy
 }  // namespace mmu
 
-#endif  // CPP_INCLUDE_MMU_NUMPY_HPP_
+#endif  // MMU_CORE_INCLUDE_MMU_NUMPY_HPP_

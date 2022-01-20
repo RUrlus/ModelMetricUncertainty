@@ -1,8 +1,8 @@
 /* confusion_matrix_bindings.hpp -- Python bindings for confusion_matrix.hpp metrics
  * Copyright 2021 Ralph Urlus
  */
-#ifndef CPP_BINDINGS_CONFUSION_MATRIX_HPP_
-#define CPP_BINDINGS_CONFUSION_MATRIX_HPP_
+#ifndef MMU_CORE_BINDINGS_CONFUSION_MATRIX_HPP_
+#define MMU_CORE_BINDINGS_CONFUSION_MATRIX_HPP_
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
@@ -19,4 +19,4 @@ void bind_confusion_matrix_proba(py::module &m);
 }  // namespace bindings
 }  // namespace mmu
 
-#endif  // CPP_BINDINGS_CONFUSION_MATRIX_HPP_
+#endif  // MMU_CORE_BINDINGS_CONFUSION_MATRIX_HPP_

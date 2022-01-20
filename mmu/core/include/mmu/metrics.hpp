@@ -1,8 +1,8 @@
 /* metrics.hpp -- Implementation of binary classification metrics
  * Copyright 2021 Ralph Urlus
  */
-#ifndef CPP_INCLUDE_MMU_METRICS_HPP_
-#define CPP_INCLUDE_MMU_METRICS_HPP_
+#ifndef MMU_CORE_INCLUDE_MMU_METRICS_HPP_
+#define MMU_CORE_INCLUDE_MMU_METRICS_HPP_
 
 /* TODO *
  *
@@ -517,4 +517,4 @@ inline py::tuple binary_metrics_runs_thresholds(
 }  // namespace bindings
 }  // namespace mmu
 
-#endif  // CPP_INCLUDE_MMU_METRICS_HPP_
+#endif  // MMU_CORE_INCLUDE_MMU_METRICS_HPP_

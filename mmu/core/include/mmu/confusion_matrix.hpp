@@ -1,8 +1,8 @@
 /* confusion_matrix.hpp -- Implementation of binary classification confusion matrix
  * Copyright 2021 Ralph Urlus
  */
-#ifndef CPP_INCLUDE_MMU_CONFUSION_MATRIX_HPP_
-#define CPP_INCLUDE_MMU_CONFUSION_MATRIX_HPP_
+#ifndef MMU_CORE_INCLUDE_MMU_CONFUSION_MATRIX_HPP_
+#define MMU_CORE_INCLUDE_MMU_CONFUSION_MATRIX_HPP_
 
 /* TODO *
  *
@@ -284,4 +284,4 @@ py::array_t<int64_t> confusion_matrix(
 }  // namespace bindings
 }  // namespace mmu
 
-#endif  // CPP_INCLUDE_MMU_CONFUSION_MATRIX_HPP_
+#endif  // MMU_CORE_INCLUDE_MMU_CONFUSION_MATRIX_HPP_

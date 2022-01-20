@@ -1,10 +1,9 @@
 include NOTICE
 include LICENSE
 include CMakeLists.txt
-include cpp/CMakeLists.txt
-recursive-include cpp *.hpp
-recursive-include cpp *.cpp
-recursive-include mmu *.stan
+recursive-include mmu */CMakeLists.txt
+recursive-include mmu *.hpp
+recursive-include mmu *.cpp
 recursive-include cmake *.cmake
 
 global-include README.md

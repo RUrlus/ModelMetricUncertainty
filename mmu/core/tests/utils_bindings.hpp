@@ -1,8 +1,8 @@
 /* utils_bindings.hpp -- Bindings to test the utility functions
  * Copyright 2021 Ralph Urlus
  */
-#ifndef TESTS_CPP_UTILS_BINDINGS_HPP_
-#define TESTS_CPP_UTILS_BINDINGS_HPP_
+#ifndef MMU_CORE_TESTS_UTILS_BINDINGS_HPP_
+#define MMU_CORE_TESTS_UTILS_BINDINGS_HPP_
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
@@ -54,4 +54,4 @@ void bind_check_equal_shape(py::module &m) {
 
 }  // namespace mmu_tests
 
-#endif  // TESTS_CPP_UTILS_BINDINGS_HPP_
+#endif  // MMU_CORE_TESTS_UTILS_BINDINGS_HPP_
