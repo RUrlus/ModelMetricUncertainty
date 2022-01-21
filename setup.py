@@ -15,9 +15,12 @@ LICENSE.
 
 import re
 import sys
+import shutil
+import pybind11
 from pathlib import Path
-from setuptools import setup
-from cmake_build_extension import BuildExtension, CMakeExtension
+from setuptools import find_packages
+import skbuild
+from skbuild import setup
 
 NAME = 'mmu'
 
@@ -65,25 +68,18 @@ release = {is_release!s}
 
 if __name__ == '__main__':
     write_version_py()
+    # fix issue with CMake cache when building in-tree multiple times
+    # https://github.com/scikit-build/scikit-build/issues/628
+    build_dir = Path(skbuild.constants.SKBUILD_DIR()).parent
+    if build_dir.exists():
+        shutil.rmtree(build_dir)
     setup(
+        name="mmu",
+        packages=find_packages(),
         version=FULL_VERSION,
-        ext_modules=[
-            CMakeExtension(
-                name="CMakeProject",
-                install_prefix="",
-                cmake_depends_on=["pybind11"],
-                disable_editable=False,
-                cmake_configure_options=[
-                    "-DCALL_FROM_SETUP_PY:BOOL=ON",
-                    f"-DMMU_CORE_VERSION_INFO:STRING={VERSION}",
-                    f"-DPython3_EXECUTABLE:STRING={sys.executable}",
-                ],
-            )
-        ],
-        cmdclass=dict(build_ext=BuildExtension),
+        cmake_args=[
+            f"-DMMU_VERSION_INFO:STRING={VERSION}",
+            f"-DPython3_EXECUTABLE:STRING={sys.executable}",
+            f"-Dpybind11_DIR:STRING={pybind11.get_cmake_dir()}",
+        ]
     )
-    # Fix CMake cache issue with in-place builds
-    cmake_cache_path = (Path(__file__).resolve().parent / "build")
-    pip_env_re = "^//.*$\n^[^#].*pip-build-env.*$"
-    for i in cmake_cache_path.rglob("CMakeCache.txt"):
-        i.write_text(re.sub(pip_env_re, "", i.read_text(), flags=re.M))
