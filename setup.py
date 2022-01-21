@@ -70,7 +70,7 @@ if __name__ == '__main__':
         ext_modules=[
             CMakeExtension(
                 name="CMakeProject",
-                install_prefix="mmu/lib",
+                install_prefix="",
                 cmake_depends_on=["pybind11"],
                 disable_editable=False,
                 cmake_configure_options=[
