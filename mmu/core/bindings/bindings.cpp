@@ -2,18 +2,12 @@
  * Copyright 2021 Ralph Urlus
  */
 #include <pybind11/pybind11.h>
+
+#include "mmu/common.hpp"
 #include "metrics.hpp"
 #include "confusion_matrix.hpp"
 
-#if defined(_WIN32) || defined(WIN32) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__BORLANDC__)
-#define OS_WIN
-#endif
 
-// handle error C2059: syntax error: ';'  on windows for this Macro
-#if not defined OS_WIN
-  #define STRINGIFY(x) #x
-  #define MACRO_STRINGIFY(x) STRINGIFY(x)
-#endif
 
 namespace py = pybind11;
 

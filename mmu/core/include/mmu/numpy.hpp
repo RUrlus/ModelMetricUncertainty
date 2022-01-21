@@ -17,6 +17,8 @@
 
 #include <cstring>  // for memset
 
+#include <mmu/common.hpp>
+
 namespace py = pybind11;
 
 namespace mmu {

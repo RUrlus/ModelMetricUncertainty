@@ -9,6 +9,7 @@
 
 #include <string>
 
+#include <mmu/common.hpp>
 #include <mmu/numpy.hpp>
 
 namespace py = pybind11;
