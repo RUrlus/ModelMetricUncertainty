@@ -66,25 +66,25 @@ def test_confusion_matrix_shapes():
         )
 
     # unequal length
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         mmu.confusion_matrix(y, yhat[:100])
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         mmu.confusion_matrix(y[:100], yhat)
 
     # 2d with more than one row/column for the second dimension or 3d
     y_shapes = [
         np.tile(y[:, None], 2),
         np.tile(y[None, :], (2, 1)),
-        y[None, None, :],
+        np.tile(y[None, :], (2, 2, 1)),
     ]
 
     yhat_shapes = [
         np.tile(yhat[:, None], 2),
         np.tile(yhat[None, :], (2, 1)),
-        yhat[None, None, :],
+        np.tile(yhat[None, :], (2, 2, 1)),
     ]
     for y_, yhat_ in itertools.product(y_shapes, yhat_shapes):
-        with pytest.raises(RuntimeError):
+        with pytest.raises(ValueError):
             mmu.confusion_matrix(y_, yhat_)
 
 
@@ -131,7 +131,9 @@ def test_confusion_matrix_proba():
         )
         yhat = proba > threshold
         sk_conf_mat = skm.confusion_matrix(y, yhat)
-        conf_mat = mmu.confusion_matrix_proba(y, proba, threshold)
+        conf_mat = mmu.confusion_matrix(
+            y, score=proba, threshold=threshold
+        )
         assert np.array_equal(conf_mat, sk_conf_mat), (
             f"test failed for dtypes: {y_dtype}, {proba_dtype}"
             f" and threshold: {threshold}"
@@ -147,32 +149,35 @@ def test_confusion_matrix_proba_shapes():
     sk_conf_mat = skm.confusion_matrix(y, yhat)
 
     for y_, proba_ in itertools.product(y_shapes, proba_shapes):
-        conf_mat = mmu.confusion_matrix_proba(y_, proba_, 0.5)
+        conf_mat = mmu.confusion_matrix(
+            y, score=proba, threshold=0.5
+        )
         assert np.array_equal(conf_mat, sk_conf_mat), (
             f"test failed for shape: {y_.shape}, {proba_.shape}"
         )
 
     # unequal length
-    with pytest.raises(RuntimeError):
-        mmu.confusion_matrix(y, proba[:100])
-    with pytest.raises(RuntimeError):
-        mmu.confusion_matrix(y[:100], proba)
+    with pytest.raises(ValueError):
+        mmu.confusion_matrix(y, score=proba[:100])
+    with pytest.raises(ValueError):
+        mmu.confusion_matrix(y[:100], score=proba)
 
     # 2d with more than one row/column for the second dimension or 3d
     y_shapes = [
         np.tile(y[:, None], 2),
         np.tile(y[None, :], (2, 1)),
-        y[None, None, :],
+        np.tile(y[None, :], (2, 2, 1)),
     ]
 
     proba_shapes = [
         np.tile(proba[:, None], 2),
         np.tile(proba[None, :], (2, 1)),
         proba[None, None, :],
+        np.tile(proba[None, :], (2, 2, 1)),
     ]
     for y_, proba_ in itertools.product(y_shapes, proba_shapes):
-        with pytest.raises(RuntimeError):
-            mmu.confusion_matrix(y_, proba_)
+        with pytest.raises(ValueError):
+            mmu.confusion_matrix(y_, score=proba_)
 
 
 def test_confusion_matrix_proba_order():
@@ -200,13 +205,7 @@ def test_confusion_matrix_proba_order():
     sk_conf_mat = skm.confusion_matrix(y, yhat)
 
     for y_, proba_ in itertools.product(y_orders, proba_orders):
-        conf_mat = mmu.confusion_matrix_proba(y_, proba_, 0.5)
+        conf_mat = mmu.confusion_matrix(y_, score=proba_)
         assert np.array_equal(conf_mat, sk_conf_mat), (
             f"test failed for shape: {y_.shape}, {proba.shape}"
         )
-
-def test_non_overlapping_overloads():
-    """Check that you can't accidently call the wrong function."""
-    _, yhat, y = generate_test_labels(1000)
-    with pytest.raises(TypeError):
-        mmu.confusion_matrix_proba(y, yhat)
