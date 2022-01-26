@@ -11,6 +11,7 @@ SET(MMU_EXTENSION_PATH "${PROJECT_SOURCE_DIR}/mmu/core/bindings")
 pybind11_add_module(${MODNAME}
     MODULE
         ${MMU_EXTENSION_PATH}/bindings.cpp
+        ${MMU_EXTENSION_PATH}/utils.cpp
         ${MMU_EXTENSION_PATH}/metrics.cpp
         ${MMU_EXTENSION_PATH}/confusion_matrix.cpp
 )

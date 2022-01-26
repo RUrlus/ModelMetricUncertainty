@@ -12,10 +12,13 @@
 #include <pybind11/numpy.h>  // for py::array_t
 #define NPY_NO_DEPRECATED_API NPY_1_18_API_VERSION
 #include <Python.h>  // for PyObject
+#include <numpy/npy_math.h> // for isfinite
 #include <numpy/arrayobject.h>  // for PyArrayObject
 #include <numpy/ndarraytypes.h> // for PyArray_*
 
-#include <cstring>  // for memset
+#include <algorithm> // for min_element, max_element
+#include <cstring> // for memset
+#include <utility> // for swap
 
 #include <mmu/common.hpp>
 
@@ -84,6 +87,7 @@ inline void* get_data(PyObject* src) {
 inline void* get_data(PyArrayObject* arr) {
     return PyArray_DATA(arr);
 }
+
 }  // namespace npc
 
 namespace npy {
@@ -145,6 +149,53 @@ inline py::array_t<T> allocate_n_confusion_matrices(
     zero_array<T>(conf_mat);
     return conf_mat;
 }
+
+template <typename T, isInt<T> = true>
+inline constexpr bool all_finite(const py::array_t<T>& arr) {
+    return true;
+}
+
+template <typename T, isFloat<T> = true>
+inline bool all_finite(const py::array_t<T>& arr) {
+    if (!is_well_behaved(arr)) {
+        throw std::runtime_error("Array must be aligned and contiguous.");
+    }
+    const size_t N = arr.size();
+    T* data = get_data(arr);
+    int64_t acc1 = 0;
+    int64_t acc2 = 0;
+    if (N < 100000) {
+        #pragma omp simd reduction(+: acc1, acc2)
+        for (size_t i = 1; i < N; i+=2) {
+            acc1 += isfinite(*data); data++;
+            acc2 += isfinite(*data); data++;
+        }
+        if (N & 1) {
+            acc1 += isfinite(*data);
+        }
+    } else {
+        #pragma omp parallel for reduction(+: acc1, acc2)
+        for (size_t i = 1; i < N; i+=2) {
+            acc1 += isfinite(*data); data++;
+            acc2 += isfinite(*data); data++;
+        }
+        if (N & 1) {
+            acc1 += isfinite(*data);
+        }
+    }
+    return static_cast<size_t>(acc1 + acc2) == N;
+}
+
+template <typename T, isInt<T> = true>
+inline bool is_well_behaved_finite(const py::array_t<T>& arr) {
+    return is_well_behaved(arr);
+}
+
+template <typename T, isFloat<T> = true>
+inline bool is_well_behaved_finite(const py::array_t<T>& arr) {
+    return is_well_behaved(arr) && all_finite(arr);
+}
+
 }  // namespace npy
 }  // namespace mmu
 

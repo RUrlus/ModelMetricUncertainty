@@ -8,6 +8,7 @@
 #include "confusion_matrix.hpp"
 
 
+#include "utils.hpp"
 
 namespace py = pybind11;
 
@@ -23,6 +24,8 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_binary_metrics_confusion(m);
     bind_binary_metrics_runs(m);
     bind_binary_metrics_runs_thresholds(m);
+    bind_all_finite(m);
+    bind_is_well_behaved_finite(m);
 
 #if not defined OS_WIN
   #ifdef VERSION_INFO
