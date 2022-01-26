@@ -22,4 +22,13 @@
 typedef SSIZE_T ssize_t;
 #endif
 
+
+#include <type_traits>
+
+template<typename T>
+using isInt = std::enable_if_t<std::is_integral<T>::value, bool>;
+
+template<typename T>
+using isFloat = std::enable_if_t<std::is_floating_point<T>::value, bool>;
+
 #endif  // MMU_CORE_INCLUDE_MMU_COMMON_HPP_
