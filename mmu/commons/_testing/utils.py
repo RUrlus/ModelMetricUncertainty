@@ -1,6 +1,17 @@
 import numpy as np
 import sklearn.metrics as skm
 
+DEFAULT_OVERLOAD_DTYPES = [
+    bool,
+    np.bool_,
+    int,
+    np.int32,
+    np.int64,
+    float,
+    np.float32,
+    np.float64,
+]
+
 
 def create_unaligned_array(dtype):
     if dtype != np.float64 and dtype != np.int64:
