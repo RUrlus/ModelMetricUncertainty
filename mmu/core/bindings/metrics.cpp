@@ -17,7 +17,7 @@ void bind_binary_metrics(py::module &m) {
             const py::array_t<bool>& yhat,
             const double fill
         ) {
-            return binary_metrics<bool>(y, yhat, fill);
+            return binary_metrics<bool, bool>(y, yhat, fill);
         },
         R"pbdoc(Compute binary classification metrics.
 
@@ -59,7 +59,7 @@ void bind_binary_metrics(py::module &m) {
             const py::array_t<int64_t>& yhat,
             const double fill
         ) {
-            return binary_metrics<int64_t>(y, yhat, fill);
+            return binary_metrics<int64_t, int64_t>(y, yhat, fill);
         },
         py::arg("y"),
         py::arg("yhat"),
@@ -72,7 +72,7 @@ void bind_binary_metrics(py::module &m) {
             const py::array_t<double>& yhat,
             const double fill
         ) {
-            return binary_metrics<double>(y, yhat, fill);
+            return binary_metrics<double, double>(y, yhat, fill);
         },
         py::arg("y"),
         py::arg("yhat"),
@@ -85,7 +85,7 @@ void bind_binary_metrics(py::module &m) {
             const py::array_t<int>& yhat,
             const double fill
         ) {
-            return binary_metrics<int>(y, yhat, fill);
+            return binary_metrics<int, int>(y, yhat, fill);
         },
         py::arg("y"),
         py::arg("yhat"),
@@ -98,7 +98,7 @@ void bind_binary_metrics(py::module &m) {
             const py::array_t<float>& yhat,
             const double fill
         ) {
-            return binary_metrics<float>(y, yhat, fill);
+            return binary_metrics<float, float>(y, yhat, fill);
         },
         py::arg("y"),
         py::arg("yhat"),
@@ -106,16 +106,16 @@ void bind_binary_metrics(py::module &m) {
     );
 }
 
-void bind_binary_metrics_proba(py::module &m) {
+void bind_binary_metrics_score(py::module &m) {
     m.def(
-        "binary_metrics_proba",
+        "binary_metrics_score",
         [](
             const py::array_t<bool>& y,
-            const py::array_t<double>& proba,
+            const py::array_t<double>& score,
             const double threshold,
             const double fill
         ) {
-            return binary_metrics_proba<bool>(y, proba, threshold, fill);
+            return binary_metrics_score<bool, double>(y, score, threshold, fill);
         },
         R"pbdoc(Compute binary classification metrics for a given threshold.
 
@@ -135,7 +135,7 @@ void bind_binary_metrics_proba(py::module &m) {
         ----------
         y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
             the ground truth labels
-        proba : np.array[np.float64]
+        score : np.array[np.float64]
             the predicted probability
         threshold : float
             classification threshold
@@ -149,67 +149,67 @@ void bind_binary_metrics_proba(py::module &m) {
             confusion matrix and metrics array
         )pbdoc",
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold"),
         py::arg("fill") = 0.
     );
     m.def(
-        "binary_metrics_proba",
+        "binary_metrics_score",
         [](
             const py::array_t<int64_t>& y,
-            const py::array_t<double>& proba,
+            const py::array_t<double>& score,
             const double threshold,
             const double fill
         ) {
-            return binary_metrics_proba<int64_t>(y, proba, threshold, fill);
+            return binary_metrics_score<int64_t, double>(y, score, threshold, fill);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold"),
         py::arg("fill") = 0.
     );
     m.def(
-        "binary_metrics_proba",
+        "binary_metrics_score",
         [](
             const py::array_t<double>& y,
-            const py::array_t<double>& proba,
+            const py::array_t<double>& score,
             const double threshold,
             const double fill
         ) {
-            return binary_metrics_proba<double>(y, proba, threshold, fill);
+            return binary_metrics_score<double, double>(y, score, threshold, fill);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold"),
         py::arg("fill") = 0.
     );
     m.def(
-        "binary_metrics_proba",
+        "binary_metrics_score",
         [](
             const py::array_t<int>& y,
-            const py::array_t<double>& proba,
+            const py::array_t<double>& score,
             const double threshold,
             const double fill
         ) {
-            return binary_metrics_proba<int>(y, proba, threshold, fill);
+            return binary_metrics_score<int, double>(y, score, threshold, fill);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold"),
         py::arg("fill") = 0.
     );
     m.def(
-        "binary_metrics_proba",
+        "binary_metrics_score",
         [](
             const py::array_t<float>& y,
-            const py::array_t<double>& proba,
+            const py::array_t<double>& score,
             const double threshold,
             const double fill
         ) {
-            return binary_metrics_proba<float>(y, proba, threshold, fill);
+            return binary_metrics_score<float, double>(y, score, threshold, fill);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold"),
         py::arg("fill") = 0.
     );
@@ -220,12 +220,12 @@ void bind_binary_metrics_runs(py::module &m) {
         "binary_metrics_runs",
         [](
             py::array_t<bool>& y,
-            py::array_t<double>& proba,
+            py::array_t<double>& score,
             double threshold,
             const double fill,
             const int obs_axis
         ) {
-            return binary_metrics_runs<bool>(y, proba, threshold, fill, obs_axis);
+            return binary_metrics_runs<bool, double>(y, score, threshold, fill, obs_axis);
         },
         R"pbdoc(Compute binary classification metrics over thresholds.
 
@@ -245,7 +245,7 @@ void bind_binary_metrics_runs(py::module &m) {
         ----------
         y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
             the ground truth labels
-        proba : np.array[np.float64]
+        score : np.array[np.float64]
             the predicted probability
         threshold : float
             classification threshold
@@ -261,7 +261,7 @@ void bind_binary_metrics_runs(py::module &m) {
             confusion matrix and metrics array
         )pbdoc",
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold"),
         py::arg("fill") = 0.,
         py::arg("obs_axis") = 0
@@ -270,15 +270,15 @@ void bind_binary_metrics_runs(py::module &m) {
         "binary_metrics_runs",
         [](
             py::array_t<int64_t>& y,
-            py::array_t<double>& proba,
+            py::array_t<double>& score,
             double threshold,
             const double fill,
             const int obs_axis
         ) {
-            return binary_metrics_runs<int64_t>(y, proba, threshold, fill, obs_axis);
+            return binary_metrics_runs<int64_t, double>(y, score, threshold, fill, obs_axis);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold"),
         py::arg("fill") = 0.,
         py::arg("obs_axis") = 0
@@ -288,15 +288,15 @@ void bind_binary_metrics_runs(py::module &m) {
         "binary_metrics_runs",
         [](
             py::array_t<double>& y,
-            py::array_t<double>& proba,
+            py::array_t<double>& score,
             double threshold,
             const double fill,
             const int obs_axis
         ) {
-            return binary_metrics_runs<double>(y, proba, threshold, fill, obs_axis);
+            return binary_metrics_runs<double, double>(y, score, threshold, fill, obs_axis);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold"),
         py::arg("fill") = 0.,
         py::arg("obs_axis") = 0
@@ -305,15 +305,15 @@ void bind_binary_metrics_runs(py::module &m) {
         "binary_metrics_runs",
         [](
             py::array_t<int>& y,
-            py::array_t<double>& proba,
+            py::array_t<double>& score,
             double threshold,
             const double fill,
             const int obs_axis
         ) {
-            return binary_metrics_runs<int>(y, proba, threshold, fill, obs_axis);
+            return binary_metrics_runs<int, double>(y, score, threshold, fill, obs_axis);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold"),
         py::arg("fill") = 0.,
         py::arg("obs_axis") = 0
@@ -323,15 +323,15 @@ void bind_binary_metrics_runs(py::module &m) {
         "binary_metrics_runs",
         [](
             py::array_t<float>& y,
-            py::array_t<double>& proba,
+            py::array_t<double>& score,
             double threshold,
             const double fill,
             const int obs_axis
         ) {
-            return binary_metrics_runs<float>(y, proba, threshold, fill, obs_axis);
+            return binary_metrics_runs<float, double>(y, score, threshold, fill, obs_axis);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold"),
         py::arg("fill") = 0.,
         py::arg("obs_axis") = 0
@@ -343,11 +343,11 @@ void bind_binary_metrics_thresholds(py::module &m) {
         "binary_metrics_thresholds",
         [](
             const py::array_t<bool>& y,
-            const py::array_t<double>& proba,
+            const py::array_t<double>& score,
             const py::array_t<double>& thresholds,
             const double fill
         ) {
-            return binary_metrics_thresholds<bool>(y, proba, thresholds, fill);
+            return binary_metrics_thresholds<bool, double>(y, score, thresholds, fill);
         },
         R"pbdoc(Compute binary classification metrics over thresholds.
 
@@ -367,7 +367,7 @@ void bind_binary_metrics_thresholds(py::module &m) {
         ----------
         y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
             the ground truth labels
-        proba : np.array[np.float64]
+        score : np.array[np.float64]
             the predicted probability
         thresholds : np.array[np.float64]
             classification thresholds
@@ -381,7 +381,7 @@ void bind_binary_metrics_thresholds(py::module &m) {
             confusion matrix and metrics array
         )pbdoc",
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("thresholds"),
         py::arg("fill") = 0.
     );
@@ -389,14 +389,14 @@ void bind_binary_metrics_thresholds(py::module &m) {
         "binary_metrics_thresholds",
         [](
             const py::array_t<int64_t>& y,
-            const py::array_t<double>& proba,
+            const py::array_t<double>& score,
             const py::array_t<double>& thresholds,
             const double fill
         ) {
-            return binary_metrics_thresholds<int64_t>(y, proba, thresholds, fill);
+            return binary_metrics_thresholds<int64_t, double>(y, score, thresholds, fill);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("thresholds"),
         py::arg("fill") = 0.
     );
@@ -404,14 +404,14 @@ void bind_binary_metrics_thresholds(py::module &m) {
         "binary_metrics_thresholds",
         [](
             const py::array_t<double>& y,
-            const py::array_t<double>& proba,
+            const py::array_t<double>& score,
             const py::array_t<double>& thresholds,
             const double fill
         ) {
-            return binary_metrics_thresholds<double>(y, proba, thresholds, fill);
+            return binary_metrics_thresholds<double, double>(y, score, thresholds, fill);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("thresholds"),
         py::arg("fill") = 0.
     );
@@ -419,14 +419,14 @@ void bind_binary_metrics_thresholds(py::module &m) {
         "binary_metrics_thresholds",
         [](
             const py::array_t<int>& y,
-            const py::array_t<double>& proba,
+            const py::array_t<double>& score,
             const py::array_t<double>& thresholds,
             const double fill
         ) {
-            return binary_metrics_thresholds<int>(y, proba, thresholds, fill);
+            return binary_metrics_thresholds<int, double>(y, score, thresholds, fill);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("thresholds"),
         py::arg("fill") = 0.
     );
@@ -434,14 +434,14 @@ void bind_binary_metrics_thresholds(py::module &m) {
         "binary_metrics_thresholds",
         [](
             const py::array_t<float>& y,
-            const py::array_t<double>& proba,
+            const py::array_t<double>& score,
             const py::array_t<double>& thresholds,
             const double fill
         ) {
-            return binary_metrics_thresholds<float>(y, proba, thresholds, fill);
+            return binary_metrics_thresholds<float, double>(y, score, thresholds, fill);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("thresholds"),
         py::arg("fill") = 0.
     );
@@ -452,13 +452,13 @@ void bind_binary_metrics_runs_thresholds(py::module &m) {
         "_binary_metrics_runs_thresholds",
         [](
             const py::array_t<bool>& y,
-            const py::array_t<double>& proba,
+            const py::array_t<double>& score,
             const py::array_t<double>& thresholds,
             const py::array_t<int64_t>& n_obs,
             const double fill
         ) {
             return binary_metrics_runs_thresholds<bool, double>(
-                y, proba, thresholds, n_obs, fill
+                y, score, thresholds, n_obs, fill
             );
         },
         R"pbdoc(Compute binary classification metrics over runs and thresholds.
@@ -479,7 +479,7 @@ void bind_binary_metrics_runs_thresholds(py::module &m) {
         ----------
         y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
             the ground truth labels
-        proba : np.array[np.float[32/64]]
+        score : np.array[np.float[32/64]]
             the predicted probability
         thresholds : np.array[np.float[32/64]]
             classification thresholds
@@ -494,7 +494,7 @@ void bind_binary_metrics_runs_thresholds(py::module &m) {
             confusion matrix and metrics array
         )pbdoc",
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("thresholds"),
         py::arg("n_obs"),
         py::arg("fill") = 0.
@@ -503,17 +503,17 @@ void bind_binary_metrics_runs_thresholds(py::module &m) {
         "_binary_metrics_runs_thresholds",
         [](
             const py::array_t<int64_t>& y,
-            const py::array_t<double>& proba,
+            const py::array_t<double>& score,
             const py::array_t<double>& thresholds,
             const py::array_t<int64_t>& n_obs,
             const double fill
         ) {
             return binary_metrics_runs_thresholds<int64_t, double>(
-                y, proba, thresholds, n_obs, fill
+                y, score, thresholds, n_obs, fill
             );
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("thresholds"),
         py::arg("n_obs"),
         py::arg("fill") = 0.
@@ -522,17 +522,17 @@ void bind_binary_metrics_runs_thresholds(py::module &m) {
         "_binary_metrics_runs_thresholds",
         [](
             const py::array_t<double>& y,
-            const py::array_t<double>& proba,
+            const py::array_t<double>& score,
             const py::array_t<double>& thresholds,
             const py::array_t<int64_t>& n_obs,
             const double fill
         ) {
             return binary_metrics_runs_thresholds<double, double>(
-                y, proba, thresholds, n_obs, fill
+                y, score, thresholds, n_obs, fill
             );
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("thresholds"),
         py::arg("n_obs"),
         py::arg("fill") = 0.
@@ -541,17 +541,17 @@ void bind_binary_metrics_runs_thresholds(py::module &m) {
         "_binary_metrics_runs_thresholds",
         [](
             const py::array_t<int>& y,
-            const py::array_t<double>& proba,
+            const py::array_t<double>& score,
             const py::array_t<double>& thresholds,
             const py::array_t<int64_t>& n_obs,
             const double fill
         ) {
             return binary_metrics_runs_thresholds<int, double>(
-                y, proba, thresholds, n_obs, fill
+                y, score, thresholds, n_obs, fill
             );
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("thresholds"),
         py::arg("n_obs"),
         py::arg("fill") = 0.
@@ -560,17 +560,17 @@ void bind_binary_metrics_runs_thresholds(py::module &m) {
         "_binary_metrics_runs_thresholds",
         [](
             const py::array_t<bool>& y,
-            const py::array_t<float>& proba,
+            const py::array_t<float>& score,
             const py::array_t<float>& thresholds,
             const py::array_t<int64_t>& n_obs,
             const double fill
         ) {
             return binary_metrics_runs_thresholds<bool, float>(
-                y, proba, thresholds, n_obs, fill
+                y, score, thresholds, n_obs, fill
             );
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("thresholds"),
         py::arg("n_obs"),
         py::arg("fill") = 0.
@@ -579,17 +579,17 @@ void bind_binary_metrics_runs_thresholds(py::module &m) {
         "_binary_metrics_runs_thresholds",
         [](
             const py::array_t<int64_t>& y,
-            const py::array_t<float>& proba,
+            const py::array_t<float>& score,
             const py::array_t<float>& thresholds,
             const py::array_t<int64_t>& n_obs,
             const double fill
         ) {
             return binary_metrics_runs_thresholds<int64_t, float>(
-                y, proba, thresholds, n_obs, fill
+                y, score, thresholds, n_obs, fill
             );
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("thresholds"),
         py::arg("n_obs"),
         py::arg("fill") = 0.
@@ -598,17 +598,17 @@ void bind_binary_metrics_runs_thresholds(py::module &m) {
         "_binary_metrics_runs_thresholds",
         [](
             const py::array_t<int>& y,
-            const py::array_t<float>& proba,
+            const py::array_t<float>& score,
             const py::array_t<float>& thresholds,
             const py::array_t<int64_t>& n_obs,
             const double fill
         ) {
             return binary_metrics_runs_thresholds<int, float>(
-                y, proba, thresholds, n_obs, fill
+                y, score, thresholds, n_obs, fill
             );
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("thresholds"),
         py::arg("n_obs"),
         py::arg("fill") = 0.
@@ -617,17 +617,17 @@ void bind_binary_metrics_runs_thresholds(py::module &m) {
         "_binary_metrics_runs_thresholds",
         [](
             const py::array_t<float>& y,
-            const py::array_t<float>& proba,
+            const py::array_t<float>& score,
             const py::array_t<float>& thresholds,
             const py::array_t<int64_t>& n_obs,
             const double fill
         ) {
             return binary_metrics_runs_thresholds<float, float>(
-                y, proba, thresholds, n_obs, fill
+                y, score, thresholds, n_obs, fill
             );
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("thresholds"),
         py::arg("n_obs"),
         py::arg("fill") = 0.

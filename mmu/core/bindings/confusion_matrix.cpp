@@ -24,7 +24,7 @@ void bind_confusion_matrix(py::module &m) {
     m.def(
         "confusion_matrix",
         [](const py::array_t<bool>& y, const py::array_t<bool>& yhat) {
-            return confusion_matrix<bool>(y, yhat);
+            return confusion_matrix<bool, bool>(y, yhat);
         },
         R"pbdoc(Compute binary Confusion Matrix.
 
@@ -46,7 +46,7 @@ void bind_confusion_matrix(py::module &m) {
     m.def(
         "confusion_matrix",
         [](const py::array_t<int64_t>& y, const py::array_t<int64_t>& yhat) {
-            return confusion_matrix<int64_t>(y, yhat);
+            return confusion_matrix<int64_t, int64_t>(y, yhat);
         },
         py::arg("y"),
         py::arg("yhat")
@@ -54,7 +54,7 @@ void bind_confusion_matrix(py::module &m) {
     m.def(
         "confusion_matrix",
         [](const py::array_t<double>& y, const py::array_t<double>& yhat) {
-            return confusion_matrix<double>(y, yhat);
+            return confusion_matrix<double, double>(y, yhat);
         },
         py::arg("y"),
         py::arg("yhat")
@@ -62,7 +62,7 @@ void bind_confusion_matrix(py::module &m) {
     m.def(
         "confusion_matrix",
         [](const py::array_t<int>& y, const py::array_t<int>& yhat) {
-            return confusion_matrix<int>(y, yhat);
+            return confusion_matrix<int, int>(y, yhat);
         },
         py::arg("y"),
         py::arg("yhat")
@@ -70,18 +70,18 @@ void bind_confusion_matrix(py::module &m) {
     m.def(
         "confusion_matrix",
         [](const py::array_t<float>& y, const py::array_t<float>& yhat) {
-            return confusion_matrix<float>(y, yhat);
+            return confusion_matrix<float, float>(y, yhat);
         },
         py::arg("y"),
         py::arg("yhat")
     );
 }
 
-void bind_confusion_matrix_proba(py::module &m) {
+void bind_confusion_matrix_score(py::module &m) {
     m.def(
-        "confusion_matrix_proba",
-        [](const py::array_t<bool>& y, const py::array_t<double>& proba, const double threshold) {
-            return confusion_matrix<bool>(y, proba, threshold);
+        "confusion_matrix_score",
+        [](const py::array_t<bool>& y, const py::array_t<double>& score, const double threshold) {
+            return confusion_matrix<bool, double>(y, score, threshold);
         },
         R"pbdoc(Compute binary Confusion Matrix given probabilities.
 
@@ -89,8 +89,8 @@ void bind_confusion_matrix_proba(py::module &m) {
         ----------
         y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
             the ground truth labels
-        proba : np.array[np.float64]
-            the estimted probabilities
+        score : np.array[np.float64]
+            the classifier scores
         threshold : double
             classification threshold
 
@@ -100,43 +100,43 @@ void bind_confusion_matrix_proba(py::module &m) {
             confusion matrix
         )pbdoc",
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold")
     );
     m.def(
-        "confusion_matrix_proba",
-        [](const py::array_t<int64_t>& y, const py::array_t<double>& proba, const double threshold) {
-            return confusion_matrix<int64_t>(y, proba, threshold);
+        "confusion_matrix_score",
+        [](const py::array_t<int64_t>& y, const py::array_t<double>& score, const double threshold) {
+            return confusion_matrix<int64_t, double>(y, score, threshold);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold")
     );
     m.def(
-        "confusion_matrix_proba",
-        [](const py::array_t<double>& y, const py::array_t<double>& proba, const double threshold) {
-            return confusion_matrix<double>(y, proba, threshold);
+        "confusion_matrix_score",
+        [](const py::array_t<double>& y, const py::array_t<double>& score, const double threshold) {
+            return confusion_matrix<double, double>(y, score, threshold);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold")
     );
     m.def(
-        "confusion_matrix_proba",
-        [](const py::array_t<int>& y, const py::array_t<double>& proba, const double threshold) {
-            return confusion_matrix<int>(y, proba, threshold);
+        "confusion_matrix_score",
+        [](const py::array_t<int>& y, const py::array_t<double>& score, const double threshold) {
+            return confusion_matrix<int, double>(y, score, threshold);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold")
     );
     m.def(
-        "confusion_matrix_proba",
-        [](const py::array_t<float>& y, const py::array_t<double>& proba, const double threshold) {
-            return confusion_matrix<float>(y, proba, threshold);
+        "confusion_matrix_score",
+        [](const py::array_t<float>& y, const py::array_t<double>& score, const double threshold) {
+            return confusion_matrix<float, double>(y, score, threshold);
         },
         py::arg("y"),
-        py::arg("proba"),
+        py::arg("score"),
         py::arg("threshold")
     );
 }

@@ -15,7 +15,7 @@ namespace mmu {
 namespace bindings {
 
 void bind_binary_metrics(py::module &m);
-void bind_binary_metrics_proba(py::module &m);
+void bind_binary_metrics_score(py::module &m);
 void bind_binary_metrics_runs(py::module &m);
 void bind_binary_metrics_thresholds(py::module &m);
 void bind_binary_metrics_runs_thresholds(py::module &m);

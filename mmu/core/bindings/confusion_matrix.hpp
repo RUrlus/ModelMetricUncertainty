@@ -15,7 +15,7 @@ namespace mmu {
 namespace bindings {
 
 void bind_confusion_matrix(py::module &m);
-void bind_confusion_matrix_proba(py::module &m);
+void bind_confusion_matrix_score(py::module &m);
 }  // namespace bindings
 }  // namespace mmu
 
