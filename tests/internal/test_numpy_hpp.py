@@ -1,8 +1,10 @@
 import numpy as np
+import pytest
 
 from mmu.commons._testing import create_unaligned_array
+from mmu.commons._testing import DEFAULT_OVERLOAD_DTYPES
+from mmu.lib import _mmu_core
 from mmu.lib import _mmu_core_tests
-
 
 def test_is_contiguous():
     carr = np.ones((10), order='C', dtype=np.float64)
@@ -83,6 +85,124 @@ def test_is_well_behaved():
     # the array being generated is c_contiguous but not aligned
     carr = create_unaligned_array(np.float64)
     assert not _mmu_core_tests.is_well_behaved(carr)
+
+
+def test_all_finite():
+    for dtype_ in [int, bool, np.int32, np.int64]:
+        # clean
+        arr = np.ones(100, order='C', dtype=dtype_)
+        assert _mmu_core.all_finite(arr)
+
+    for dtype_ in [float, np.float32, np.float64]:
+        # clean
+        arr = np.ones(100, order='C', dtype=dtype_)
+        assert _mmu_core.all_finite(arr)
+        # with NaNs
+        arr[np.random.randint(0, 99, size=3)] = np.nan
+        assert not _mmu_core.all_finite(arr)
+
+        # with infty
+        arr = np.ones(100, order='C', dtype=dtype_)
+        arr[np.random.randint(0, 99, size=3)] = np.infty
+        assert not _mmu_core.all_finite(arr)
+
+        # with both infty
+        arr = np.ones(100, order='C', dtype=dtype_)
+        arr[np.random.randint(0, 99, size=3)] = np.infty
+        arr[np.random.randint(0, 99, size=3)] = np.nan
+        assert not _mmu_core.all_finite(arr)
+
+        carr = np.arange(12, dtype=dtype_).reshape((3, 4))
+        with(pytest.raises(RuntimeError)):
+            assert not _mmu_core.all_finite(carr[:, 1:3])
+
+
+def test_is_well_behaved_finite_int_t():
+    for dtype_ in [int, bool, np.int32, np.int64]:
+        carr = np.ones((10), order='C', dtype=dtype_)
+        farr = np.ones((10), order='F', dtype=dtype_)
+        assert _mmu_core.is_well_behaved_finite(carr)
+        assert _mmu_core.is_well_behaved_finite(farr)
+
+        carr = np.ones((10, 4), order='C', dtype=dtype_)
+        farr = np.ones((10, 4), order='F', dtype=dtype_)
+        assert _mmu_core.is_well_behaved_finite(carr)
+        assert _mmu_core.is_well_behaved_finite(farr)
+
+        assert _mmu_core.is_well_behaved_finite(carr[:, [1, 3]])
+        assert _mmu_core.is_well_behaved_finite(farr[:, [1, 3]])
+        assert _mmu_core.is_well_behaved_finite(carr[[1, 3], :])
+        assert _mmu_core.is_well_behaved_finite(farr[[1, 3], :])
+
+        if dtype_ != bool:
+            carr = np.arange(12, dtype=dtype_).reshape((3, 4))
+            farr = carr.copy(order='F')
+            assert not _mmu_core.is_well_behaved_finite(carr[:, 1:3])
+            assert not _mmu_core.is_well_behaved_finite(farr[1:3, ])
+
+        if dtype_ == np.int64:
+            # the array being generated is c_contiguous but not aligned
+            carr = create_unaligned_array(dtype_)
+            assert not _mmu_core.is_well_behaved_finite(carr)
+
+
+def test_is_well_behaved_finite_float_t():
+    for dtype_ in [float, np.float32, np.float64]:
+        carr = np.ones((10), order='C', dtype=dtype_)
+        farr = np.ones((10), order='F', dtype=dtype_)
+        assert _mmu_core.is_well_behaved_finite(carr)
+        assert _mmu_core.is_well_behaved_finite(farr)
+
+        carr = np.ones((10, 4), order='C', dtype=dtype_)
+        farr = np.ones((10, 4), order='F', dtype=dtype_)
+        assert _mmu_core.is_well_behaved_finite(carr)
+        assert _mmu_core.is_well_behaved_finite(farr)
+
+        assert _mmu_core.is_well_behaved_finite(carr[:, [1, 3]])
+        assert _mmu_core.is_well_behaved_finite(farr[:, [1, 3]])
+        assert _mmu_core.is_well_behaved_finite(carr[[1, 3], :])
+        assert _mmu_core.is_well_behaved_finite(farr[[1, 3], :])
+
+        carr = np.arange(12, dtype=dtype_).reshape((3, 4))
+        farr = carr.copy(order='F')
+        assert not _mmu_core.is_well_behaved_finite(carr[:, 1:3])
+        assert not _mmu_core.is_well_behaved_finite(farr[1:3, ])
+
+        if dtype_ == np.float64:
+            # the array being generated is c_contiguous but not aligned
+            carr = create_unaligned_array(dtype_)
+            assert not _mmu_core.is_well_behaved_finite(carr)
+
+        # clean
+        arr = np.ones(100, order='C', dtype=dtype_)
+        assert _mmu_core.is_well_behaved_finite(arr)
+        # with NaNs
+        arr[np.random.randint(0, 99, size=3)] = np.nan
+        assert not _mmu_core.is_well_behaved_finite(arr)
+
+        # with infty
+        arr = np.ones(100, order='C', dtype=dtype_)
+        arr[np.random.randint(0, 99, size=3)] = np.infty
+        assert not _mmu_core.is_well_behaved_finite(arr)
+
+        # with both infty
+        arr = np.ones(100, order='C', dtype=dtype_)
+        arr[np.random.randint(0, 99, size=3)] = np.infty
+        arr[np.random.randint(0, 99, size=3)] = np.nan
+        assert not _mmu_core.is_well_behaved_finite(arr)
+
+        arr = np.arange(12, dtype=dtype_).reshape((3, 4))
+        arr[0, 0] = np.infty
+        arr[1, 2] = np.nan
+        assert not _mmu_core.is_well_behaved_finite(arr[:, 1:3])
+
+        if dtype_ == np.float64:
+            # the array being generated is c_contiguous but not aligned
+            arr = create_unaligned_array(dtype_)
+            arr[np.random.randint(0, 9, size=3), np.random.randint(0, 9, size=3)] = np.infty
+            arr[np.random.randint(0, 9, size=3), np.random.randint(0, 9, size=3)] = np.nan
+            assert not _mmu_core.is_well_behaved_finite(arr)
+
 
 def test_get_data():
     assert _mmu_core_tests.test_get_data(np.zeros((10, 10)))
