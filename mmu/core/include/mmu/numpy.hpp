@@ -16,9 +16,11 @@
 #include <numpy/arrayobject.h>  // for PyArrayObject
 #include <numpy/ndarraytypes.h> // for PyArray_*
 
-#include <algorithm> // for min_element, max_element
+#include <algorithm> // for min_element, max_element, sort
 #include <cstring> // for memset
+#include <vector>
 #include <utility> // for swap
+
 
 #include <mmu/common.hpp>
 
@@ -51,7 +53,6 @@ inline bool is_c_contiguous(PyArrayObject* src) {
 
 inline bool is_contiguous(PyObject* src) {
     auto arr = reinterpret_cast<PyArrayObject*>(src);
-    auto obj_fields = reinterpret_cast<PyArrayObject_fields*>(arr);
     return (
         PyArray_CHKFLAGS(arr, NPY_ARRAY_C_CONTIGUOUS)
         || PyArray_CHKFLAGS(arr, NPY_ARRAY_F_CONTIGUOUS)
@@ -63,6 +64,15 @@ inline bool is_contiguous(PyArrayObject* arr) {
         PyArray_CHKFLAGS(arr, NPY_ARRAY_C_CONTIGUOUS)
         || PyArray_CHKFLAGS(arr, NPY_ARRAY_F_CONTIGUOUS)
     );
+}
+
+inline bool is_aligned(PyObject* src) {
+    auto arr = reinterpret_cast<PyArrayObject*>(src);
+    return PyArray_CHKFLAGS(arr, NPY_ARRAY_ALIGNED);
+}
+
+inline bool is_aligned(PyArrayObject* arr) {
+    return PyArray_CHKFLAGS(arr, NPY_ARRAY_ALIGNED);
 }
 
 inline bool is_well_behaved(PyObject* src) {
@@ -105,6 +115,11 @@ inline bool is_c_contiguous(const py::array_t<T>& arr) {
 template <typename T>
 inline bool is_contiguous(const py::array_t<T>& arr) {
     return npc::is_contiguous(arr.ptr());
+}
+
+template <typename T>
+inline bool is_aligned(const py::array_t<T>& arr) {
+    return npc::is_aligned(arr.ptr());
 }
 
 template <typename T>
@@ -156,16 +171,85 @@ inline constexpr bool all_finite(const py::array_t<T>& arr) {
 }
 
 template <typename T, isFloat<T> = true>
+inline bool all_finite_strided(const py::array_t<T>& arr) {
+    /* The array is assumed to be non-contiguous so we move in
+     * strides.
+     * We argsort based on the strides and iterate over the
+     * array in the order of smallest stride to biggest.
+     *
+     * We account for the non-contiguous memory by jumping
+     * ahead the next biggest strides minus the steps we have
+     * already taken, i.e. say strides are (80, 8) and shape
+     * is (10, 3). We add 8 to the pointer three times and
+     * and than at (80 - (3 * 8)) to jump to the next block.
+     * Add 8 to the pointer three times and etc...
+     */
+    const size_t N = arr.size();
+    const size_t ndim = arr.ndim();
+    auto arr_ptr = reinterpret_cast<PyArrayObject*>(arr.ptr());
+    npy_intp* strides = PyArray_STRIDES(arr_ptr);
+    npy_intp* dims = PyArray_DIMS(arr_ptr);
+    // argsort the strides
+    std::vector<size_t> idx(3);
+    std::iota(idx.begin(), idx.end(), 0);
+    std::sort(
+        idx.begin(),
+        idx.begin() + ndim,
+        [&](size_t i1, size_t i2) {return strides[i1] < strides[i2];}
+    );
+
+    int s0 = strides[idx[0]];
+    size_t acc = 0;
+    auto ptr = reinterpret_cast<unsigned char*>(get_data(arr));
+
+    if (ndim == 1) {
+        for (size_t i = 0; i < N; i++) {
+            acc += isfinite(*reinterpret_cast<T*>(ptr));
+            ptr += s0;
+        }
+    } else if (ndim == 2) {
+        const size_t n0 = dims[idx[0]];
+        const size_t n1 = dims[idx[1]];
+        const size_t s1 = strides[idx[1]] - (n0 * s0);
+        for (size_t i = 0; i < n1; i++) {
+            for (size_t j = 0; j < n0; j++) {
+                acc += isfinite(*reinterpret_cast<T*>(ptr));
+                ptr += s0;
+            } // row loop
+            ptr += s1;
+        } // column loop
+    } else if (ndim == 3) {
+        const size_t n0 = dims[idx[0]];
+        const size_t n1 = dims[idx[1]];
+        const size_t n2 = dims[idx[2]];
+        const size_t inner_stride_offset = n0 * s0;
+        const size_t s1 = strides[idx[1]] - inner_stride_offset;
+        const size_t s2 = strides[idx[2]] - n1 * inner_stride_offset;
+        for (size_t i = 0; i < n2; i++) {
+            for (size_t j = 0; j < n1; j++) {
+                for (size_t k = 0; k < n0; k++) {
+                    acc += isfinite(*reinterpret_cast<T*>(ptr));
+                    ptr += s0;
+                } // row loop
+                ptr += s1;
+            } // column loop
+            ptr += s2;
+        } // slice loop
+    }
+    return acc == N;
+}
+
+template <typename T, isFloat<T> = true>
 inline bool all_finite(const py::array_t<T>& arr) {
     if (!is_well_behaved(arr)) {
-        throw std::runtime_error("Array must be aligned and contiguous.");
+        // slow path but one that handles non-contiguous and unaligned data
+        return all_finite_strided(arr);
     }
     const size_t N = arr.size();
     T* data = get_data(arr);
-    int64_t acc1 = 0;
-    int64_t acc2 = 0;
     if (N < 100000) {
-        #pragma omp simd reduction(+: acc1, acc2)
+        size_t acc1 = 0;
+        size_t acc2 = 0;
         for (size_t i = 1; i < N; i+=2) {
             acc1 += isfinite(*data); data++;
             acc2 += isfinite(*data); data++;
@@ -173,17 +257,14 @@ inline bool all_finite(const py::array_t<T>& arr) {
         if (N & 1) {
             acc1 += isfinite(*data);
         }
-    } else {
-        #pragma omp parallel for reduction(+: acc1, acc2)
-        for (size_t i = 1; i < N; i+=2) {
-            acc1 += isfinite(*data); data++;
-            acc2 += isfinite(*data); data++;
-        }
-        if (N & 1) {
-            acc1 += isfinite(*data);
-        }
+        return (acc1 + acc2) == N;
     }
-    return static_cast<size_t>(acc1 + acc2) == N;
+    size_t acc = 0;
+    #pragma omp parallel for reduction(+: acc)
+    for (size_t i = 0; i < N; i++) {
+        acc += isfinite(data[i]);
+    }
+    return acc == N;
 }
 
 template <typename T, isInt<T> = true>
