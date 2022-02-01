@@ -22,7 +22,7 @@
 #include <stdexcept>  // for runtime_error
 #include <type_traits>  // for enable_if_t
 
-#include "mmu/common.hpp"
+#include <mmu/common.hpp>
 #include <mmu/numpy.hpp>
 #include <mmu/confusion_matrix.hpp>
 
@@ -484,35 +484,35 @@ inline py::tuple binary_metrics_runs_thresholds(
     const ssize_t cm_offset = n_thresholds * 4;
     const ssize_t metrics_offset = n_thresholds * 10;
 
-    T1* outer_y_ptr;
-    T2* outer_score_ptr;
-    ssize_t outer_n_obs;
-    int64_t* outer_cm_ptr;
-    double* outer_metrics_ptr;
-    double* inner_metrics_ptr;
-    int64_t* inner_cm_ptr;
+    T1* o_y_ptr;
+    T2* o_score_ptr;
+    ssize_t o_n_obs;
+    int64_t* o_cm_ptr;
+    double* o_metrics_ptr;
+    double* i_metrics_ptr;
+    int64_t* i_cm_ptr;
 
 
-    #pragma omp parallel for private(outer_n_obs, outer_y_ptr, outer_metrics_ptr, outer_cm_ptr, inner_cm_ptr, inner_metrics_ptr)
+    #pragma omp parallel for private(o_n_obs, o_y_ptr, o_metrics_ptr, o_cm_ptr, i_cm_ptr, i_metrics_ptr)
     for (ssize_t r = 0; r < n_runs; r++) {
-        outer_n_obs = n_obs_ptr[r];
-        outer_y_ptr = y_ptr + (r * max_obs);
-        outer_score_ptr = score_ptr + (r * max_obs);
-        outer_cm_ptr = cm_ptr + (r * cm_offset);
-        outer_metrics_ptr = metrics_ptr + (r * metrics_offset);
+        o_n_obs = n_obs_ptr[r];
+        o_y_ptr = y_ptr + (r * max_obs);
+        o_score_ptr = score_ptr + (r * max_obs);
+        o_cm_ptr = cm_ptr + (r * cm_offset);
+        o_metrics_ptr = metrics_ptr + (r * metrics_offset);
         for (ssize_t i = 0; i < n_thresholds; i++) {
-            inner_cm_ptr = outer_cm_ptr + (i * 4);
-            inner_metrics_ptr = outer_metrics_ptr + (i * 10);
+            i_cm_ptr = o_cm_ptr + (i * 4);
+            i_metrics_ptr = o_metrics_ptr + (i * 10);
             // fill confusion matrix
             details::confusion_matrix<T1, T2>(
-                outer_n_obs,
-                outer_y_ptr,
-                outer_score_ptr,
+                o_n_obs,
+                o_y_ptr,
+                o_score_ptr,
                 thresholds_ptr[i],
-                inner_cm_ptr
+                i_cm_ptr
             );
             // compute metrics
-            details::binary_metrics(inner_cm_ptr, inner_metrics_ptr, fill);
+            details::binary_metrics(i_cm_ptr, i_metrics_ptr, fill);
         }
     }
     return py::make_tuple(conf_mat, metrics);

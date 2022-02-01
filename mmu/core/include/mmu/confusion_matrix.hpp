@@ -22,8 +22,8 @@
 #include <algorithm>
 #include <type_traits>
 
-#include "mmu/common.hpp"
-#include "mmu/numpy.hpp"
+#include <mmu/common.hpp>
+#include <mmu/numpy.hpp>
 
 namespace py = pybind11;
 

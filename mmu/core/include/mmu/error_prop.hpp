@@ -16,7 +16,7 @@
 #include <stdexcept>  // for runtime_error
 #include <type_traits>  // for enable_if_t
 
-#include "mmu/common.hpp"
+#include <mmu/common.hpp>
 #include <mmu/numpy.hpp>
 #include <mmu/confusion_matrix.hpp>
 #include <mmu/erfinv.hpp>
