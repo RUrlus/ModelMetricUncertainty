@@ -53,6 +53,16 @@ TARGET_INCLUDE_DIRECTORIES(mmu_headers
         ${Python3_INCLUDE_DIRS}
 )
 
+IF(DEFINED ENV{MMU_DEV_MODE} OR MMU_DEV_MODE)
+    TARGET_COMPILE_OPTIONS(mmu_headers
+        INTERFACE
+        -Wall
+        -Wextra
+        -Wunused-variable
+        -Wunused-const-variable
+    )
+ENDIF()
+
 TARGET_LINK_LIBRARIES(
     mmu_headers
     INTERFACE
