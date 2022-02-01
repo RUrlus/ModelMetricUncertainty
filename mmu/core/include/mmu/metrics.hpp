@@ -39,7 +39,6 @@ inline void precision_recall(
     int64_t iP = conf_mat[2] + conf_mat[3];
     bool P_nonzero = iP > 0;
     auto P = static_cast<double>(iP);
-    auto FP = static_cast<double>(conf_mat[1]);
     auto TP = static_cast<double>(conf_mat[3]);
 
     int64_t iTP_FP = conf_mat[3] + conf_mat[1];

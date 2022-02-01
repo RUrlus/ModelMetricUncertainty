@@ -64,7 +64,6 @@ inline void lep_conf_mat(T* const conf_mat, double* const metrics) {
      *  3 TP
      *
      */
-    auto TN = static_cast<double>(conf_mat[0]);
     auto FP = static_cast<double>(conf_mat[1]);
     auto FN = static_cast<double>(conf_mat[2]);
     auto TP = static_cast<double>(conf_mat[3]);
@@ -121,7 +120,6 @@ inline void lep_conf_mat_ci(T* const conf_mat, double* const metrics, const doub
      */
     const double alpha_lb = alpha / 2;
     const double alpha_ub = 1.0 - alpha_ub;
-    auto TN = static_cast<double>(conf_mat[0]);
     auto FP = static_cast<double>(conf_mat[1]);
     auto FN = static_cast<double>(conf_mat[2]);
     auto TP = static_cast<double>(conf_mat[3]);
