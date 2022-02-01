@@ -4,6 +4,8 @@
 #ifndef MMU_CORE_INCLUDE_MMU_COMMON_HPP_
 #define MMU_CORE_INCLUDE_MMU_COMMON_HPP_
 
+#define UNUSED(x) (void)(x)
+
 #if defined(_WIN32) || defined(_WIN64) || defined(WIN32) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__BORLANDC__)
 #define OS_WIN
 #endif

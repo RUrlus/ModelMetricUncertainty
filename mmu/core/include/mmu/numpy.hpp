@@ -167,6 +167,7 @@ inline py::array_t<T> allocate_n_confusion_matrices(
 
 template <typename T, isInt<T> = true>
 inline constexpr bool all_finite(const py::array_t<T>& arr) {
+    UNUSED(arr);
     return true;
 }
 

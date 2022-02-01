@@ -8,6 +8,7 @@
 #include <pybind11/numpy.h>
 
 #include <string>
+#include <mmu/common.hpp>
 #include <mmu/numpy.hpp>
 
 namespace py = pybind11;
@@ -108,6 +109,7 @@ void bind_allocate_confusion_matrix(py::module &m) {
     m.def(
         "allocate_confusion_matrix",
         [](bool return_double) {
+            UNUSED(return_double);
             return mmu::npy::allocate_confusion_matrix<double>();
         }
     );
@@ -123,6 +125,7 @@ void bind_allocate_n_confusion_matrices(py::module &m) {
     m.def(
         "allocate_n_confusion_matrices",
         [](int64_t n_matrices, bool return_double) {
+            UNUSED(return_double);
             return mmu::npy::allocate_n_confusion_matrices<double>(n_matrices);
         }
     );
