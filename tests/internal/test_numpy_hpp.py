@@ -1,8 +1,6 @@
 import numpy as np
-import pytest
 
 from mmu.commons._testing import create_unaligned_array
-from mmu.commons._testing import DEFAULT_OVERLOAD_DTYPES
 from mmu.lib import _mmu_core
 from mmu.lib import _mmu_core_tests
 
@@ -112,9 +110,51 @@ def test_all_finite():
         arr[np.random.randint(0, 99, size=3)] = np.nan
         assert not _mmu_core.all_finite(arr)
 
-        carr = np.arange(12, dtype=dtype_).reshape((3, 4))
-        with(pytest.raises(RuntimeError)):
-            assert not _mmu_core.all_finite(carr[:, 1:3])
+
+def test_all_finite_non_contiguous():
+    for dtype_ in [int, np.int32, np.int64]:
+        # clean
+        arr = np.arange(12, dtype=dtype_).reshape((3, 4))[:, 1:3]
+        assert _mmu_core.all_finite(arr)
+
+    for dtype_ in [float, np.float32, np.float64]:
+        # clean
+        arr = np.arange(100, dtype=dtype_).reshape((10, 10))[:, 1:4]
+        assert _mmu_core.all_finite(arr)
+        # with NaNs
+        arr = np.arange(100, dtype=dtype_).reshape((10, 10))[:, 1:4]
+        col_idx = np.random.randint(1, 3, size=1)
+        row_idxs = np.random.randint(0, 10, size=2)
+        arr[row_idxs, col_idx] = np.nan
+        assert not _mmu_core.all_finite(arr)
+
+        # with infty
+        arr = np.arange(100, dtype=dtype_).reshape((10, 10))[:, 1:4]
+        col_idx = np.random.randint(1, 3, size=1)
+        row_idxs = np.random.randint(0, 10, size=2)
+        arr[row_idxs, col_idx] = np.infty
+        assert not _mmu_core.all_finite(arr)
+
+        # with both infty
+        arr = np.arange(100, dtype=dtype_).reshape((10, 10))[:, 1:4]
+        col_idx = np.random.randint(1, 3, size=1)
+        row_idxs = np.random.randint(0, 10, size=2)
+        arr[row_idxs, col_idx] = np.infty
+        col_idx = np.random.randint(1, 3, size=1)
+        row_idxs = np.random.randint(0, 10, size=2)
+        arr[row_idxs, col_idx] = np.nan
+        assert not _mmu_core.all_finite(arr)
+
+
+def test_all_finite_non_contiguous_not_aligned():
+    arr = create_unaligned_array(np.int64).reshape((10, 10))[:, 1:4]
+    assert _mmu_core.all_finite(arr)
+
+    arr = create_unaligned_array(np.float64).reshape((10, 10))[:, 1:4]
+    col_idx = np.random.randint(1, 3, size=1)
+    row_idxs = np.random.randint(0, 10, size=2)
+    arr[row_idxs, col_idx] = np.nan
+    assert not _mmu_core.all_finite(arr)
 
 
 def test_is_well_behaved_finite_int_t():
