@@ -80,11 +80,11 @@ inline void check_equal_shape(
     const py::array_t<T>& x, const py::array_t<V>& y,
     const std::string& x_name, const std::string& y_name
 ) {
-    size_t x_dim = x.ndim();
-    size_t y_dim = y.ndim();
+    int x_dim = x.ndim();
+    int y_dim = y.ndim();
     int pass = 0;
     if (x_dim == y_dim) {
-        for (size_t i = 0; i < x_dim; i++) {
+        for (int i = 0; i < x_dim; i++) {
             pass += x.shape(i) == y.shape(i);
         }
     }
@@ -145,7 +145,7 @@ inline bool is_correct_shape_order(
     const py::array_t<T>& arr, ssize_t expected
 ) {
     ssize_t n_dim = arr.ndim();
-    bool state = true;
+    bool state = false;
     if (n_dim == 1 && arr.size() == expected) {
         state = npy::is_c_contiguous(arr);
     } else if (n_dim == 2) {
@@ -155,14 +155,7 @@ inline bool is_correct_shape_order(
             state = is_f_contiguous(arr);
         }
     }
-    // if (!state) {
-    //     throw std::runtime_error(
-    //         "``"
-    //         + name
-    //         + "`` should be C-contiguous and have shape (n, 4)"
-    //         + " or F-contiguous with shape (4, n)"
-    //     );
-    // }
+    return state;
 }  // check_shape_order
 
 
