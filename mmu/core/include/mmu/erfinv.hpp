@@ -34,10 +34,16 @@ namespace details {
 template <typename T, isFloat<T> = true>
 inline double erfinv(T x) {
 	// special cases
-	if (std::isnan(x) || x <= -1 || x >= 1) {
-		if (x == -1 || x == 1) {
-			return std::numeric_limits<double>::infinity();
-		}
+    constexpr double epsilon = std::numeric_limits<double>::epsilon();
+    // x == 1
+    if (abs(x - 1.) < epsilon) {
+		return std::numeric_limits<double>::infinity();
+    }
+    // x == -1
+	if(abs(x + 1.) < epsilon) {
+		return -1 * std::numeric_limits<double>::infinity();
+	}
+	if (std::isnan(x) || x < -1.0 || x > 1.0) {
 		return std::numeric_limits<double>::signaling_NaN();
 	}
 
@@ -102,20 +108,20 @@ inline double erfinv(T x) {
 
     double result, r, z1, z2;
 	if (x <= 0.85) { // |x| <= 0.85
-		r = 0.180625 - 0.25*x*x;
-		z1 = ((((((a7*r+a6)*r+a5)*r+a4)*r+a3)*r+a2)*r+a1)*r + a0;
-		z2 = ((((((b7*r+b6)*r+b5)*r+b4)*r+b3)*r+b2)*r+b1)*r + b0;
+		r = 0.180625 - 0.25 * x * x;
+		z1 = ((((((a7 * r + a6) * r + a5) * r + a4) * r + a3) * r + a2) * r + a1) * r + a0;
+		z2 = ((((((b7 * r + b6) * r + b5) * r + b4) * r + b3) * r + b2) * r + b1) * r + b0;
 		result = (x * z1) / z2;
 	} else {
 		r = std::sqrt(ln2 - std::log(1.0 - x));
 		if (r <= 5.0) {
 			r -= 1.6;
-			z1 = ((((((c7*r+c6)*r+c5)*r+c4)*r+c3)*r+c2)*r+c1)*r + c0;
-			z2 = ((((((d7*r+d6)*r+d5)*r+d4)*r+d3)*r+d2)*r+d1)*r + d0;
+			z1 = ((((((c7 * r + c6) * r + c5) * r + c4) * r + c3) * r + c2) * r + c1) * r + c0;
+			z2 = ((((((d7 * r + d6) * r + d5) * r + d4) * r + d3) * r + d2) * r + d1) * r + d0;
 		} else {
 			r -= 5.0;
-			z1 = ((((((e7*r+e6)*r+e5)*r+e4)*r+e3)*r+e2)*r+e1)*r + e0;
-			z2 = ((((((f7*r+f6)*r+f5)*r+f4)*r+f3)*r+f2)*r+f1)*r + f0;
+			z1 = ((((((e7 * r + e6) * r + e5) * r + e4) * r + e3) * r + e2) * r + e1) * r + e0;
+			z2 = ((((((f7 * r + f6) * r + f5) * r + f4) * r + f3) * r + f2) * r + f1) * r + f0;
 		}
 		result = z1 / z2;
 	}

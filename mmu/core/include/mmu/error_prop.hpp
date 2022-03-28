@@ -28,14 +28,16 @@ namespace details {
 
 /* Compute PPF of Normal distribution
  *
+ * Parameters
+ * ----------
  * mu : mean of distribution
  * sigma : std dev of distribution
- * alpha : percentile to compue
+ * p : percentile to compue
  */
 template <typename T, isFloat<T> = true>
-inline double norm_ppf(const T mu, const T sigma, const T alpha) {
+inline double norm_ppf(const T mu, const T sigma, const T p) {
     const double sqrt2 = 1.414213562373095048801688724209698079;
-    return mu + sigma * sqrt2 * erfinv<T>(2 * alpha - 1);
+    return mu + sigma * sqrt2 * erfinv<T>(2 * p - 1);
 }
 
 /* This function computes the uncertainty on the precision-recall curve
