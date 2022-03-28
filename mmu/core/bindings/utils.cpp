@@ -27,35 +27,35 @@ void bind_all_finite(py::module &m) {
         bool
             true if all values are finite
         )pbdoc",
-        py::arg("arr")
+        py::arg("arr").noconvert()
     );
     m.def(
         "all_finite",
         [](const py::array_t<int64_t>& arr) {
             return npy::all_finite<int64_t>(arr);
         },
-        py::arg("arr")
+        py::arg("arr").noconvert()
     );
     m.def(
         "all_finite",
         [](const py::array_t<int>& arr) {
             return npy::all_finite<int>(arr);
         },
-        py::arg("arr")
+        py::arg("arr").noconvert()
     );
     m.def(
         "all_finite",
         [](const py::array_t<float>& arr) {
             return npy::all_finite<float>(arr);
         },
-        py::arg("arr")
+        py::arg("arr").noconvert()
     );
     m.def(
         "all_finite",
         [](const py::array_t<bool>& arr) {
             return npy::all_finite<bool>(arr);
         },
-        py::arg("arr")
+        py::arg("arr").noconvert()
     );
 }
 
@@ -77,35 +77,35 @@ void bind_is_well_behaved_finite(py::module &m) {
         bool
             true if all values are finite
         )pbdoc",
-        py::arg("arr")
+        py::arg("arr").noconvert()
     );
     m.def(
         "is_well_behaved_finite",
         [](const py::array_t<int64_t>& arr) {
             return npy::is_well_behaved_finite<int64_t>(arr);
         },
-        py::arg("arr")
+        py::arg("arr").noconvert()
     );
     m.def(
         "is_well_behaved_finite",
         [](const py::array_t<int>& arr) {
             return npy::is_well_behaved_finite<int>(arr);
         },
-        py::arg("arr")
+        py::arg("arr").noconvert()
     );
     m.def(
         "is_well_behaved_finite",
         [](const py::array_t<float>& arr) {
             return npy::is_well_behaved_finite<float>(arr);
         },
-        py::arg("arr")
+        py::arg("arr").noconvert()
     );
     m.def(
         "is_well_behaved_finite",
         [](const py::array_t<bool>& arr) {
             return npy::is_well_behaved_finite<bool>(arr);
         },
-        py::arg("arr")
+        py::arg("arr").noconvert()
     );
 }
 
