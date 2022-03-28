@@ -3,6 +3,7 @@
  */
 #include <pybind11/pybind11.h>
 #include "numpy_bindings.hpp"
+#include "math_bindings.hpp"
 
 namespace py = pybind11;
 
@@ -18,6 +19,8 @@ PYBIND11_MODULE(_mmu_core_tests, m) {
     bind_zero_array_fixed(m);
     bind_allocate_confusion_matrix(m);
     bind_allocate_n_confusion_matrices(m);
+    bind_erfinv(m);
+    bind_norm_ppf(m);
 }
 
 }  // namespace mmu_tests
