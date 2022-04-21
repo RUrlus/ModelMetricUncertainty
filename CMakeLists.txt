@@ -27,9 +27,15 @@ OPTION(MMU_ENABLE_INTERNAL_TESTS OFF)
 SET(DEFAULT_BUILD_TYPE Release)
 INCLUDE(BuildType)
 
+IF (MMU_DEV_MODE)
+    SET(MMU_ENABLE_INTERNAL_TESTS ON)
+ENDIF()
+
 ################################################################################
 #                               DEPENDENCIES                                   #
 ################################################################################
+INCLUDE(GNUInstallDirs)
+
 FIND_PACKAGE(Python3 COMPONENTS Development NumPy REQUIRED)
 # Needed to ensure the same Python executable is found by Pybind11
 IF (NOT DEFINED PYTHON_EXECUTABLE)

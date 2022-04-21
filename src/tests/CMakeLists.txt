@@ -6,6 +6,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
 SET(MODNAME "_mmu_core_tests")
 SET(MMU_EXTENSION_TEST_PATH "${PROJECT_SOURCE_DIR}/src/tests")
 
+MESSAGE(STATUS "MMU: Building tests")
 
 pybind11_add_module(${MODNAME}
     MODULE
