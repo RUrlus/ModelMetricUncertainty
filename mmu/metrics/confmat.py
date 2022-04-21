@@ -7,9 +7,9 @@ from mmu.lib import _core
 from mmu.commons import check_array
 
 _CONF_MAT_SUPPORTED_DTYPES = {
-    'y': [np.bool_, np.int32, np.int64, np.float32, np.float64],
-    'yhat': {np.bool_, np.int32, np.int64, np.float32, np.float64},
-    'score': {np.float32, np.float64}
+    'y': ['bool', 'int32', 'int64', 'float32', 'float64'],
+    'yhat': ['bool', 'int32', 'int64', 'float32', 'float64'],
+    'score': ['float32', 'float64']
 }
 
 
@@ -98,7 +98,6 @@ def confusion_matrix(y, yhat=None, score=None, threshold=0.5, return_df=False):
     # condition checks
     y = check_array(
         y,
-        name='y',
         max_dim=1,
         dtypes=_CONF_MAT_SUPPORTED_DTYPES['y'],
     )
@@ -106,7 +105,6 @@ def confusion_matrix(y, yhat=None, score=None, threshold=0.5, return_df=False):
     if score is not None:
         score = check_array(
             score,
-            'score',
             max_dim=1,
             dtype=_CONF_MAT_SUPPORTED_DTYPES['score'],
         )
@@ -115,20 +113,18 @@ def confusion_matrix(y, yhat=None, score=None, threshold=0.5, return_df=False):
         if score.size != y.size:
             raise ValueError('`score` and `y` must have equal length.')
         conf_mat = _core.confusion_matrix_score(y, score, threshold)
-    else:
-        if yhat is not None:
-            yhat = check_array(
-                yhat,
-                'yhat',
-                max_dim=1,
-                dtype=_CONF_MAT_SUPPORTED_DTYPES['yhat'],
-            )
-        else:
-            raise TypeError("`yhat` must not be None if `score` is None")
+    elif yhat is not None:
+        yhat = check_array(
+            yhat,
+            max_dim=1,
+            dtype=_CONF_MAT_SUPPORTED_DTYPES['yhat'],
+        )
         if yhat.size != y.size:
             raise ValueError('`yhat` and `y` must have equal length.')
 
         conf_mat = _core.confusion_matrix(y, yhat)
+    else:
+        raise TypeError("`yhat` must not be None if `score` is None")
 
     if return_df:
         return confusion_matrix_to_dataframe(conf_mat)
