@@ -135,7 +135,7 @@ inline void confusion_matrix(
     int64_t* __restrict const conf_mat
 ) {
     for (size_t i = 0; i < n_obs; i++) {
-        conf_mat[static_cast<bool>(*y) * 2 + (*score >= threshold)]++;
+        conf_mat[static_cast<bool>(*y) * 2 + isgreaterequal(*score, threshold)]++;
         y++;
         score++;
     }
@@ -167,7 +167,7 @@ inline void confusion_matrix(
 ) {
     static constexpr T1 epsilon = std::numeric_limits<T1>::epsilon();
     for (size_t i = 0; i < n_obs; i++) {
-        conf_mat[(*y > epsilon) * 2 + (*score >= threshold)]++; score++; y++;
+        conf_mat[(*y > epsilon) * 2 + isgreaterequal(*score, threshold)]++; score++; y++;
     }
 }
 
