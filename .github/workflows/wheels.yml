@@ -2,40 +2,20 @@ name: Wheels
 
 on:
   workflow_dispatch:
-  pull_request:
-    branches:
-      - main
-      - unstable
-  push:
-    branches:
-     - main
   release:
     types:
       - published
 
 jobs:
-  pre_job:
-    # continue-on-error: true # Uncomment once integration is finished
-    runs-on: ubuntu-latest
-    # Map a step output to a job output
-    outputs:
-      should_skip: ${{ steps.skip_check.outputs.should_skip }}
-    steps:
-      - id: skip_check
-        uses: fkirc/skip-duplicate-actions@master
-        with:
-          # All of these options are optional, so you can remove them if you are happy with the defaults
-          cancel_others: 'true'
-          do_not_skip: '["pull_request", "workflow_dispatch"]'
   build_sdist:
     name: Build SDist
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: true
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v3
 
     - name: Install deps
       run: python -m pip install twine build
@@ -46,7 +26,7 @@ jobs:
     - name: Check metadata
       run: twine check dist/*
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         path: dist/*.tar.gz
 
@@ -60,24 +40,26 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: true
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v3
 
     - name: Install cibuildwheel
       run: python -m pip install cibuildwheel
 
-    - name: Install tests
-      run: pip install {project}tests/.
-
     - name: Build wheel
       run: python -m cibuildwheel --output-dir wheelhouse
       env:
-        CIBW_ENVIRONMENT: MACOSX_DEPLOYMENT_TARGET=10.13
-        CIBW_BUILD: 'cp37-* cp38-* cp39-*'
-        CIBW_TEST_COMMAND: pytest {project}/tests/api
+        CIBW_ENVIRONMENT: MACOSX_DEPLOYMENT_TARGET="10.13" CMAKE_ARGS="-DMMU_BUILDING_WHEELS=ON"
+        CIBW_BUILD: 'cp37-* cp38-* cp39-* cp310-*'
+        CIBW_TEST_EXTRAS: test
+        CIBW_TEST_COMMAND: python -m pytest {project}/tests/test_diptest.py
+        CIBW_ARCHS: "auto64"
+        CIBW_ARCHS_MACOS: "x86_64 arm64"
+        # Skip 32-bit builds
+        CIBW_SKIP: "*-win32 *-manylinux_i686 *-musllinux_x86_64"
 
     - name: Show files
       run: ls -lh wheelhouse
@@ -88,7 +70,7 @@ jobs:
       shell: bash
 
     - name: Upload wheels
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         path: wheelhouse/*.whl
 
@@ -99,14 +81,15 @@ jobs:
     if: github.event_name == 'release' && github.event.action == 'published'
 
     steps:
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v3
 
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v3
       with:
         name: artifact
         path: dist
 
-    - uses: pypa/gh-action-pypi-publish@v1.4.1
+    - uses: pypa/gh-action-pypi-publish@v1.5.0
       with:
+        skip_existing: true
         user: __token__
-        password: ${{ secrets.pypi_password }}
+        password: ${{ secrets.PYPI_API_TOKEN }}
