@@ -2,7 +2,8 @@
  * Copyright 2021 Ralph Urlus
  */
 
-#include "utils.hpp"
+#include <mmu/api/utils.hpp>
+#include <mmu/bindings/utils.hpp>
 
 namespace py = pybind11;
 

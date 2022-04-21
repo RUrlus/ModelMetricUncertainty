@@ -6,16 +6,16 @@
  *
  * Adapted from: https://github.com/golang/go/blob/master/src/math/erfinv.go#L7
  */
-#ifndef MMU_CORE_INCLUDE_MMU_ERFINV_HPP_
-#define MMU_CORE_INCLUDE_MMU_ERFINV_HPP_
+#ifndef INCLUDE_MMU_CORE_ERFINV_HPP_
+#define INCLUDE_MMU_CORE_ERFINV_HPP_
 
 #include <cmath>      // for sqrt
 #include <limits>     // for numeric_limits
 
-#include <mmu/common.hpp>
+#include <mmu/core/common.hpp>
 
 namespace mmu {
-namespace details {
+namespace core {
 
 
 /* Inverse of the floating-point error function.
@@ -132,7 +132,7 @@ inline double erfinv(T x) {
 	return result;
 }
 
-}  // namespace details
+}  // namespace core
 }  // namespace mmu
 
-#endif  // MMU_CORE_INCLUDE_MMU_ERFINV_HPP_
+#endif  // INCLUDE_MMU_CORE_ERFINV_HPP_

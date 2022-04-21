@@ -2,12 +2,12 @@
  *
  * Copyright 2021 Ralph Urlus
  */
-#ifndef MMU_CORE_BINDINGS_METRICS_HPP_
-#define MMU_CORE_BINDINGS_METRICS_HPP_
+#ifndef INCLUDE_MMU_BINDINGS_METRICS_HPP_
+#define INCLUDE_MMU_BINDINGS_METRICS_HPP_
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 
-#include <mmu/metrics.hpp>
+#include <mmu/api/metrics.hpp>
 
 namespace py = pybind11;
 
@@ -23,4 +23,4 @@ void bind_binary_metrics_confusion(py::module &m);
 }  // namespace bindings
 }  // namespace mmu
 
-#endif  // MMU_CORE_BINDINGS_METRICS_HPP_
+#endif  // INCLUDE_MMU_BINDINGS_METRICS_HPP_

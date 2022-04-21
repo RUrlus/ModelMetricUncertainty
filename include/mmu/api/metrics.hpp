@@ -1,8 +1,8 @@
 /* metrics.hpp -- Implementation of binary classification metrics
  * Copyright 2021 Ralph Urlus
  */
-#ifndef MMU_CORE_INCLUDE_MMU_METRICS_HPP_
-#define MMU_CORE_INCLUDE_MMU_METRICS_HPP_
+#ifndef INCLUDE_MMU_API_METRICS_HPP_
+#define INCLUDE_MMU_API_METRICS_HPP_
 
 /* TODO *
  *
@@ -22,142 +22,18 @@
 #include <stdexcept>  // for runtime_error
 #include <type_traits>  // for enable_if_t
 
-#include <mmu/common.hpp>
-#include <mmu/numpy.hpp>
-#include <mmu/confusion_matrix.hpp>
+#include <mmu/core/common.hpp>
+#include <mmu/core/confusion_matrix.hpp>
+#include <mmu/core/metrics.hpp>
+
+#include <mmu/api/numpy.hpp>
+#include <mmu/api/confusion_matrix.hpp>
 
 
 namespace py = pybind11;
 
 namespace mmu {
-namespace details {
-
-inline void precision_recall(
-    int64_t* const conf_mat, double* const metrics, const double fill = 0.
-) {
-    // real true/positive observations [FN + TP]
-    int64_t iP = conf_mat[2] + conf_mat[3];
-    bool P_nonzero = iP > 0;
-    auto P = static_cast<double>(iP);
-    auto TP = static_cast<double>(conf_mat[3]);
-
-    int64_t iTP_FP = conf_mat[3] + conf_mat[1];
-    bool TP_FP_nonzero = iTP_FP > 0;
-
-    // metrics[0]  - pos.precision aka Positive Predictive Value (PPV)
-    metrics[0] = TP_FP_nonzero ? TP / static_cast<double>(iTP_FP) : fill;
-
-    // metrics[1]  - pos.recall aka True Positive Rate (TPR) aka Sensitivity
-    metrics[1] = P_nonzero ? TP / P : fill;
-}  // binary_metrics
-
-/* Sets the following values at metrics index:
- *    0 - neg.precision aka Negative Predictive Value
- *    1 - pos.precision aka Positive Predictive Value
- *    2 - neg.recall aka True Negative Rate & Specificity
- *    3 - pos.recall aka True Positive Rate aka Sensitivity
- *    4 - neg.f1 score
- *    5 - pos.f1 score
- *    6 - False Positive Rate
- *    7 - False Negative Rate
- *    8 - Accuracy
- *    9 - MCC
- */
-template<class T, std::enable_if_t<std::is_integral<T>::value, int> = 0>
-inline void binary_metrics(
-    T* const conf_mat, double* const metrics, const double fill = 0.
-) {
-    // total observations
-    auto K = static_cast<double>(
-        conf_mat[0]
-        + conf_mat[1]
-        + conf_mat[2]
-        + conf_mat[3]
-    );
-
-    /*
-     *                  pred
-     *                0     1
-     *  actual  0    TN    FP
-     *          1    FN    TP
-     *
-     *  Flattened we have:
-     *  0 TN
-     *  1 FP
-     *  2 FN
-     *  3 TP
-     *
-     */
-
-    // real true/positive observations [FN + TP]
-    int64_t iP = conf_mat[2] + conf_mat[3];
-    bool P_nonzero = iP > 0;
-    auto P = static_cast<double>(iP);
-    // real false/negative observations [TN + FP]
-    int64_t iN = conf_mat[0] + conf_mat[1];
-    bool N_nonzero = iN > 0;
-    auto N = static_cast<double>(iN);
-
-    auto TN = static_cast<double>(conf_mat[0]);
-    auto FP = static_cast<double>(conf_mat[1]);
-    auto FN = static_cast<double>(conf_mat[2]);
-    auto TP = static_cast<double>(conf_mat[3]);
-
-    int64_t iTP_FP = conf_mat[3] + conf_mat[1];
-    bool TP_FP_nonzero = iTP_FP > 0;
-    auto TP_FP = static_cast<double>(iTP_FP);
-
-    auto TP_TN = static_cast<double>(conf_mat[3] + conf_mat[0]);
-
-    int64_t iTN_FN = conf_mat[0] + conf_mat[2];
-    bool TN_FN_nonzero = iTN_FN > 0;
-    auto TN_FN = static_cast<double>(iTN_FN);
-    auto FP_FN = static_cast<double>(conf_mat[1] + conf_mat[2]);
-
-    double itm = 0.0;
-    double itm_alt = 0.0;
-    // metrics 0 - neg.precision aka Negative Predictive Value (NPV)
-    metrics[0] = TN_FN_nonzero ? TN / TN_FN : fill;
-
-    // metrics[1]  - pos.precision aka Positive Predictive Value (PPV)
-    metrics[1] = TP_FP_nonzero ? TP / TP_FP : fill;
-
-    // metrics[2]  - neg.recall aka True Negative Rate (TNR) & Specificity
-    // metrics[6]  - False positive Rate (FPR)
-    itm = TN / N;
-    metrics[2] = N_nonzero ? itm : fill;
-    metrics[6] = N_nonzero ? (1 - itm) : 1.0;
-
-    // metrics[3]  - pos.recall aka True Positive Rate (TPR) aka Sensitivity
-    // metrics[7]  - False Negative Rate (FNR)
-    itm = TP / P;
-    metrics[3] = P_nonzero ? itm : fill;
-    metrics[7] = P_nonzero ? (1 - itm) : 1.0;
-
-    // metrics[4]  - Negative F1 score
-    itm_alt = 2 * TN;
-    itm = itm_alt / (itm_alt + FP_FN);
-    metrics[4] = (N_nonzero || TN_FN_nonzero) ? itm : fill;
-
-    // metrics[5]  - Positive F1 score
-    itm_alt = 2 * TP;
-    itm = itm_alt / (itm_alt + FP_FN);
-    metrics[5] = (P_nonzero || TP_FP_nonzero) ? itm : fill;
-
-    // metrics[8]  - Accuracy
-    metrics[8] = TP_TN / K;
-
-    // metrics[9]  - MCC
-    static constexpr double limit = std::numeric_limits<double>::epsilon();
-    itm = TP_FP * P * N * TN_FN;
-    metrics[9] = (itm > limit) ? (TP * TN - FP * FN) / std::sqrt(itm) : 0.0;
-}  // binary_metrics
-
-
-}  // namespace details
-
-
-namespace bindings {
+namespace api {
 
 /* Compute the binary metrics given true labels y and estimated labels yhat.
  *
@@ -185,7 +61,7 @@ inline py::tuple binary_metrics(
     auto conf_mat = npy::allocate_confusion_matrix<int64_t>();
     int64_t* const cm_ptr = npy::get_data(conf_mat);;
 
-    details::confusion_matrix<T1, T2>(
+    core::confusion_matrix<T1, T2>(
         n_obs, npy::get_data(y), npy::get_data(yhat), cm_ptr
     );
 
@@ -193,7 +69,7 @@ inline py::tuple binary_metrics(
     double* const metrics_ptr = npy::get_data(metrics);
 
     // compute metrics
-    details::binary_metrics(cm_ptr, metrics_ptr, fill);
+    core::binary_metrics(cm_ptr, metrics_ptr, fill);
     return py::make_tuple(conf_mat, metrics);
 }
 
@@ -226,7 +102,7 @@ inline py::tuple binary_metrics_score(
     const size_t n_obs = std::min(y.size(), score.size());
     auto conf_mat = npy::allocate_confusion_matrix<int64_t>();
     int64_t* const cm_ptr = npy::get_data(conf_mat);
-    details::confusion_matrix<T1, T2>(
+    core::confusion_matrix<T1, T2>(
         n_obs, npy::get_data(y), npy::get_data(score), threshold, cm_ptr
     );
 
@@ -234,7 +110,7 @@ inline py::tuple binary_metrics_score(
     double* const metrics_ptr = npy::get_data(metrics);
 
     // compute metrics
-    details::binary_metrics(cm_ptr, metrics_ptr, fill);
+    core::binary_metrics(cm_ptr, metrics_ptr, fill);
     return py::make_tuple(conf_mat, metrics);
 }
 
@@ -279,7 +155,7 @@ py::array_t<double> binary_metrics_confusion(
         p_cm_ptr = cm_ptr + (i * 4);
         p_metrics_ptr = metrics_ptr + (i * 10);
         // compute metrics
-        details::binary_metrics<T>(p_cm_ptr, p_metrics_ptr, fill);
+        core::binary_metrics<T>(p_cm_ptr, p_metrics_ptr, fill);
     }
     return metrics;
 }
@@ -339,11 +215,11 @@ inline py::tuple binary_metrics_thresholds(
         p_cm_ptr = cm_ptr + (i * 4);
         p_metrics_ptr = metrics_ptr + (i * 10);
         // fill confusion matrix
-        details::confusion_matrix<T1, T2>(
+        core::confusion_matrix<T1, T2>(
             n_obs, y_ptr, score_ptr, threshold_ptr[i], p_cm_ptr
         );
         // compute metrics
-        details::binary_metrics(p_cm_ptr, p_metrics_ptr, fill);
+        core::binary_metrics(p_cm_ptr, p_metrics_ptr, fill);
     }
     return py::make_tuple(conf_mat, metrics);
 }
@@ -417,11 +293,11 @@ inline py::tuple binary_metrics_runs(
         p_cm_ptr = cm_ptr + (i * 4);
         p_metrics_ptr = metrics_ptr + (i * 10);
         // fill confusion matrix
-        details::confusion_matrix<T1, T2>(
+        core::confusion_matrix<T1, T2>(
             n_obs, p_y_ptr, p_score_ptr, threshold, p_cm_ptr
         );
         // compute metrics
-        details::binary_metrics(p_cm_ptr, p_metrics_ptr, fill);
+        core::binary_metrics(p_cm_ptr, p_metrics_ptr, fill);
     }
     return py::make_tuple(conf_mat, metrics);
 }
@@ -504,7 +380,7 @@ inline py::tuple binary_metrics_runs_thresholds(
             i_cm_ptr = o_cm_ptr + (i * 4);
             i_metrics_ptr = o_metrics_ptr + (i * 10);
             // fill confusion matrix
-            details::confusion_matrix<T1, T2>(
+            core::confusion_matrix<T1, T2>(
                 o_n_obs,
                 o_y_ptr,
                 o_score_ptr,
@@ -512,13 +388,13 @@ inline py::tuple binary_metrics_runs_thresholds(
                 i_cm_ptr
             );
             // compute metrics
-            details::binary_metrics(i_cm_ptr, i_metrics_ptr, fill);
+            core::binary_metrics(i_cm_ptr, i_metrics_ptr, fill);
         }
     }
     return py::make_tuple(conf_mat, metrics);
 }
 
-}  // namespace bindings
+}  // namespace api
 }  // namespace mmu
 
-#endif  // MMU_CORE_INCLUDE_MMU_METRICS_HPP_
+#endif  // INCLUDE_MMU_API_METRICS_HPP_

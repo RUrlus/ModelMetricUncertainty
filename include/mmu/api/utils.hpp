@@ -1,21 +1,22 @@
 /* metrics.hpp -- Implementation of binary classification metrics
  * Copyright 2021 Ralph Urlus
  */
-#ifndef MMU_CORE_INCLUDE_MMU_UTILS_HPP_
-#define MMU_CORE_INCLUDE_MMU_UTILS_HPP_
+#ifndef INCLUDE_MMU_API_UTILS_HPP_
+#define INCLUDE_MMU_API_UTILS_HPP_
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 
 #include <string>
 
-#include <mmu/common.hpp>
-#include <mmu/numpy.hpp>
+#include <mmu/core/common.hpp>
+#include <mmu/api/numpy.hpp>
 
 namespace py = pybind11;
 
 
 namespace mmu {
+namespace api {
 namespace details {
 
 /* Check if arr is 1D or two 1D with the second axis containing a single index.
@@ -160,6 +161,7 @@ inline bool is_correct_shape_order(
 
 
 }  // namespace details
+}  // namespace api
 }  // namespace mmu
 
-#endif  // MMU_CORE_INCLUDE_MMU_UTILS_HPP_
+#endif  // INCLUDE_MMU_API_UTILS_HPP_

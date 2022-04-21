@@ -2,8 +2,8 @@
  * Copyright 2021 Ralph Urlus
  */
 #include <pybind11/pybind11.h>
-#include "numpy_bindings.hpp"
-#include "math_bindings.hpp"
+#include <mmu/tests/math.hpp>
+#include <mmu/tests/numpy.hpp>
 
 namespace py = pybind11;
 

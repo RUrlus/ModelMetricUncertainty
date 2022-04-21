@@ -1,8 +1,8 @@
 /* numpy.hpp -- Utility functions used to inferace with Numpy arrays
  * Copyright 2021 Ralph Urlus
  */
-#ifndef MMU_CORE_INCLUDE_MMU_NUMPY_HPP_
-#define MMU_CORE_INCLUDE_MMU_NUMPY_HPP_
+#ifndef INCLUDE_MMU_API_NUMPY_HPP_
+#define INCLUDE_MMU_API_NUMPY_HPP_
 
 /* pybind11 include required even if not explicitly used
  * to prevent link with pythonXX_d.lib on Win32
@@ -22,7 +22,7 @@
 #include <utility> // for swap
 
 
-#include <mmu/common.hpp>
+#include <mmu/core/common.hpp>
 
 namespace py = pybind11;
 
@@ -281,4 +281,4 @@ inline bool is_well_behaved_finite(const py::array_t<T>& arr) {
 }  // namespace npy
 }  // namespace mmu
 
-#endif  // MMU_CORE_INCLUDE_MMU_NUMPY_HPP_
+#endif  // INCLUDE_MMU_API_NUMPY_HPP_

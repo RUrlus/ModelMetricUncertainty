@@ -1,19 +1,8 @@
 /* confusion_matrix.hpp -- Implementation of binary classification confusion matrix
  * Copyright 2021 Ralph Urlus
  */
-#ifndef MMU_CORE_INCLUDE_MMU_CONFUSION_MATRIX_HPP_
-#define MMU_CORE_INCLUDE_MMU_CONFUSION_MATRIX_HPP_
-
-/* TODO *
- *
- * - Add function over runs for yhat
- * - Add function over runs for score with single threshold
- * - Add function over runs for score over multiple thresholds
- * TODO */
-
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-#include <pybind11/stl.h>
+#ifndef INCLUDE_MMU_CORE_CONFUSION_MATRIX_HPP_
+#define INCLUDE_MMU_CORE_CONFUSION_MATRIX_HPP_
 
 #include <cmath>
 #include <string>
@@ -22,10 +11,7 @@
 #include <algorithm>
 #include <type_traits>
 
-#include <mmu/common.hpp>
-#include <mmu/numpy.hpp>
-
-namespace py = pybind11;
+#include <mmu/core/common.hpp>
 
 /*                  pred
  *                0     1
@@ -40,7 +26,7 @@ namespace py = pybind11;
  */
 
 namespace mmu {
-namespace details {
+namespace core {
 
 /* Fill binary confusion matrix based on true labels y and estimated labels yhat
  *
@@ -59,9 +45,9 @@ namespace details {
  */
 inline void confusion_matrix(
     const size_t n_obs,
-    bool* y,
-    bool* yhat,
-    int64_t* const conf_mat
+    bool* __restrict y,
+    bool* __restrict yhat,
+    int64_t* __restrict const conf_mat
 ) {
     for (size_t i = 0; i < n_obs; i++) {
         conf_mat[*y * 2 + *yhat]++; yhat++; y++;
@@ -86,9 +72,9 @@ inline void confusion_matrix(
 template<typename T1, typename T2, isInt<T1> = true, isInt<T2> = true>
 inline void confusion_matrix(
     const size_t n_obs,
-    T1* y,
-    T2* yhat,
-    int64_t* const conf_mat
+    T1* __restrict y,
+    T2* __restrict yhat,
+    int64_t* __restrict const conf_mat
 ) {
     for (size_t i = 0; i < n_obs; i++) {
         conf_mat[static_cast<bool>(*y) * 2 + static_cast<bool>(*yhat)]++; yhat++; y++;
@@ -113,9 +99,9 @@ inline void confusion_matrix(
 template<typename T1, typename T2, isFloat<T1> = true, isFloat<T2> = true>
 inline void confusion_matrix(
     const size_t n_obs,
-    T1* y,
-    T2* yhat,
-    int64_t* const conf_mat
+    T1* __restrict y,
+    T2* __restrict yhat,
+    int64_t* __restrict const conf_mat
 ) {
     static constexpr T1 epsilon_T1 = std::numeric_limits<T1>::epsilon();
     static constexpr T2 epsilon_T2 = std::numeric_limits<T2>::epsilon();
@@ -143,10 +129,10 @@ inline void confusion_matrix(
 template<typename T1, typename T2, isInt<T1> = true, isFloat<T2> = true>
 inline void confusion_matrix(
     const size_t n_obs,
-    T1* y,
-    T2* score,
+    T1* __restrict y,
+    T2* __restrict score,
     const T2 threshold,
-    int64_t* const conf_mat
+    int64_t* __restrict const conf_mat
 ) {
     for (size_t i = 0; i < n_obs; i++) {
         conf_mat[static_cast<bool>(*y) * 2 + (*score >= threshold)]++;
@@ -174,90 +160,18 @@ inline void confusion_matrix(
 template<typename T1, typename T2, isFloat<T1> = true, isFloat<T2> = true>
 inline void confusion_matrix(
     const size_t n_obs,
-    T1* y,
-    T2* score,
+    T1* __restrict y,
+    T2* __restrict score,
     const T2 threshold,
-    int64_t* const conf_mat
+    int64_t* __restrict const conf_mat
 ) {
     static constexpr T1 epsilon = std::numeric_limits<T1>::epsilon();
     for (size_t i = 0; i < n_obs; i++) {
         conf_mat[(*y > epsilon) * 2 + (*score >= threshold)]++; score++; y++;
     }
 }
-}  // namespace details
 
-
-namespace bindings {
-
-/* Compute the confusion matrix given true labels y and estimated labels yhat.
- *
- * --- Parameters ---
- * - y : true labels
- * - yhat : estimated labels
- *
- * --- Returns ---
- * - confusion matrix
- */
-template <typename T1, typename T2>
-py::array_t<int64_t> confusion_matrix(
-    const py::array_t<T1>& y,
-    const py::array_t<T2>& yhat
-) {
-    // condition checks
-    if (!(npy::is_well_behaved(y) && npy::is_well_behaved(yhat))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
-    }
-
-    // guard against buffer overruns
-    const size_t n_obs = std::min(y.size(), yhat.size());
-
-    auto conf_mat = npy::allocate_confusion_matrix<int64_t>();
-    int64_t* const cm_ptr = npy::get_data(conf_mat);
-
-    auto y_ptr = npy::get_data(y);
-    auto yhat_ptr = npy::get_data(yhat);
-    details::confusion_matrix<T1, T2>(n_obs, y_ptr, yhat_ptr, cm_ptr);
-
-    return conf_mat;
-}
-
-/* Compute the confusion matrix given true labels y and classifier scores.
- *
- * --- Parameters ---
- * - y : true labels
- * - score : classifier scores
- * - threshold : inclusive classification threshold
- *
- * --- Returns ---
- * - confusion matrix
- */
-template <typename T1, typename T2, isFloat<T2> = true>
-py::array_t<int64_t> confusion_matrix(
-    const py::array_t<T1>& y,
-    const py::array_t<T2>& score,
-    const T2 threshold
-) {
-    // condition checks
-    if (!(npy::is_well_behaved(y) && npy::is_well_behaved(score))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
-    }
-
-    // guard against buffer overruns
-    const size_t n_obs = std::min(y.size(), score.size());
-
-    auto conf_mat = npy::allocate_confusion_matrix<int64_t>();
-    int64_t* const cm_ptr = npy::get_data(conf_mat);
-
-    T1* y_ptr = npy::get_data(y);
-    T2* score_ptr = npy::get_data<T2>(score);
-    details::confusion_matrix<T1, T2>(
-        n_obs, y_ptr, score_ptr, threshold, cm_ptr
-    );
-
-    return conf_mat;
-}
-
-}  // namespace bindings
+}  // namespace core
 }  // namespace mmu
 
-#endif  // MMU_CORE_INCLUDE_MMU_CONFUSION_MATRIX_HPP_
+#endif  // INCLUDE_MMU_CORE_CONFUSION_MATRIX_HPP_

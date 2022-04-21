@@ -1,8 +1,8 @@
 /* common.hpp -- Utility functions and macros used in multiple headers.
  * Copyright 2021 Ralph Urlus
  */
-#ifndef MMU_CORE_INCLUDE_MMU_COMMON_HPP_
-#define MMU_CORE_INCLUDE_MMU_COMMON_HPP_
+#ifndef INCLUDE_MMU_CORE_COMMON_HPP_
+#define INCLUDE_MMU_CORE_COMMON_HPP_
 
 #define UNUSED(x) (void)(x)
 
@@ -27,10 +27,14 @@ typedef SSIZE_T ssize_t;
 
 #include <type_traits>
 
+namespace mmu {
+
 template<typename T>
 using isInt = std::enable_if_t<std::is_integral<T>::value, bool>;
 
 template<typename T>
 using isFloat = std::enable_if_t<std::is_floating_point<T>::value, bool>;
 
-#endif  // MMU_CORE_INCLUDE_MMU_COMMON_HPP_
+}  // namespace mmu
+
+#endif  // INCLUDE_MMU_CORE_COMMON_HPP_

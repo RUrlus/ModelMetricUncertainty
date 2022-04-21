@@ -3,10 +3,10 @@
  */
 #include <pybind11/pybind11.h>
 
-#include "mmu/common.hpp"
-#include "confusion_matrix.hpp"
-#include "metrics.hpp"
-#include "utils.hpp"
+#include <mmu/core/common.hpp>
+#include <mmu/bindings/confusion_matrix.hpp>
+#include <mmu/bindings/metrics.hpp>
+#include <mmu/bindings/utils.hpp>
 
 namespace py = pybind11;
 
@@ -15,7 +15,9 @@ namespace bindings {
 
 PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_confusion_matrix(m);
+    bind_confusion_matrix_runs(m);
     bind_confusion_matrix_score(m);
+    bind_confusion_matrix_score_runs(m);
     bind_binary_metrics(m);
     bind_binary_metrics_score(m);
     bind_binary_metrics_thresholds(m);

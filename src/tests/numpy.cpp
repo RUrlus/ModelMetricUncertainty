@@ -1,15 +1,7 @@
-/* numpy_bindings.hpp -- Bindings to test the numpy utility functions
+/* numpy.cpp -- Bindings to test the numpy utility functions
  * Copyright 2021 Ralph Urlus
  */
-#ifndef MMU_CORE_TESTS_NUMPY_BINDINGS_HPP_
-#define MMU_CORE_TESTS_NUMPY_BINDINGS_HPP_
-
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-
-#include <string>
-#include <mmu/common.hpp>
-#include <mmu/numpy.hpp>
+#include <mmu/tests/numpy.hpp>
 
 namespace py = pybind11;
 
@@ -132,5 +124,3 @@ void bind_allocate_n_confusion_matrices(py::module &m) {
 }
 
 }  // namespace mmu_tests
-
-#endif  // MMU_CORE_TESTS_NUMPY_BINDINGS_HPP_
