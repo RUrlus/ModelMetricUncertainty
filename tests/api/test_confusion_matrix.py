@@ -129,7 +129,7 @@ def test_confusion_matrix_proba():
             y_dtype=y_dtype,
             proba_dtype=proba_dtype
         )
-        yhat = proba > threshold
+        yhat = proba >= threshold
         sk_conf_mat = skm.confusion_matrix(y, yhat)
         conf_mat = mmu.confusion_matrix(
             y, score=proba, threshold=threshold
@@ -145,7 +145,7 @@ def test_confusion_matrix_proba_shapes():
     y_shapes = [y, y[None, :], y[:, None]]
     proba_shapes = [proba, proba[None, :], proba[:, None]]
 
-    yhat = proba > 0.5
+    yhat = proba >= 0.5
     sk_conf_mat = skm.confusion_matrix(y, yhat)
 
     for y_, proba_ in itertools.product(y_shapes, proba_shapes):
@@ -201,7 +201,7 @@ def test_confusion_matrix_proba_order():
         proba[:, None].copy(order='F'),
     ]
 
-    yhat = proba > 0.5
+    yhat = proba >= 0.5
     sk_conf_mat = skm.confusion_matrix(y, yhat)
 
     for y_, proba_ in itertools.product(y_orders, proba_orders):
