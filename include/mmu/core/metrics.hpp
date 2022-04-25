@@ -17,16 +17,18 @@ namespace mmu {
 namespace core {
 
 inline void precision_recall(
-    int64_t* const conf_mat, double* const metrics, const double fill = 0.
+    int64_t* __restrict const conf_mat,
+    double* __restrict const metrics,
+    const double fill = 0.
 ) {
     // real true/positive observations [FN + TP]
-    int64_t iP = conf_mat[2] + conf_mat[3];
-    bool P_nonzero = iP > 0;
-    auto P = static_cast<double>(iP);
-    auto TP = static_cast<double>(conf_mat[3]);
+    const int64_t iP = conf_mat[2] + conf_mat[3];
+    const bool P_nonzero = iP > 0;
+    const auto P = static_cast<double>(iP);
+    const auto TP = static_cast<double>(conf_mat[3]);
 
-    int64_t iTP_FP = conf_mat[3] + conf_mat[1];
-    bool TP_FP_nonzero = iTP_FP > 0;
+    const int64_t iTP_FP = conf_mat[3] + conf_mat[1];
+    const bool TP_FP_nonzero = iTP_FP > 0;
 
     // metrics[0]  - pos.precision aka Positive Predictive Value (PPV)
     metrics[0] = TP_FP_nonzero ? TP / static_cast<double>(iTP_FP) : fill;
@@ -49,10 +51,12 @@ inline void precision_recall(
  */
 template<class T, std::enable_if_t<std::is_integral<T>::value, int> = 0>
 inline void binary_metrics(
-    T* const conf_mat, double* const metrics, const double fill = 0.
+    T* __restrict const conf_mat,
+    double* __restrict const metrics,
+    const double fill = 0.
 ) {
     // total observations
-    auto K = static_cast<double>(
+    const auto K = static_cast<double>(
         conf_mat[0]
         + conf_mat[1]
         + conf_mat[2]
@@ -74,29 +78,29 @@ inline void binary_metrics(
      */
 
     // real true/positive observations [FN + TP]
-    int64_t iP = conf_mat[2] + conf_mat[3];
-    bool P_nonzero = iP > 0;
-    auto P = static_cast<double>(iP);
+    const int64_t iP = conf_mat[2] + conf_mat[3];
+    const bool P_nonzero = iP > 0;
+    const auto P = static_cast<double>(iP);
     // real false/negative observations [TN + FP]
-    int64_t iN = conf_mat[0] + conf_mat[1];
-    bool N_nonzero = iN > 0;
-    auto N = static_cast<double>(iN);
+    const int64_t iN = conf_mat[0] + conf_mat[1];
+    const bool N_nonzero = iN > 0;
+    const auto N = static_cast<double>(iN);
 
-    auto TN = static_cast<double>(conf_mat[0]);
-    auto FP = static_cast<double>(conf_mat[1]);
-    auto FN = static_cast<double>(conf_mat[2]);
-    auto TP = static_cast<double>(conf_mat[3]);
+    const auto TN = static_cast<double>(conf_mat[0]);
+    const auto FP = static_cast<double>(conf_mat[1]);
+    const auto FN = static_cast<double>(conf_mat[2]);
+    const auto TP = static_cast<double>(conf_mat[3]);
 
-    int64_t iTP_FP = conf_mat[3] + conf_mat[1];
-    bool TP_FP_nonzero = iTP_FP > 0;
-    auto TP_FP = static_cast<double>(iTP_FP);
+    const int64_t iTP_FP = conf_mat[3] + conf_mat[1];
+    const bool TP_FP_nonzero = iTP_FP > 0;
+    const auto TP_FP = static_cast<double>(iTP_FP);
 
-    auto TP_TN = static_cast<double>(conf_mat[3] + conf_mat[0]);
+    const auto TP_TN = static_cast<double>(conf_mat[3] + conf_mat[0]);
 
-    int64_t iTN_FN = conf_mat[0] + conf_mat[2];
-    bool TN_FN_nonzero = iTN_FN > 0;
-    auto TN_FN = static_cast<double>(iTN_FN);
-    auto FP_FN = static_cast<double>(conf_mat[1] + conf_mat[2]);
+    const int64_t iTN_FN = conf_mat[0] + conf_mat[2];
+    const bool TN_FN_nonzero = iTN_FN > 0;
+    const auto TN_FN = static_cast<double>(iTN_FN);
+    const auto FP_FN = static_cast<double>(conf_mat[1] + conf_mat[2]);
 
     double itm = 0.0;
     double itm_alt = 0.0;

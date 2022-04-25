@@ -28,7 +28,7 @@ namespace core {
  */
 template <typename T, isFloat<T> = true>
 inline double norm_ppf(const T mu, const T sigma, const T p) {
-    const double sqrt2 = 1.414213562373095048801688724209698079;
+    static const double sqrt2 = 1.414213562373095048801688724209698079;
     return mu + sigma * sqrt2 * erfinv<T>(2 * p - 1);
 }
 
@@ -44,7 +44,10 @@ inline double norm_ppf(const T mu, const T sigma, const T p) {
  *    4 - covariance between precision and recall
  */
 template<typename T, isInt<T> = true>
-inline void lep_conf_mat(T* const conf_mat, double* const metrics) {
+inline void lep_conf_mat(
+    T* __restrict const conf_mat,
+    double* __restrict const metrics
+) {
     /*
      *                  pred
      *                0     1
@@ -58,26 +61,26 @@ inline void lep_conf_mat(T* const conf_mat, double* const metrics) {
      *  3 TP
      *
      */
-    auto FP = static_cast<double>(conf_mat[1]);
-    auto FN = static_cast<double>(conf_mat[2]);
-    auto TP = static_cast<double>(conf_mat[3]);
+    const auto FP = static_cast<double>(conf_mat[1]);
+    const auto FN = static_cast<double>(conf_mat[2]);
+    const auto TP = static_cast<double>(conf_mat[3]);
 
-    auto TP_FN = static_cast<double>(conf_mat[2] + conf_mat[3]);
-    auto TP_FP = static_cast<double>(conf_mat[1] + conf_mat[3]);
+    const auto TP_FN = static_cast<double>(conf_mat[2] + conf_mat[3]);
+    const auto TP_FP = static_cast<double>(conf_mat[1] + conf_mat[3]);
 
     // tpr == recall = TP/P = TP/(TP + FN)
     // precision == positive predictive value = TP/PP = TP/(TP + FP)
-    double fn_tp_sq = std::pow(TP_FN, 2.);
-    double fp_tp_sq = std::pow(TP_FP, 2.);
+    const double fn_tp_sq = std::pow(TP_FN, 2.);
+    const double fp_tp_sq = std::pow(TP_FP, 2.);
 
-    double recall_d_TP = FN / fn_tp_sq;
-    double recall_d_FN = - TP / fn_tp_sq;
-    double precision_d_TP = FP / fp_tp_sq;
-    double precision_d_FP = - TP / fp_tp_sq;
+    const double recall_d_TP = FN / fn_tp_sq;
+    const double recall_d_FN = - TP / fn_tp_sq;
+    const double precision_d_TP = FP / fp_tp_sq;
+    const double precision_d_FP = - TP / fp_tp_sq;
 
-    double TP_var = std::max(TP, 1.0);
-    double FN_var = std::max(FN, 1.0);
-    double FP_var = std::max(FP, 1.0);
+    const double TP_var = std::max(TP, 1.0);
+    const double FN_var = std::max(FN, 1.0);
+    const double FP_var = std::max(FP, 1.0);
 
     // precision
     metrics[0] = TP / (TP_FP);
@@ -98,7 +101,11 @@ inline void lep_conf_mat(T* const conf_mat, double* const metrics) {
 }  // lep_conf_mat
 
 template<typename T, isInt<T> = true>
-inline void lep_conf_mat_ci(T* const conf_mat, double* const metrics, const double alpha) {
+inline void lep_conf_mat_ci(
+    T* __restrict const conf_mat,
+    double* __restrict const metrics,
+    const double alpha
+) {
     /*
      *                  pred
      *                0     1
@@ -114,26 +121,26 @@ inline void lep_conf_mat_ci(T* const conf_mat, double* const metrics, const doub
      */
     const double alpha_lb = alpha / 2;
     const double alpha_ub = 1.0 - alpha_ub;
-    auto FP = static_cast<double>(conf_mat[1]);
-    auto FN = static_cast<double>(conf_mat[2]);
-    auto TP = static_cast<double>(conf_mat[3]);
+    const auto FP = static_cast<double>(conf_mat[1]);
+    const auto FN = static_cast<double>(conf_mat[2]);
+    const auto TP = static_cast<double>(conf_mat[3]);
 
-    auto TP_FN = static_cast<double>(conf_mat[2] + conf_mat[3]);
-    auto TP_FP = static_cast<double>(conf_mat[1] + conf_mat[3]);
+    const auto TP_FN = static_cast<double>(conf_mat[2] + conf_mat[3]);
+    const auto TP_FP = static_cast<double>(conf_mat[1] + conf_mat[3]);
 
     // tpr == recall = TP/P = TP/(TP + FN)
     // precision == positive predictive value = TP/PP = TP/(TP + FP)
-    double fn_tp_sq = std::pow(TP_FN, 2.);
-    double fp_tp_sq = std::pow(TP_FP, 2.);
+    const double fn_tp_sq = std::pow(TP_FN, 2.);
+    const double fp_tp_sq = std::pow(TP_FP, 2.);
 
-    double recall_d_TP = FN / fn_tp_sq;
-    double recall_d_FN = - TP / fn_tp_sq;
-    double precision_d_TP = FP / fp_tp_sq;
-    double precision_d_FP = - TP / fp_tp_sq;
+    const double recall_d_TP = FN / fn_tp_sq;
+    const double recall_d_FN = - TP / fn_tp_sq;
+    const double precision_d_TP = FP / fp_tp_sq;
+    const double precision_d_FP = - TP / fp_tp_sq;
 
-    double TP_var = std::max(TP, 1.0);
-    double FN_var = std::max(FN, 1.0);
-    double FP_var = std::max(FP, 1.0);
+    const double TP_var = std::max(TP, 1.0);
+    const double FN_var = std::max(FN, 1.0);
+    const double FP_var = std::max(FP, 1.0);
 
     // precision
     metrics[1] = TP / (TP_FP);
