@@ -1,7 +1,6 @@
 """Public API to confusion functions in mmu/core/.../confusion_matrix.hpp.
 
 """
-import numpy as np
 import pandas as pd
 from mmu.lib import _core
 from mmu.commons import check_array
@@ -49,7 +48,6 @@ def confusion_matrices_to_dataframe(conf_mat):
 
     """
     return pd.DataFrame(conf_mat, columns=['TN', 'FP', 'FN', 'TP'])
-
 
 
 def confusion_matrix(y, yhat=None, score=None, threshold=0.5, return_df=False):

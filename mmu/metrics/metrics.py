@@ -1,10 +1,16 @@
 import numpy as np
 import pandas as pd
-import arviz as az
-from sklearn.utils import check_array
 
 import mmu.lib._mmu_core as _core
-from mmu.commons import _check_shape_order
+from mmu.commons import check_array
+from mmu.metrics.confmat import confusion_matrix_to_dataframe
+from mmu.metrics.confmat import confusion_matrices_to_dataframe
+
+_BINARY_METRICS_SUPPORTED_DTYPES = {
+    'y': ['bool', 'int32', 'int64', 'float32', 'float64'],
+    'yhat': ['bool', 'int32', 'int64', 'float32', 'float64'],
+    'score': ['float32', 'float64']
+}
 
 col_index = {
     'neg.precision': 0,
@@ -78,83 +84,320 @@ def metrics_to_dataframe(metrics, metric_names=None):
     return pd.DataFrame(metrics, columns=metric_names)
 
 
-def confusion_matrix_to_dataframe(conf_mat):
-    """Create dataframe with confusion matrix.
+def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df=False):
+    """Compute binary classification metrics.
+
+    Computes the following metrics:
+        0 - neg.precision aka Negative Predictive Value (NPV)
+        1 - pos.precision aka Positive Predictive Value (PPV)
+        2 - neg.recall aka True Negative Rate (TNR) aka Specificity
+        3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+        4 - neg.f1 score
+        5 - pos.f1 score
+        6 - False Positive Rate (FPR)
+        7 - False Negative Rate (FNR)
+        8 - Accuracy
+        9 - MCC
 
     Parameters
     ----------
-    conf_mat : np.ndarray
-        array containing a single confusion matrix
+    y : np.ndarray
+        true labels for observations, supported dtypes are [bool, int32,
+        int64, float32, float64]
+    yhat : np.ndarray, default=None
+        the predicted labels, the same dtypes are supported as y. Can be `None`
+        if `score` is not `None`, if both are provided, `score` is ignored.
+    score : np.ndarray, default=None
+        the classifier score to be evaluated against the `threshold`, i.e.
+        `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
+        if both are provided, this parameter is ignored.
+        Supported dtypes are float32 and float64.
+    threshold : float, default=0.5
+        the classification threshold to which the classifier score is evaluated,
+        is inclusive.
+    return_df : bool, default=False
+        return confusion matrix as pd.DataFrame
 
     Returns
     -------
-    pd.DataFrame
-        the confusion matrix
+    confusion_matrix : np.ndarray, pd.DataFrame
+        the confusion_matrix
+    metrics : np.ndarray, pd.DataFrame
+        the computed metrics
 
     """
-    index = (('observed', 'negative'), ('observed', 'positive'))
-    cols = (('estimated', 'negative'), ('estimated', 'positive'))
-    if conf_mat.size == 4:
-        conf_mat = conf_mat.reshape(2, 2)
-    return pd.DataFrame(conf_mat, index=index, columns=cols)
+    if not isinstance(fill, float):
+        raise TypeError("`fill` must be a float.")
+
+    y = check_array(
+        y,
+        max_dim=1,
+        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['y'],
+    )
+
+    if score is not None:
+        score = check_array(
+            score,
+            max_dim=1,
+            dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
+        )
+        if not isinstance(threshold, float):
+            raise TypeError("`threshold` must be a float if score is not None")
+        if score.size != y.size:
+            raise ValueError('`score` and `y` must have equal length.')
+
+        conf_mat, metrics = _core.binary_metrics_score(y, score, threshold, fill)
+
+    elif yhat is not None:
+        yhat = check_array(
+            yhat,
+            max_dim=1,
+            dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['yhat'],
+        )
+        if yhat.size != y.size:
+            raise ValueError('`yhat` and `y` must have equal length.')
+        conf_mat, metrics = _core.binary_metrics(y, yhat, fill)
+    else:
+        raise TypeError("`yhat` must not be None if `score` is None")
+
+    if return_df:
+        return (
+            confusion_matrix_to_dataframe(conf_mat),
+            metrics_to_dataframe(metrics)
+        )
+    return conf_mat, metrics
 
 
-def compute_hdi(X, prob=0.95, **kwargs):
-    """Compute Highest Density Interval over marginal distributions.
+def binary_metrics_confusion_matrix(confusion_matrix, fill=0.0, return_df=False):
+    """Compute binary classification metrics.
+
+    Computes the following metrics:
+        0 - neg.precision aka Negative Predictive Value (NPV)
+        1 - pos.precision aka Positive Predictive Value (PPV)
+        2 - neg.recall aka True Negative Rate (TNR) aka Specificity
+        3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+        4 - neg.f1 score
+        5 - pos.f1 score
+        6 - False Positive Rate (FPR)
+        7 - False Negative Rate (FNR)
+        8 - Accuracy
+        9 - MCC
 
     Parameters
     ----------
-    X : pd.DataFrame, array-like
-        at most two dimensional array where the rows contain the observations
-        and the column different distributions.
-    prob : float, default=0.95
-        the cumulative probability that should be contained in the HDI
-    kwargs
-        keyword arguments passed to az.hdi
+    confusion_matrix : np.ndarray,
+        confusion_matrix as returned by mmu.confusion_matrix
+    fill : float, default=0.0
+        value to fill when a metric is not defined, e.g. divide by zero.
+    return_df : bool, default=False
+        return the metrics confusion matrix and metrics as a DataFrame
 
     Returns
     -------
-    hdi : pd.DataFrame, optional
-        the HDI interval for each column, only returned when ``X`` is a
-        DataFrame
-    hdi : np.ndarray, optional
-        the HID interval for each column in ``X``, only returned if ``X`` is a
-        np.ndarray. The first column is the lower bound, the second the upper
-        bound
+    metrics : np.ndarray, pd.DataFrame
+        the computed metrics
 
     """
-    to_frame = False
-    X_cols = []
-    if isinstance(X, pd.DataFrame):
-        X_cols = X.columns
-        X = X.values
-        to_frame = True
-    elif isinstance(X, np.ndarray):
-        if X.ndim > 2:
-            raise TypeError('``X`` must be at most two dimensional.')
-    elif isinstance(X, (tuple, list, set)):
-        X = np.asarray(X)
-    else:
-        raise TypeError('``X`` must be a DataFrame or array-like')
+    if not isinstance(fill, float):
+        raise TypeError("`fill` must be a float.")
 
-    if X.ndim > 1:
-        n_vars = X.shape[1]
-        hdi = np.zeros((n_vars, 2))
-        # loop over X as az.hdi has furture warning where the columns will be
-        # interpreted as chains rather than distributions
-        for i in range(n_vars):
-            hdi[i, :] = az.hdi(ary=X[:, i], hdi_prob=prob, **kwargs)
-    else:
-        hdi = az.hdi(ary=X, hdi_prob=prob, **kwargs)
+    if confusion_matrix.shape == (2, 2):
+        confusion_matrix = confusion_matrix.flatten()
 
-    if to_frame:
-        return pd.DataFrame(hdi, index=X_cols, columns=['lb', 'ub'])
-    return hdi
+    confusion_matrix = check_array(
+        confusion_matrix,
+        max_dim=1,
+        dtypes=['int32', 'int64'],
+    )
+    metrics = _core.binary_metrics_confusion(confusion_matrix, fill)
+
+    if return_df:
+        return metrics_to_dataframe(metrics)
+    return metrics
+
+
+def binary_metrics_thresholds(
+    y, score, thresholds, fill=0.0, return_df=False
+):
+    """Compute binary classification metrics over multiple thresholds.
+
+    Computes the following metrics:
+        0 - neg.precision aka Negative Predictive Value (NPV)
+        1 - pos.precision aka Positive Predictive Value (PPV)
+        2 - neg.recall aka True Negative Rate (TNR) aka Specificity
+        3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+        4 - neg.f1 score
+        5 - pos.f1 score
+        6 - False Positive Rate (FPR)
+        7 - False Negative Rate (FNR)
+        8 - Accuracy
+        9 - MCC
+
+    Parameters
+    ----------
+    y : np.ndarray
+        true labels for observations, supported dtypes are [bool, int32,
+        int64, float32, float64]
+    score : np.ndarray, default=None
+        the classifier score to be evaluated against the `threshold`, i.e.
+        `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
+        if both are provided, this parameter is ignored.
+        Supported dtypes are float32 and float64.
+    thresholds : np.ndarray
+        the classification thresholds for which the classifier score is evaluated,
+        is inclusive.
+    fill : float, default=0.0
+        value to fill when a metric is not defined, e.g. divide by zero.
+    return_df : bool, default=False
+        return the metrics confusion matrix and metrics as a DataFrame
+
+    Returns
+    -------
+    confusion_matrix : np.ndarray, pd.DataFrame
+        the confusion_matrices where the rows contain the counts for a
+        threshold
+    metrics : np.ndarray, pd.DataFrame
+        the computed metrics where the rows contain the metrics for a single
+        threshold
+
+    """
+    if not isinstance(fill, float):
+        raise TypeError("`fill` must be a float.")
+
+    y = check_array(
+        y,
+        max_dim=1,
+        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['y'],
+    )
+
+    score = check_array(
+        score,
+        max_dim=1,
+        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
+    )
+
+    thresholds = check_array(
+        thresholds,
+        max_dim=1,
+        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
+    )
+
+    if score.size != y.size:
+        raise ValueError('`score` and `y` must have equal length.')
+    conf_mat, metrics = _core.binary_metrics_thresholds(y, score, thresholds, fill)
+
+    if return_df:
+        return (
+            confusion_matrices_to_dataframe(conf_mat),
+            metrics_to_dataframe(metrics)
+        )
+    return conf_mat, metrics
+
+
+def binary_metrics_runs(
+    y, yhat=None, score=None, threshold=None, obs_axis=0, fill=0.0, return_df=False
+):
+    """Compute binary classification metrics over multiple runs.
+
+    Computes the following metrics:
+        0 - neg.precision aka Negative Predictive Value (NPV)
+        1 - pos.precision aka Positive Predictive Value (PPV)
+        2 - neg.recall aka True Negative Rate (TNR) aka Specificity
+        3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+        4 - neg.f1 score
+        5 - pos.f1 score
+        6 - False Positive Rate (FPR)
+        7 - False Negative Rate (FNR)
+        8 - Accuracy
+        9 - MCC
+
+    Parameters
+    ----------
+    y : np.ndarray
+        true labels for observations, supported dtypes are [bool, int32,
+        int64, float32, float64]
+    yhat : np.ndarray, default=None
+        the predicted labels, the same dtypes are supported as y. Can be `None`
+        if `score` is not `None`, if both are provided, `score` is ignored.
+    score : np.ndarray, default=None
+        the classifier score to be evaluated against the `threshold`, i.e.
+        `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
+        if both are provided, this parameter is ignored.
+        Supported dtypes are float32 and float64.
+    threshold : float, default=0.5
+        the classification threshold for which the classifier score is evaluated,
+        is inclusive.
+    obs_axis : int, default=0
+        the axis containing the observations for a single run, e.g. 0 when the
+        labels and scores are stored as columns
+    fill : float, default=0.0
+        value to fill when a metric is not defined, e.g. divide by zero.
+    return_df : bool, default=False
+        return the metrics confusion matrix and metrics as a DataFrame
+
+    Returns
+    -------
+    confusion_matrix : np.ndarray, pd.DataFrame
+        the confusion_matrices where the rows contain the counts for a single
+        run
+    metrics : np.ndarray, pd.DataFrame
+        the computed metrics where the rows contain the metrics for a single
+        run
+
+    """
+    if not isinstance(fill, float):
+        raise TypeError("`fill` must be a float.")
+    if not isinstance(obs_axis, int) or (obs_axis != 0 and obs_axis != 1):
+        raise TypeError("`obs_axis` must be either 0 or 1.")
+
+    y = check_array(
+        y,
+        axis=obs_axis,
+        target_axis=obs_axis,
+        max_dim=2,
+        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['y'],
+    )
+
+    if score is not None:
+        score = check_array(
+            score,
+            axis=obs_axis,
+            target_axis=obs_axis,
+            max_dim=2,
+            dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
+        )
+        if not isinstance(threshold, float):
+            raise TypeError("`threshold` must be a float if score is not None")
+        if score.size != y.size:
+            raise ValueError('`score` and `y` must have equal length.')
+        conf_mat, metrics = _core.binary_metrics_runs(y, score, threshold, fill, obs_axis)
+
+    elif yhat is not None:
+        yhat = check_array(
+            yhat,
+            axis=obs_axis,
+            target_axis=obs_axis,
+            max_dim=2,
+            dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['yhat'],
+        )
+        if yhat.size != y.size:
+            raise ValueError('`yhat` and `y` must have equal length.')
+        conf_mat = _core.confusion_matrix_runs(y, yhat, obs_axis)
+        metrics = _core.binary_metrics_confusion(conf_mat, fill)
+    else:
+        raise TypeError("`yhat` must not be None if `score` is None")
+
+    if return_df:
+        return (
+            confusion_matrices_to_dataframe(conf_mat),
+            metrics_to_dataframe(metrics)
+        )
+    return conf_mat, metrics
 
 
 
 def binary_metrics_runs_thresholds(
-    y, proba, thresholds, n_obs=None, fill=0.0, obs_axis=0):
+    y, scores, thresholds, n_obs=None, fill=0.0, obs_axis=0):
     """Compute binary classification metrics over runs and thresholds.
 
     Computes the following metrics:
@@ -174,10 +417,10 @@ def binary_metrics_runs_thresholds(
     y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
         the ground truth labels, if different runs have different number of
         observations the n_obs parameter must be set to avoid computing metrics
-        of the filled values. If ``y`` is one dimensional and ``proba`` is not
+        of the filled values. If ``y`` is one dimensional and ``scores`` is not
         the ``y`` values are assumed to be the same for each run.
-    proba : np.array[np.float[32/64]]
-        the predicted probability, if different runs have different number of
+    scores : np.array[np.float[32/64]]
+        the classifier scores, if different runs have different number of
         observations the n_obs parameter must be set to avoid computing metrics
         of the filled values.
     thresholds : np.array[np.float[32/64]]
@@ -199,13 +442,24 @@ def binary_metrics_runs_thresholds(
         the second the metric and the third the run
 
     """
-    y = check_array(y, accept_large_sparse=False)
-    proba = check_array(proba, accept_large_sparse=False)
+    y = check_array(
+        y,
+        axis=obs_axis,
+        target_axis=obs_axis,
+        max_dim=2,
+        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['y'],
+    )
 
-    y = _check_shape_order(y, 'y', obs_axis)
-    proba = _check_shape_order(proba, 'proba', obs_axis)
-    n_runs = proba.shape[1 - obs_axis]
-    max_obs = proba.shape[obs_axis]
+    scores = check_array(
+        scores,
+        axis=obs_axis,
+        target_axis=obs_axis,
+        max_dim=2,
+        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
+    )
+
+    n_runs = scores.shape[1 - obs_axis]
+    max_obs = scores.shape[obs_axis]
 
     if y.shape[1] < 2:
         y = np.tile(y, (y.shape[0], n_runs))
@@ -215,7 +469,7 @@ def binary_metrics_runs_thresholds(
         n_obs = np.repeat(max_obs, n_runs)
 
     cm, mtr = _core._binary_metrics_runs_thresholds(
-        y, proba, thresholds, n_obs, fill
+        y, scores, thresholds, n_obs, fill
     )
     # cm and mtr are both flat arrays with order conf_mat, thresholds, runs
     # as this is fastest to create. However, how the cubes will be sliced
