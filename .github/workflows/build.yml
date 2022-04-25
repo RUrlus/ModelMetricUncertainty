@@ -111,20 +111,15 @@ jobs:
       - name: Install python pacakges
         run: |
           python -m pip install --upgrade pip
-          python -m pip install setuptools wheel numpy pybind11 scikit-build
+          python -m pip install pytest
           
-      - name: Configure
+      - name: Build and install
         run: |
-          cmake -G "${{ matrix.config.generators }}"\
-            -S . -B build \
-            -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
-            -DMMU_BUILD_TESTS=ON \
-            -Dpybind11_DIR=$(python3 -c 'import pybind11; print(pybind11.get_cmake_dir())') \
-            -DPython3_EXECUTABLE=$(python3 -c 'import sys; print(sys.executable)')
+          CXX=${{ matrix.config.cxx }} \
+          CMAKE_ARGS="-DMMU_ENABLE_INTERNAL_TESTS=ON" \
+          pip install --verbose .
 
-      - name: Build
+      - name: Unit test
         run: |
-            cmake \
-              --build build \
-              --target ${{ matrix.config.target }} \
-              --config ${{ matrix.config.build_type }}
+          cd tests
+          python -m pytest
