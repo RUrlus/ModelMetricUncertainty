@@ -23,12 +23,12 @@ DEFAULT_DTYPES = [i for i in _FAST_PATH_TYPES]
 
 def _check_array(
     arr,
+    dtype,
     axis=None,
     target_axis=0,
     target_order=1,
     min_dim=1,
     max_dim=2,
-    dtype=None,
     copy=False,
 ):
     """Specialisation of check_array for Numpy arrays."""
@@ -99,12 +99,31 @@ def check_array(
 ):
     """Check if array has the appropiate properties.
 
+    There exists a fast path for numpy arrays for Specific dtypes, all other
+    types are send to sklearn's check_array.
+
     Parameters
     ----------
     arr : np.ndarray
         the array to validate
-    name : string
-        the name of the parameter
+    axis : int, default=None
+        the axis containing the observations that are part of a single run,
+        e.g. 0 if the values of a single run are stored as a column
+    target_axis : int, default=0,
+        the axis along which the values should be contiguous
+    target_order : int, default=1
+        1 for Fortran order/column contiguous and 0 for C order/row contiguous
+    min_dim : int, default=1,
+        minimal number of dimensions the array should have
+    max_dim : int, default=2,
+        maximum number of dimensions the array should have
+    dtype : str, np.dtype, list[str], default=None
+        the supported dtype(s)
+    copy : bool, default=False,
+        always copy the array
+    **kwargs
+        keyword arguments passed to sklearn's check_array
+
 
     Returns
     -------
@@ -117,7 +136,7 @@ def check_array(
     if isinstance(arr, np.ndarray) and arr.dtype in _FAST_PATH_TYPES:
         return _check_array(
             arr=arr,
-            axis=axis or -1,
+            axis=axis,
             target_axis=target_axis,
             target_order=target_order,
             min_dim=min_dim,
