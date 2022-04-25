@@ -120,7 +120,7 @@ inline void lep_conf_mat_ci(
      *
      */
     const double alpha_lb = alpha / 2;
-    const double alpha_ub = 1.0 - alpha_ub;
+    const double alpha_ub = 1.0 - alpha_lb;
     const auto FP = static_cast<double>(conf_mat[1]);
     const auto FN = static_cast<double>(conf_mat[2]);
     const auto TP = static_cast<double>(conf_mat[3]);
