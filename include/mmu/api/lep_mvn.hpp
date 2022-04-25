@@ -2,8 +2,8 @@
  * over the Poisson errors of the Confusion Matrix
  * Copyright 2021 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_API_ERROR_PROP_HPP_
-#define INCLUDE_MMU_API_ERROR_PROP_HPP_
+#ifndef INCLUDE_MMU_API_LEP_MVN_HPP_
+#define INCLUDE_MMU_API_LEP_MVN_HPP_
 
 #include <pybind11/pybind11.h> // for py::array
 #include <pybind11/numpy.h>  // for py::array
@@ -214,4 +214,4 @@ inline py::tuple pr_curve_ci(
 }  // namespace api
 }  // namespace mmu
 
-#endif  // INCLUDE_MMU_API_ERROR_PROP_HPP_
+#endif  // INCLUDE_MMU_API_LEP_MVN_HPP_

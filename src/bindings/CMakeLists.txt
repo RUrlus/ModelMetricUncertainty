@@ -14,6 +14,7 @@ pybind11_add_module(${MODNAME}
         ${MMU_EXTENSION_PATH}/utils.cpp
         ${MMU_EXTENSION_PATH}/metrics.cpp
         ${MMU_EXTENSION_PATH}/confusion_matrix.cpp
+        ${MMU_EXTENSION_PATH}/lep_mvn.cpp
 )
 
 TARGET_LINK_LIBRARIES(${MODNAME} PUBLIC mmu::mmu)
