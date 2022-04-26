@@ -318,6 +318,9 @@ inline py::tuple confusion_matrix_runs_thresholds(
 
     // allocate confusion_matrix
     auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_thresholds * n_runs);
+    // we must zero the array as we are not garuenteed to set all values
+    // some runs might have less observations
+    npy::zero_array(conf_mat);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
 
     // Bookkeeping variables
