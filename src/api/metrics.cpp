@@ -52,7 +52,7 @@ f64arr binary_metrics_2d(const i64arr& conf_mat, const double fill) {
     }
 
     // guard against buffer overruns
-    const size_t n_obs = std::max(conf_mat.shape(0), conf_mat.shape(1));
+    const size_t n_obs = conf_mat.shape(1) == 4 ? conf_mat.shape(0) : conf_mat.shape(1);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
     auto metrics = py::array_t<double>({n_obs, static_cast<size_t>(10)});
     double* const metrics_ptr = npy::get_data(metrics);
