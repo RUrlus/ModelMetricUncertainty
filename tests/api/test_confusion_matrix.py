@@ -1,4 +1,5 @@
 import itertools
+from pandas.core.reshape.reshape import _stack_multi_column_index
 import pytest
 import sklearn as sk
 import sklearn.metrics as skm
@@ -6,6 +7,7 @@ import numpy as np
 import mmu
 
 from mmu.commons._testing import generate_test_labels
+import mmu.lib._mmu_core as _core
 
 Y_DTYPES = [
     bool,
@@ -208,4 +210,41 @@ def test_confusion_matrix_proba_order():
         conf_mat = mmu.confusion_matrix(y_, score=proba_)
         assert np.array_equal(conf_mat, sk_conf_mat), (
             f"test failed for shape: {y_.shape}, {proba.shape}"
+        )
+
+def test_confusion_matrix_runs():
+    for y_dtype, yhat_dtype in itertools.product(Y_DTYPES, YHAT_DTYPES):
+        _, yhat, y = generate_test_labels(
+            N=4000,
+            y_dtype=y_dtype,
+            yhat_dtype=yhat_dtype
+        )
+        yhat = yhat.reshape((1000, 4), order='F')
+        y = y.reshape((1000, 4), order='F')
+
+        sk_conf_mats = np.empty((4, 4), dtype=np.int64)
+        for i in range(4):
+            sk_conf_mats[i, :] = skm.confusion_matrix(y[:, i], yhat[:, i]).flatten()
+        conf_mat = _core.confusion_matrix_runs(y, yhat, 0)
+        assert np.array_equal(conf_mat, sk_conf_mats), (
+            f"test failed for dtypes: {y_dtype}, {yhat_dtype}"
+        )
+
+def test_confusion_matrix_score_runs():
+    for y_dtype, proba_dtype in itertools.product(Y_DTYPES, PROBA_DTYPES):
+        score, _, y = generate_test_labels(
+            N=4000,
+            y_dtype=y_dtype,
+            proba_dtype=proba_dtype
+        )
+        score = score.reshape((1000, 4), order='F')
+        y = y.reshape((1000, 4), order='F')
+
+        sk_conf_mats = np.empty((4, 4), dtype=np.int64)
+        for i in range(4):
+            yhat = score[:, i] > 0.5
+            sk_conf_mats[i, :] = skm.confusion_matrix(y[:, i], yhat).flatten()
+        conf_mat = _core.confusion_matrix_score_runs(y, score, 0.5, 0)
+        assert np.array_equal(conf_mat, sk_conf_mats), (
+            f"test failed for dtypes: {y_dtype}, {proba_dtype}"
         )
