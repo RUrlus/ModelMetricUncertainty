@@ -7,7 +7,7 @@
 #include <mmu/bindings/confusion_matrix.hpp>
 #include <mmu/bindings/metrics.hpp>
 #include <mmu/bindings/utils.hpp>
-#include <mmu/bindings/lep_mvn.hpp>
+#include <mmu/bindings/mvn_error.hpp>
 
 namespace py = pybind11;
 
@@ -30,10 +30,8 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_all_finite(m);
     bind_is_well_behaved_finite(m);
     // lep_mvn
-    bind_pr_mvn_var(m);
-    bind_pr_curve_mvn_var(m);
-    bind_pr_mvn_ci(m);
-    bind_pr_curve_mvn_ci(m);
+    bind_pr_mvn_error(m);
+    bind_pr_curve_mvn_error(m);
 
 #if not defined OS_WIN
   #ifdef VERSION_INFO

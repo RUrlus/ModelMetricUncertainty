@@ -10,7 +10,7 @@
 #include <string>
 #include <mmu/core/common.hpp>
 #include <mmu/core/erfinv.hpp>
-#include <mmu/core/error_prop.hpp>
+#include <mmu/core/mvn_error.hpp>
 
 namespace py = pybind11;
 
