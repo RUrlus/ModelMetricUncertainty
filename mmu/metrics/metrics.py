@@ -145,8 +145,7 @@ def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df
             raise TypeError("`threshold` must be a float if score is not None")
         if score.size != y.size:
             raise ValueError('`score` and `y` must have equal length.')
-
-        conf_mat, metrics = _core.binary_metrics_score(y, score, threshold, fill)
+        conf_mat = _core.confusion_matrix_score(y, score, threshold)
 
     elif yhat is not None:
         yhat = check_array(
@@ -156,9 +155,11 @@ def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df
         )
         if yhat.size != y.size:
             raise ValueError('`yhat` and `y` must have equal length.')
-        conf_mat, metrics = _core.binary_metrics(y, yhat, fill)
+        conf_mat = _core.confusion_matrix(y, yhat)
     else:
         raise TypeError("`yhat` must not be None if `score` is None")
+
+    metrics = _core.binary_metrics(conf_mat, fill)
 
     if return_df:
         return (
@@ -209,7 +210,7 @@ def binary_metrics_confusion_matrix(confusion_matrix, fill=0.0, return_df=False)
         max_dim=1,
         dtypes=['int32', 'int64'],
     )
-    metrics = _core.binary_metrics_confusion(confusion_matrix, fill)
+    metrics = _core.binary_metrics(confusion_matrix, fill)
 
     if return_df:
         return metrics_to_dataframe(metrics)
@@ -284,7 +285,8 @@ def binary_metrics_thresholds(
 
     if score.size != y.size:
         raise ValueError('`score` and `y` must have equal length.')
-    conf_mat, metrics = _core.binary_metrics_thresholds(y, score, thresholds, fill)
+    conf_mat = _core.confusion_matrix_thresholds(y, score, thresholds)
+    metrics = _core.binary_metrics_thresholds(conf_mat, fill)
 
     if return_df:
         return (
@@ -370,7 +372,7 @@ def binary_metrics_runs(
             raise TypeError("`threshold` must be a float if score is not None")
         if score.size != y.size:
             raise ValueError('`score` and `y` must have equal length.')
-        conf_mat, metrics = _core.binary_metrics_runs(y, score, threshold, fill, obs_axis)
+        conf_mat = _core.confusion_matrix_score_runs(y, score, threshold, obs_axis)
 
     elif yhat is not None:
         yhat = check_array(
@@ -383,9 +385,10 @@ def binary_metrics_runs(
         if yhat.size != y.size:
             raise ValueError('`yhat` and `y` must have equal length.')
         conf_mat = _core.confusion_matrix_runs(y, yhat, obs_axis)
-        metrics = _core.binary_metrics_confusion(conf_mat, fill)
     else:
         raise TypeError("`yhat` must not be None if `score` is None")
+
+    metrics = _core.binary_metrics_2d(conf_mat, fill)
 
     if return_df:
         return (
@@ -468,9 +471,11 @@ def binary_metrics_runs_thresholds(
     if n_obs is None:
         n_obs = np.repeat(max_obs, n_runs)
 
-    cm, mtr = _core._binary_metrics_runs_thresholds(
-        y, scores, thresholds, n_obs, fill
+    cm = _core.confusion_matrix_runs_thresholds(
+        y, scores, thresholds, n_obs
     )
+    mtr = _core.binary_metrics_flattened(cm, fill)
+
     # cm and mtr are both flat arrays with order conf_mat, thresholds, runs
     # as this is fastest to create. However, how the cubes will be sliced
     # later doesn't align with this. So we incur a copy such that the cubes
@@ -492,9 +497,8 @@ def binary_metrics_runs_thresholds(
     # create cube from flat array
     # order is runs, thresholds, metrics
     if n_thresholds == 1:
-        mtr = mtr.reshape(n_runs, 10, order='C')
         # make values over the runs contiguous
-        mtr = np.asarray(mtr, order='F')
+        mtr = np.asarray(mtr.reshape(n_runs, 10, order='C'), order='F')
     else:
         mtr = mtr.reshape(n_runs, n_thresholds, 10, order='C')
         # make values over the runs contiguous
