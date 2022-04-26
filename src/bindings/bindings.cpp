@@ -24,11 +24,9 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_confusion_matrix_runs_thresholds(m);
     // metrics
     bind_binary_metrics(m);
-    bind_binary_metrics_score(m);
-    bind_binary_metrics_thresholds(m);
-    bind_binary_metrics_confusion(m);
-    bind_binary_metrics_runs(m);
-    bind_binary_metrics_runs_thresholds(m);
+    bind_binary_metrics_2d(m);
+    bind_binary_metrics_flattened(m);
+    // npy
     bind_all_finite(m);
     bind_is_well_behaved_finite(m);
     // lep_mvn
