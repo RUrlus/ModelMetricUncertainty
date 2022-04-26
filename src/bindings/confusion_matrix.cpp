@@ -346,5 +346,226 @@ void bind_confusion_matrix_score_runs(py::module &m) {
     );
 }
 
+void bind_confusion_matrix_thresholds(py::module &m) {
+    m.def(
+        "confusion_matrix_thresholds",
+        [](
+            const py::array_t<int64_t>& y,
+            const py::array_t<double>& score,
+            const py::array_t<double>& thresholds
+        ) {
+            return api::confusion_matrix_thresholds<int64_t, double>(y, score, thresholds);
+        },
+        R"pbdoc(Compute binary Confusion Matrix given probabilities over multiple thresholds.
+
+        Parameters
+        ----------
+        y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
+            the ground truth labels, must be 2 dimensional
+        score : np.array[np.float64]
+            the classifier scores, must be 2 dimensional and have the same shape as y
+        thresholds : np.array[np.float64]
+            classification thresholds
+
+        Returns
+        -------
+        confusion_matrix : np.array[np.int64]
+            confusion matrix
+        )pbdoc",
+        py::arg("y"),
+        py::arg("score").noconvert(),
+        py::arg("thresholds")
+    );
+    m.def(
+        "confusion_matrix_thresholds",
+        [](
+            const py::array_t<bool>& y,
+            const py::array_t<double>& score,
+            const py::array_t<double>& thresholds
+        ) {
+            return api::confusion_matrix_thresholds<bool, double>(y, score, thresholds);
+        },
+        py::arg("y"),
+        py::arg("score").noconvert(),
+        py::arg("thresholds")
+    );
+    m.def(
+        "confusion_matrix_thresholds",
+        [](
+            const py::array_t<double>& y,
+            const py::array_t<double>& score,
+            const py::array_t<double>& thresholds
+        ) {
+            return api::confusion_matrix_thresholds<double, double>(y, score, thresholds);
+        },
+        py::arg("y"),
+        py::arg("score").noconvert(),
+        py::arg("thresholds")
+    );
+    m.def(
+        "confusion_matrix_thresholds",
+        [](
+            const py::array_t<int64_t>& y,
+            const py::array_t<float>& score,
+            const py::array_t<float>& thresholds
+        ) {
+            return api::confusion_matrix_thresholds<int64_t, float>(y, score, thresholds);
+        },
+        py::arg("y"),
+        py::arg("score").noconvert(),
+        py::arg("thresholds")
+    );
+    m.def(
+        "confusion_matrix_thresholds",
+        [](
+            const py::array_t<bool>& y,
+            const py::array_t<float>& score,
+            const py::array_t<float>& thresholds
+        ) {
+            return api::confusion_matrix_thresholds<bool, float>(y, score, thresholds);
+        },
+        py::arg("y"),
+        py::arg("score").noconvert(),
+        py::arg("thresholds")
+    );
+    m.def(
+        "confusion_matrix_thresholds",
+        [](
+            const py::array_t<float>& y,
+            const py::array_t<float>& score,
+            const py::array_t<float> thresholds
+        ) {
+            return api::confusion_matrix_thresholds<float, float>(y, score, thresholds);
+        },
+        py::arg("y"),
+        py::arg("score").noconvert(),
+        py::arg("thresholds")
+    );
+}
+
+void bind_confusion_matrix_runs_thresholds(py::module &m) {
+    m.def(
+        "confusion_matrix_runs_thresholds",
+        [](
+            const py::array_t<int64_t>& y,
+            const py::array_t<double>& score,
+            const py::array_t<double>& thresholds,
+            const py::array_t<int64_t>& n_obs
+        ) {
+            return api::confusion_matrix_runs_thresholds<int64_t, double>(
+                y, score, thresholds, n_obs
+            );
+        },
+        R"pbdoc(Compute binary Confusion Matrix given probabilities over multiple thresholds and runs.
+
+        Parameters
+        ----------
+        y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
+            the ground truth labels, must be 2 dimensional
+        score : np.array[np.float64]
+            the classifier scores, must be 2 dimensional and have the same shape as y
+        thresholds : np.array[np.float64]
+            classification thresholds
+        n_obs : np.array[np.int64]
+            number of observations per run, allowing different runs to have
+            different shapes.
+
+        Returns
+        -------
+        confusion_matrix : np.array[np.int64]
+            confusion matrix
+        )pbdoc",
+        py::arg("y"),
+        py::arg("score").noconvert(),
+        py::arg("thresholds"),
+        py::arg("n_obs")
+    );
+    m.def(
+        "confusion_matrix_runs_thresholds",
+        [](
+            const py::array_t<bool>& y,
+            const py::array_t<double>& score,
+            const py::array_t<double>& thresholds,
+            const py::array_t<int64_t>& n_obs
+        ) {
+            return api::confusion_matrix_runs_thresholds<bool, double>(
+                y, score, thresholds, n_obs
+            );
+        },
+        py::arg("y"),
+        py::arg("score").noconvert(),
+        py::arg("thresholds"),
+        py::arg("n_obs")
+    );
+    m.def(
+        "confusion_matrix_runs_thresholds",
+        [](
+            const py::array_t<double>& y,
+            const py::array_t<double>& score,
+            const py::array_t<double>& thresholds,
+            const py::array_t<int64_t>& n_obs
+        ) {
+            return api::confusion_matrix_runs_thresholds<double, double>(
+                y, score, thresholds, n_obs
+            );
+        },
+        py::arg("y"),
+        py::arg("score").noconvert(),
+        py::arg("thresholds"),
+        py::arg("n_obs")
+    );
+    m.def(
+        "confusion_matrix_runs_thresholds",
+        [](
+            const py::array_t<int64_t>& y,
+            const py::array_t<float>& score,
+            const py::array_t<float>& thresholds,
+            const py::array_t<int64_t>& n_obs
+        ) {
+            return api::confusion_matrix_runs_thresholds<int64_t, float>(
+                y, score, thresholds, n_obs
+            );
+        },
+        py::arg("y"),
+        py::arg("score").noconvert(),
+        py::arg("thresholds"),
+        py::arg("n_obs")
+    );
+    m.def(
+        "confusion_matrix_runs_thresholds",
+        [](
+            const py::array_t<bool>& y,
+            const py::array_t<float>& score,
+            const py::array_t<float>& thresholds,
+            const py::array_t<int64_t>& n_obs
+        ) {
+            return api::confusion_matrix_runs_thresholds<bool, float>(
+                y, score, thresholds, n_obs
+            );
+        },
+        py::arg("y"),
+        py::arg("score").noconvert(),
+        py::arg("thresholds"),
+        py::arg("n_obs")
+    );
+    m.def(
+        "confusion_matrix_runs_thresholds",
+        [](
+            const py::array_t<float>& y,
+            const py::array_t<float>& score,
+            const py::array_t<float>& thresholds,
+            const py::array_t<int64_t>& n_obs
+        ) {
+            return api::confusion_matrix_runs_thresholds<float, float>(
+                y, score, thresholds, n_obs
+            );
+        },
+        py::arg("y"),
+        py::arg("score").noconvert(),
+        py::arg("thresholds"),
+        py::arg("n_obs")
+    );
+}
+
 }  // namespace bindings
 }  // namespace mmu

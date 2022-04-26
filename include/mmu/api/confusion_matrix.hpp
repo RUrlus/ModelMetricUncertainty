@@ -4,13 +4,6 @@
 #ifndef INCLUDE_MMU_API_CONFUSION_MATRIX_HPP_
 #define INCLUDE_MMU_API_CONFUSION_MATRIX_HPP_
 
-/* TODO *
- *
- * - Add function over runs for yhat
- * - Add function over runs for score with single threshold
- * - Add function over runs for score over multiple thresholds
- * TODO */
-
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
@@ -159,19 +152,15 @@ inline py::array_t<int64_t> confusion_matrix_runs(
     auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_runs);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
 
-    int64_t* p_cm_ptr;
-
-    T1* p_y_ptr;
-    T2* p_score_ptr;
-
-    #pragma omp parallel for private(p_cm_ptr, p_y_ptr, p_score_ptr)
+    #pragma omp parallel for
     for (ssize_t i = 0; i < n_runs; i++) {
-        p_y_ptr = y_ptr + (i * n_obs);
-        p_score_ptr = score_ptr + (i * n_obs);
-        p_cm_ptr = cm_ptr + (i * 4);
         // fill confusion matrix
         core::confusion_matrix<T1, T2>(
-            n_obs, p_y_ptr, p_score_ptr, threshold, p_cm_ptr
+            n_obs,
+            y_ptr + (i * n_obs),
+            score_ptr + (i * n_obs),
+            threshold,
+            cm_ptr + (i * 4)
         );
     }
     return conf_mat;
@@ -213,7 +202,7 @@ inline py::array_t<int64_t> confusion_matrix_runs(
 
     // copy to const help compiler optimisations below
     const size_t n_obs = n_obs_tmp;
-    const ssize_t n_runs = n_runs_tmp;
+    const size_t n_runs = n_runs_tmp;
 
     // get ptr
     T1* y_ptr = npy::get_data(y);
@@ -223,19 +212,138 @@ inline py::array_t<int64_t> confusion_matrix_runs(
     auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_runs);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
 
-    int64_t* p_cm_ptr;
-    T1* p_y_ptr;
-    T2* p_yhat_ptr;
+    #pragma omp parallel for
+    for (size_t i = 0; i < n_runs; i++) {
+        core::confusion_matrix<T1, T2>(
+            n_obs,
+            y_ptr + (i * n_obs),
+            yhat_ptr + (i * n_obs),
+            cm_ptr + (i * 4)
+        );
+    }
+    return conf_mat;
+}
 
-    #pragma omp parallel for private(p_cm_ptr, p_y_ptr, p_yhat_ptr)
-    for (ssize_t i = 0; i < n_runs; i++) {
-        p_y_ptr = y_ptr + (i * n_obs);
-        p_yhat_ptr = yhat_ptr + (i * n_obs);
-        p_cm_ptr = cm_ptr + (i * 4);
+/* Compute the confusion matrix given true labels y and
+ * classifier scores over a range of thresholds.
+ *
+ * --- Parameters ---
+ * - y : true labels
+ * - score : classifier scores
+ * - thresholds : inclusive classification thresholds
+ * - fill : values to set when divide by zero is encountered
+ *
+ * --- Returns ---
+ * - confusion matrix
+ */
+template <typename T1, typename T2, isFloat<T2> = true>
+inline py::tuple confusion_matrix_thresholds(
+    const py::array_t<T1>& y,
+    const py::array_t<T2>& score,
+    const py::array_t<T2>& thresholds
+) {
+    // condition checks
+    if (!(
+        npy::is_well_behaved(y)
+        && npy::is_well_behaved(score)
+        && npy::is_well_behaved(thresholds)
+    )) {
+        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    }
+
+    // guard against buffer overruns
+    const size_t n_obs = std::min(y.size(), score.size());
+    const size_t n_thresholds = thresholds.size();
+
+    // get ptr
+    T1* y_ptr = npy::get_data(y);
+    T2* score_ptr = npy::get_data(score);
+    T2* threshold_ptr = npy::get_data(thresholds);
+
+    // allocate confusion_matrix
+    auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_thresholds);
+    int64_t* const cm_ptr = npy::get_data(conf_mat);
+
+    #pragma omp parallel for private(y_ptr, score_ptr)
+    for (size_t i = 0; i < n_thresholds; i++) {
         // fill confusion matrix
         core::confusion_matrix<T1, T2>(
-            n_obs, p_y_ptr, p_yhat_ptr, p_cm_ptr
+            n_obs, y_ptr, score_ptr, threshold_ptr[i], cm_ptr + (i * 4)
         );
+    }
+    return conf_mat;
+}
+
+/* Compute the confusion matrices given true labels y and classifier scores over
+ * a range of thresholds. Where both arrays contain the values for
+ * multiple runs/experiments.
+ *
+ * --- Parameters ---
+ * - y : true labels
+ * - score : classifier scores
+ * - thresholds : inclusive classification threshold
+ * - n_obs : array containing the number of observations for each run/experiment
+ *
+ * --- Returns ---
+ * - tuple
+ *   * confusion matrix
+ *   * metrics
+ */
+template <typename T1, typename T2, isFloat<T2> = true>
+inline py::tuple confusion_matrix_runs_thresholds(
+    const py::array_t<T1>& y,
+    const py::array_t<T2>& score,
+    const py::array_t<T2>& thresholds,
+    const py::array_t<int64_t>& n_obs
+) {
+    // condition checks
+    if (!(
+        npy::is_well_behaved(y)
+        && npy::is_well_behaved(score)
+        && npy::is_well_behaved(thresholds)
+        && npy::is_well_behaved(n_obs)
+    )) {
+        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    }
+
+    // get ptr
+    T1* y_ptr = npy::get_data<T1>(y);
+    T2* score_ptr = npy::get_data<T2>(score);
+    T2* thresholds_ptr = npy::get_data<T2>(thresholds);
+    int64_t* n_obs_ptr = npy::get_data(n_obs);
+
+    const size_t n_runs = n_obs.size();
+    const size_t n_thresholds = thresholds.size();
+    const size_t max_obs = *std::max_element(n_obs_ptr, n_obs_ptr + n_runs);
+
+    // allocate confusion_matrix
+    auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_thresholds * n_runs);
+    int64_t* const cm_ptr = npy::get_data(conf_mat);
+
+    // Bookkeeping variables
+    const size_t cm_offset = n_thresholds * 4;
+
+    T1* o_y_ptr;
+    T2* o_score_ptr;
+    size_t o_n_obs;
+    int64_t* o_cm_ptr;
+
+    #pragma omp parallel for private(o_n_obs, o_y_ptr, o_cm_ptr)
+    for (size_t r = 0; r < n_runs; r++) {
+        o_n_obs = n_obs_ptr[r];
+        o_y_ptr = y_ptr + (r * max_obs);
+        o_score_ptr = score_ptr + (r * max_obs);
+        o_cm_ptr = cm_ptr + (r * cm_offset);
+        for (size_t i = 0; i < n_thresholds; i++) {
+            // fill confusion matrix
+            core::confusion_matrix<T1, T2>(
+                o_n_obs,
+                o_y_ptr,
+                o_score_ptr,
+                thresholds_ptr[i],
+                o_cm_ptr + (i * 4)
+            );
+        }
     }
     return conf_mat;
 }

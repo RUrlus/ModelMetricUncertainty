@@ -17,9 +17,11 @@ namespace bindings {
 PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     // confusion_matrix
     bind_confusion_matrix(m);
-    bind_confusion_matrix_runs(m);
     bind_confusion_matrix_score(m);
+    bind_confusion_matrix_runs(m);
     bind_confusion_matrix_score_runs(m);
+    bind_confusion_matrix_thresholds(m);
+    bind_confusion_matrix_runs_thresholds(m);
     // metrics
     bind_binary_metrics(m);
     bind_binary_metrics_score(m);
