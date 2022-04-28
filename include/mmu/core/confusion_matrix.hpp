@@ -28,6 +28,11 @@
 namespace mmu {
 namespace core {
 
+template <typename T1, typename T2, isFloat<T1> = true, isFloat<T2> = true>
+bool greater_equal_tol(T1 a, T2 b, double rtol = 1e-05, double atol = 1e-8) {
+    return std::abs(a - b) <= (atol + rtol * std::max(std::abs(b), std::abs(a))) || a > b;
+}
+
 /* Fill binary confusion matrix based on true labels y and estimated labels yhat
  *
  * --- NOTE ---
@@ -135,7 +140,7 @@ inline void confusion_matrix(
     int64_t* __restrict const conf_mat
 ) {
     for (size_t i = 0; i < n_obs; i++) {
-        conf_mat[static_cast<bool>(*y) * 2 + isgreaterequal(*score, threshold)]++;
+        conf_mat[static_cast<bool>(*y) * 2 + greater_equal_tol(*score, threshold)]++;
         y++;
         score++;
     }
@@ -167,7 +172,7 @@ inline void confusion_matrix(
 ) {
     static constexpr T1 epsilon = std::numeric_limits<T1>::epsilon();
     for (size_t i = 0; i < n_obs; i++) {
-        conf_mat[(*y > epsilon) * 2 + isgreaterequal(*score, threshold)]++; score++; y++;
+        conf_mat[(*y > epsilon) * 2 + greater_equal_tol(*score, threshold)]++; score++; y++;
     }
 }
 
