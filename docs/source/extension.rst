@@ -28,7 +28,7 @@ By default we create a CMake ``Release`` build, if you need to create a
 
 .. code-block:: bash
 
-   MMU_DEBUG_BUILD=ON pip install -e .
+   CMAKE_ARGS="CMAKE_BUILD_TYPE=Debug" pip install -e .
 
 Independent build
 +++++++++++++++++
@@ -46,11 +46,12 @@ environment, these can be found in ``pyproject.toml`` file.
 
     cmake -S . -G Ninja -B mbuild \
         -DCMAKE_BUILD_TYPE=Release \
-        -DMMU_BUILD_TESTS=ON \
+        -DMMU_ENABLE_INTERNAL_TESTS=ON \
+        -DMMU_DEV_MODE=ON \
         -DPython3_EXECUTABLE=$(python3 -c 'import sys; print(sys.executable)') \
         -Dpybind11_DIR=$(python3 -c 'import pybind11; print(pybind11.get_cmake_dir())') \
         -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON
-
+    
     cmake --build mbuild --target install --config Release -j 4
 
 Extension specific tests
@@ -62,7 +63,7 @@ These are specific tests that have their own extension which can be build using:
 
 .. code-block:: bash
 
-   MMU_BUILD_TESTS=ON pip install -e .
+   CMAKE_ARGS="-DMMU_ENABLE_INTERNAL_TESTS=ON" pip install -e .
 
 This will place ``_mmu_core_tests`` extension in ``mmu/lib``.
 You can run the tests with
@@ -107,7 +108,7 @@ Confusion Matrix
     The arrays are assumed to be one-dimensional, contiguous in
     memory and have equal size. The size of the smallest array is used.
 
-.. function:: template <typename T1, typename T2> py::array_t<int64_t> confusion_matrix(const py::array_t<T1>& y, const py::array_t<T2>& score, const T2 threshold)
+.. function:: template <typename T1, typename T2> py::array_t<int64_t> confusion_matrix_score(const py::array_t<T1>& y, const py::array_t<T2>& score, const T2 threshold)
 
     Where ``T1`` is one of ``bool``, ``int``, ``int64_t``, ``float``, ``double``
     and ``T2`` is ``float`` or ``double``.
@@ -117,10 +118,42 @@ Confusion Matrix
     
     :param y: true labels
     :param score: classifier scores
-    :param threshold: include classification threshold
+    :param threshold: inclusive classification threshold
     :exception ``runtime_error``: if an array is not aligned or not contiguous.
 
     The arrays are assumed to be one-dimensional, contiguous in
+    memory and have equal size. The size of the smallest array is used.
+
+.. function:: template <typename T1, typename T2> py::array_t<int64_t> confusion_matrix_runs(const py::array_t<T1>& y, const py::array_t<T2>& yhat)
+
+    Where ``T1`` and ``T2`` are one of ``bool``, ``int``, ``int64_t``,
+    ``float`` or ``double``.
+
+    Compute the confusion matrix given true labels y and estimated labels yhat.
+
+    :param y: true labels
+    :param yhat: predicted labels
+    :param obs_axis: the axis containing the observations beloning to the same run, e.g. 0 when a column contains the scores/labels for a single run.
+    :exception ``runtime_error``: if an array is not aligned or not contiguous.
+
+    The arrays are assumed to be two-dimensional, contiguous in
+    memory and have equal size. The size of the smallest array is used.
+
+.. function:: template <typename T1, typename T2> py::array_t<int64_t> confusion_matrix_score_runs(const py::array_t<T1>& y, const py::array_t<T2>& score, const T2 threshold, const int obs_axis)
+
+    Where ``T1`` is one of ``bool``, ``int``, ``int64_t``, ``float``, ``double``
+    and ``T2`` is ``float`` or ``double``.
+
+    Compute the confusion matrix given true labels ``y`` and classifier scores
+    ``score``.
+    
+    :param y: true labels
+    :param score: classifier scores
+    :param threshold: inclusive classification threshold
+    :param obs_axis: the axis containing the observations beloning to the same run, e.g. 0 when a column contains the scores/labels for a single run.
+    :exception ``runtime_error``: if an array is not aligned or not contiguous.
+
+    The arrays are assumed to be two-dimensional, contiguous in
     memory and have equal size. The size of the smallest array is used.
 
 

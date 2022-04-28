@@ -1,6 +1,6 @@
-=========================================
-MMU - Model Metric Uncertainty converters
-=========================================
+==============================
+MMU - Model Metric Uncertainty
+==============================
 *MMU is a library for ...*
 
 .. only: not latex
