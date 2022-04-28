@@ -7,6 +7,7 @@ import numpy as np
 import mmu
 
 from mmu.commons._testing import generate_test_labels
+from mmu.commons._testing import greater_equal_tol
 import mmu.lib._mmu_core as _core
 
 Y_DTYPES = [
@@ -131,7 +132,7 @@ def test_confusion_matrix_proba():
             y_dtype=y_dtype,
             proba_dtype=proba_dtype
         )
-        yhat = proba >= threshold
+        yhat = greater_equal_tol(proba, threshold)
         sk_conf_mat = skm.confusion_matrix(y, yhat)
         conf_mat = mmu.confusion_matrix(
             y, score=proba, threshold=threshold
@@ -147,7 +148,7 @@ def test_confusion_matrix_proba_shapes():
     y_shapes = [y, y[None, :], y[:, None]]
     proba_shapes = [proba, proba[None, :], proba[:, None]]
 
-    yhat = proba >= 0.5
+    yhat = greater_equal_tol(proba, 0.5)
     sk_conf_mat = skm.confusion_matrix(y, yhat)
 
     for y_, proba_ in itertools.product(y_shapes, proba_shapes):
@@ -203,7 +204,7 @@ def test_confusion_matrix_proba_order():
         proba[:, None].copy(order='F'),
     ]
 
-    yhat = proba >= 0.5
+    yhat = greater_equal_tol(proba, 0.5)
     sk_conf_mat = skm.confusion_matrix(y, yhat)
 
     for y_, proba_ in itertools.product(y_orders, proba_orders):
@@ -242,7 +243,7 @@ def test_confusion_matrix_score_runs():
 
         sk_conf_mats = np.empty((4, 4), dtype=np.int64)
         for i in range(4):
-            yhat = score[:, i] > 0.5
+            yhat = greater_equal_tol(score[:, i], 0.5, return_dtype=np.bool_)
             sk_conf_mats[i, :] = skm.confusion_matrix(y[:, i], yhat).flatten()
         conf_mat = _core.confusion_matrix_score_runs(y, score, 0.5, 0)
         assert np.array_equal(conf_mat, sk_conf_mats), (

@@ -26,6 +26,25 @@ def create_unaligned_array(dtype):
     return z
 
 
+def greater_equal_tol(a, b, return_dtype=np.int64):
+    """Check if a >= b, taking into account floating point noise.
+
+    Parameters
+    ----------
+    a : np.ndarray[floating]
+        array containing floating points to be checked against b
+    b : np.ndarray[floating]
+        array containing floating points to be checked against a
+
+    Returns
+    -------
+    np.ndarray[`return_dtype`]
+        the greater equal values with dtype `return_dtype`
+
+    """
+    return (np.isclose(a, b) | (a > b)).astype(return_dtype)
+
+
 def generate_test_labels(
     N,
     y_dtype=np.int64,
@@ -90,7 +109,7 @@ def compute_reference_metrics(y, yhat=None, proba=None, threshold=None,
             raise ValueError(
                 '``threshold`` must note be None when Proba is not None'
             )
-        yhat = (proba > threshold).astype(np.int64)
+        yhat = greater_equal_tol(proba, threshold)
 
     metrics = np.zeros(10, dtype=np.float64)
     prec, rec, f1,  _ = skm.precision_recall_fscore_support(y, yhat, zero_division=fill)
