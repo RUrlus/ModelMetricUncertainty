@@ -82,7 +82,7 @@ def _check_array(
     )
 
     if convert > 0:
-        return np.asarray(arr, order=_ORDER_SH[order], dtype=dtype_)  # type: ignore
+        return np.asarray(arr, order=_ORDER_SH[target_order], dtype=dtype_)  # type: ignore
     return arr
 
 
