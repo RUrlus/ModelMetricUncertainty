@@ -24,6 +24,7 @@ namespace mmu {
 namespace bindings {
 
 void bind_pr_mvn_error(py::module &m);
+void bind_pr_mvn_error_runs(py::module &m);
 void bind_pr_curve_mvn_error(py::module &m);
 
 }  // namespace bindings

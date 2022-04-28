@@ -40,6 +40,37 @@ void bind_pr_mvn_error(py::module &m) {
     );
 }
 
+void bind_pr_mvn_error_runs(py::module &m) {
+    m.def(
+        "pr_mvn_error_runs",
+        &api::pr_mvn_error_runs,
+        R"pbdoc(Compute Precision, Recall and their, joint, uncertainty.
+
+        --- Parameters ---
+        conf_mat : np.ndarray[int64]
+            confusion_matrix with shape (2, 2) or (4, )
+        - alpha : float
+            the density inside the confidence interval
+
+        --- Returns ---
+        metrics : np.ndarray
+            with columns
+                0. precision
+                1. LB CI precision
+                2. UB CI precision
+                3. recall
+                4. LB CI recall
+                5. UB CI recall
+                6. V[precision]
+                7. COV[precision, recall]
+                8. V[recall]
+                9. COV[precision, recall]
+        )pbdoc",
+        py::arg("conf_mat"),
+        py::arg("alpha")
+    );
+}
+
 void bind_pr_curve_mvn_error(py::module &m) {
     m.def(
         "pr_curve_mvn_error",

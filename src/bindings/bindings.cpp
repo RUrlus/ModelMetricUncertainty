@@ -31,6 +31,7 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_is_well_behaved_finite(m);
     // lep_mvn
     bind_pr_mvn_error(m);
+    bind_pr_mvn_error_runs(m);
     bind_pr_curve_mvn_error(m);
 
 #if not defined OS_WIN

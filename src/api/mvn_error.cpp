@@ -51,6 +51,53 @@ f64arr pr_mvn_error(
     return metrics;
 }
 
+/* Compute the Precision-Recall and their uncertainty.
+ *
+ * --- Parameters ---
+ * - conf_mat : confusion_matrix
+ * - alpha : the density inside the confidence interval
+ *
+ * --- Returns ---
+ * - metrics with columns
+ *     0. precision
+ *     1. LB CI precision
+ *     2. UB CI precision
+ *     3. recall
+ *     4. LB CI recall
+ *     5. UB CI recall
+ *     6. V[precision]
+ *     7. COV[precision, recall]
+ *     8. V[recall]
+ *     9. COV[precision, recall]
+ */
+f64arr pr_mvn_error_runs(
+    const i64arr& conf_mat,
+    double alpha
+) {
+    // condition checks
+    if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
+        throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
+    }
+    size_t ndim = conf_mat.ndim();
+    if (ndim != 2 || conf_mat.shape(1) != 4) {
+        throw std::runtime_error("`conf_mat` should have shape (N, 4).");
+    }
+    // allocate memory confusion_matrix
+    int64_t* const cm_ptr = npy::get_data(conf_mat);;
+
+    const size_t n_runs = conf_mat.shape(0);
+
+    auto metrics = f64arr(n_runs * 10);
+    double* const metrics_ptr = npy::get_data(metrics);
+
+    // compute metrics
+    #pragma omp parallel for
+    for (size_t i = 0; i < n_runs; i++) {
+        core::pr_mvn_error(cm_ptr + (i * 4), metrics_ptr + (i * 10), alpha);
+    }
+    return metrics.reshape({n_runs, static_cast<size_t>(10)});
+}
+
 /* Compute the Precision-Recall curve and its uncertainty.
  *
  * --- Parameters ---

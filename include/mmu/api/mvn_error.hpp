@@ -25,6 +25,7 @@ namespace mmu {
 namespace api {
 
 f64arr pr_mvn_error(const i64arr& conf_mat, double alpha);
+f64arr pr_mvn_error_runs(const i64arr& conf_mat, double alpha);
 f64arr pr_curve_mvn_error(const i64arr& conf_mat, double alpha);
 
 }  // namespace api
