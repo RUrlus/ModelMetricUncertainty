@@ -157,5 +157,76 @@ Confusion Matrix
     memory and have equal size. The size of the smallest array is used.
 
 
+Binary Metrics
+++++++++++++++
+
+The binary metrics functions only operate on confusion matrices.
+
+.. function:: py::array_t<double> binary_metrics(const py::array_t<int64_t>& conf_mat, const double fill)
+
+    Computes the following metrics where [i] indicates the i'th value in the
+    array.
+
+        * [0] neg.precision aka Negative Predictive Value (NPV)
+        * [1] pos.precision aka Positive Predictive Value (PPV)
+        * [2] neg.recall aka True Negative Rate (TNR) aka Specificity
+        * [3] pos.recall aka True Positive Rate (TPR) aka Sensitivity
+        * [4] neg.f1 score
+        * [5] pos.f1 score
+        * [6] False Positive Rate (FPR)
+        * [7] False Negative Rate (FNR)
+        * [8] Accuracy
+        * [9] MCC
+    
+    :param conf_mat: confusion matrix
+    :param fill: value to set when computed metric will be undefined
+    :exception ``runtime_error``: if an array is not aligned or not contiguous.
+
+    `conf_mat` should be aligned and contiguous.
+
+.. function:: py::array_t<double> binary_metrics_2d(const py::array_t<int64_t>& conf_mat, const double fill)
+
+    Computes the following metrics where [i] indicates the i'th column in the
+    array.
+
+        * [0] neg.precision aka Negative Predictive Value (NPV)
+        * [1] pos.precision aka Positive Predictive Value (PPV)
+        * [2] neg.recall aka True Negative Rate (TNR) aka Specificity
+        * [3] pos.recall aka True Positive Rate (TPR) aka Sensitivity
+        * [4] neg.f1 score
+        * [5] pos.f1 score
+        * [6] False Positive Rate (FPR)
+        * [7] False Negative Rate (FNR)
+        * [8] Accuracy
+        * [9] MCC
+    
+    :param conf_mat: confusion matrix
+    :param fill: value to set when computed metric will be undefined
+    :exception ``runtime_error``: if an array is not aligned or not C-contiguous.
+
+    `conf_mat` should be aligned and C-contiguous and have shape (N, 4).
+
+.. function:: py::array_t<double> binary_metrics_flattened(const py::array_t<int64_t>& conf_mat, const double fill)
+
+    Computes the following metrics where [i] indicates the i'th column in the
+    array.
+
+        * [0] neg.precision aka Negative Predictive Value (NPV)
+        * [1] pos.precision aka Positive Predictive Value (PPV)
+        * [2] neg.recall aka True Negative Rate (TNR) aka Specificity
+        * [3] pos.recall aka True Positive Rate (TPR) aka Sensitivity
+        * [4] neg.f1 score
+        * [5] pos.f1 score
+        * [6] False Positive Rate (FPR)
+        * [7] False Negative Rate (FNR)
+        * [8] Accuracy
+        * [9] MCC
+    
+    :param conf_mat: confusion matrix
+    :param fill: value to set when computed metric will be undefined
+    :exception ``runtime_error``: if an array is not aligned or not contiguous.
+
+    `conf_mat` should be aligned and contiguous and have shape (N * 4).
+
 .. _pybind11: https://pybind11.readthedocs.io/en/stable/#
 .. _scikit-build: https://scikit-build.readthedocs.io/en/latest/index.html

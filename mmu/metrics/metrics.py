@@ -85,33 +85,33 @@ def metrics_to_dataframe(metrics, metric_names=None):
 
 
 def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df=False):
-    """Compute binary classification metrics.
+    r"""Compute binary classification metrics.
 
-    Computes the following metrics:
-        0 - neg.precision aka Negative Predictive Value (NPV)
-        1 - pos.precision aka Positive Predictive Value (PPV)
-        2 - neg.recall aka True Negative Rate (TNR) aka Specificity
-        3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
-        4 - neg.f1 score
-        5 - pos.f1 score
-        6 - False Positive Rate (FPR)
-        7 - False Negative Rate (FNR)
-        8 - Accuracy
-        9 - MCC
+    Computes the following metrics where [i] indicates the i'th value in the
+    array.
+
+        * [0] neg.precision aka Negative Predictive Value (NPV)
+        * [1] pos.precision aka Positive Predictive Value (PPV)
+        * [2] neg.recall aka True Negative Rate (TNR) aka Specificity
+        * [3] pos.recall aka True Positive Rate (TPR) aka Sensitivity
+        * [4] neg.f1 score
+        * [5] pos.f1 score
+        * [6] False Positive Rate (FPR)
+        * [7] False Negative Rate (FNR)
+        * [8] Accuracy
+        * [9] MCC
 
     Parameters
     ----------
-    y : np.ndarray
-        true labels for observations, supported dtypes are [bool, int32,
-        int64, float32, float64]
-    yhat : np.ndarray, default=None
+    y : np.ndarray[bool, int32, int64, float32, float64]
+        true labels for observations
+    yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
         the predicted labels, the same dtypes are supported as y. Can be `None`
         if `score` is not `None`, if both are provided, `score` is ignored.
-    score : np.ndarray, default=None
+    score : np.ndarray[float32, float64], default=None
         the classifier score to be evaluated against the `threshold`, i.e.
         `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
         if both are provided, this parameter is ignored.
-        Supported dtypes are float32 and float64.
     threshold : float, default=0.5
         the classification threshold to which the classifier score is evaluated,
         is inclusive.
@@ -121,7 +121,8 @@ def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df
     Returns
     -------
     confusion_matrix : np.ndarray, pd.DataFrame
-        the confusion_matrix
+        the confusion_matrix with layout
+        [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP
     metrics : np.ndarray, pd.DataFrame
         the computed metrics
 
@@ -172,21 +173,23 @@ def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df
 def binary_metrics_confusion_matrix(confusion_matrix, fill=0.0, return_df=False):
     """Compute binary classification metrics.
 
-    Computes the following metrics:
-        0 - neg.precision aka Negative Predictive Value (NPV)
-        1 - pos.precision aka Positive Predictive Value (PPV)
-        2 - neg.recall aka True Negative Rate (TNR) aka Specificity
-        3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
-        4 - neg.f1 score
-        5 - pos.f1 score
-        6 - False Positive Rate (FPR)
-        7 - False Negative Rate (FNR)
-        8 - Accuracy
-        9 - MCC
+    Computes the following metrics where [i] indicates the i'th value in the
+    array.
+
+        * [0] neg.precision aka Negative Predictive Value (NPV)
+        * [1] pos.precision aka Positive Predictive Value (PPV)
+        * [2] neg.recall aka True Negative Rate (TNR) aka Specificity
+        * [3] pos.recall aka True Positive Rate (TPR) aka Sensitivity
+        * [4] neg.f1 score
+        * [5] pos.f1 score
+        * [6] False Positive Rate (FPR)
+        * [7] False Negative Rate (FNR)
+        * [8] Accuracy
+        * [9] MCC
 
     Parameters
     ----------
-    confusion_matrix : np.ndarray,
+    confusion_matrix : np.ndarray[int32, int64],
         confusion_matrix as returned by mmu.confusion_matrix
     fill : float, default=0.0
         value to fill when a metric is not defined, e.g. divide by zero.
@@ -221,22 +224,25 @@ def binary_metrics_confusion_matrix(confusion_matrix, fill=0.0, return_df=False)
 def binary_metrics_confusion_matrices(confusion_matrix, fill=0.0, return_df=False):
     """Compute binary classification metrics.
 
-    Computes the following metrics:
-        0 - neg.precision aka Negative Predictive Value (NPV)
-        1 - pos.precision aka Positive Predictive Value (PPV)
-        2 - neg.recall aka True Negative Rate (TNR) aka Specificity
-        3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
-        4 - neg.f1 score
-        5 - pos.f1 score
-        6 - False Positive Rate (FPR)
-        7 - False Negative Rate (FNR)
-        8 - Accuracy
-        9 - MCC
+    Computes the following metrics where [i] indicates the i'th value in the
+    array.
+
+        * [0] neg.precision aka Negative Predictive Value (NPV)
+        * [1] pos.precision aka Positive Predictive Value (PPV)
+        * [2] neg.recall aka True Negative Rate (TNR) aka Specificity
+        * [3] pos.recall aka True Positive Rate (TPR) aka Sensitivity
+        * [4] neg.f1 score
+        * [5] pos.f1 score
+        * [6] False Positive Rate (FPR)
+        * [7] False Negative Rate (FNR)
+        * [8] Accuracy
+        * [9] MCC
 
     Parameters
     ----------
-    confusion_matrix : np.ndarray,
-        confusion_matrix as returned by mmu.confusion_matrices
+    confusion_matrix : np.ndarray[int32, int64],
+        confusion_matrix as returned by mmu.confusion_matrices, should have
+        shape (N, 4) and be C-Contiguous
     fill : float, default=0.0
         value to fill when a metric is not defined, e.g. divide by zero.
     return_df : bool, default=False
@@ -269,29 +275,32 @@ def binary_metrics_thresholds(
 ):
     """Compute binary classification metrics over multiple thresholds.
 
-    Computes the following metrics:
-        0 - neg.precision aka Negative Predictive Value (NPV)
-        1 - pos.precision aka Positive Predictive Value (PPV)
-        2 - neg.recall aka True Negative Rate (TNR) aka Specificity
-        3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
-        4 - neg.f1 score
-        5 - pos.f1 score
-        6 - False Positive Rate (FPR)
-        7 - False Negative Rate (FNR)
-        8 - Accuracy
-        9 - MCC
+    Computes the following metrics where [i] indicates the i'th column in the
+    array.
+
+        * [0] neg.precision aka Negative Predictive Value (NPV)
+        * [1] pos.precision aka Positive Predictive Value (PPV)
+        * [2] neg.recall aka True Negative Rate (TNR) aka Specificity
+        * [3] pos.recall aka True Positive Rate (TPR) aka Sensitivity
+        * [4] neg.f1 score
+        * [5] pos.f1 score
+        * [6] False Positive Rate (FPR)
+        * [7] False Negative Rate (FNR)
+        * [8] Accuracy
+        * [9] MCC
 
     Parameters
     ----------
-    y : np.ndarray
-        true labels for observations, supported dtypes are [bool, int32,
-        int64, float32, float64]
-    score : np.ndarray, default=None
+    y : np.ndarray[bool, int32, int64, float32, float64]
+        true labels for observations
+    yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
+        the predicted labels, the same dtypes are supported as y. Can be `None`
+        if `score` is not `None`, if both are provided, `score` is ignored.
+    score : np.ndarray[float32, float64], default=None
         the classifier score to be evaluated against the `threshold`, i.e.
         `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
         if both are provided, this parameter is ignored.
-        Supported dtypes are float32 and float64.
-    thresholds : np.ndarray
+    thresholds : np.ndarray[float32, float64]
         the classification thresholds for which the classifier score is evaluated,
         is inclusive.
     fill : float, default=0.0
@@ -303,7 +312,7 @@ def binary_metrics_thresholds(
     -------
     confusion_matrix : np.ndarray, pd.DataFrame
         the confusion_matrices where the rows contain the counts for a
-        threshold
+        threshold, [i, 0] = TN, [i, 1] = FP, [i, 2] = FN, [i, 3] = TP
     metrics : np.ndarray, pd.DataFrame
         the computed metrics where the rows contain the metrics for a single
         threshold
@@ -348,33 +357,36 @@ def binary_metrics_runs(
 ):
     """Compute binary classification metrics over multiple runs.
 
-    Computes the following metrics:
-        0 - neg.precision aka Negative Predictive Value (NPV)
-        1 - pos.precision aka Positive Predictive Value (PPV)
-        2 - neg.recall aka True Negative Rate (TNR) aka Specificity
-        3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
-        4 - neg.f1 score
-        5 - pos.f1 score
-        6 - False Positive Rate (FPR)
-        7 - False Negative Rate (FNR)
-        8 - Accuracy
-        9 - MCC
+    Computes the following metrics where [i] indicates the i'th column in the
+    array.
+
+        * [0] neg.precision aka Negative Predictive Value (NPV)
+        * [1] pos.precision aka Positive Predictive Value (PPV)
+        * [2] neg.recall aka True Negative Rate (TNR) aka Specificity
+        * [3] pos.recall aka True Positive Rate (TPR) aka Sensitivity
+        * [4] neg.f1 score
+        * [5] pos.f1 score
+        * [6] False Positive Rate (FPR)
+        * [7] False Negative Rate (FNR)
+        * [8] Accuracy
+        * [9] MCC
 
     Parameters
     ----------
-    y : np.ndarray
-        true labels for observations, supported dtypes are [bool, int32,
-        int64, float32, float64]
-    yhat : np.ndarray, default=None
+    y : np.ndarray[bool, int32, int64, float32, float64]
+        true labels for observations, should have shape (N, K) for `K` runs
+        each consisting of `N` observations if `obs_axis`
+    yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
         the predicted labels, the same dtypes are supported as y. Can be `None`
         if `score` is not `None`, if both are provided, `score` is ignored.
-    score : np.ndarray, default=None
+        `yhat` shape must be compatible with `y`.
+    score : np.ndarray[float32, float64], default=None
         the classifier score to be evaluated against the `threshold`, i.e.
         `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
         if both are provided, this parameter is ignored.
-        Supported dtypes are float32 and float64.
-    threshold : float, default=0.5
-        the classification threshold for which the classifier score is evaluated,
+        `score` shape must be compatible with `y`.
+    thresholds : np.ndarray[float32, float64]
+        the classification thresholds for which the classifier score is evaluated,
         is inclusive.
     obs_axis : int, default=0
         the axis containing the observations for a single run, e.g. 0 when the
@@ -387,8 +399,8 @@ def binary_metrics_runs(
     Returns
     -------
     confusion_matrix : np.ndarray, pd.DataFrame
-        the confusion_matrices where the rows contain the counts for a single
-        run
+        the confusion_matrices where the rows contain the counts for a
+        run, [i, 0] = TN, [i, 1] = FP, [i, 2] = FN, [i, 3] = TP
     metrics : np.ndarray, pd.DataFrame
         the computed metrics where the rows contain the metrics for a single
         run
@@ -450,32 +462,34 @@ def binary_metrics_runs_thresholds(
     y, score, thresholds, n_obs=None, fill=0.0, obs_axis=0):
     """Compute binary classification metrics over runs and thresholds.
 
-    Computes the following metrics:
-        0 - neg.precision aka Negative Predictive Value (NPV)
-        1 - pos.precision aka Positive Predictive Value (PPV)
-        2 - neg.recall aka True Negative Rate (TNR) aka Specificity
-        3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
-        4 - neg.f1 score
-        5 - pos.f1 score
-        6 - False Positive Rate (FPR)
-        7 - False Negative Rate (FNR)
-        8 - Accuracy
-        9 - MCC
+    Computes the following metrics where [i] indicates the i'th column in the
+    array.
+
+        * [0] neg.precision aka Negative Predictive Value (NPV)
+        * [1] pos.precision aka Positive Predictive Value (PPV)
+        * [2] neg.recall aka True Negative Rate (TNR) aka Specificity
+        * [3] pos.recall aka True Positive Rate (TPR) aka Sensitivity
+        * [4] neg.f1 score
+        * [5] pos.f1 score
+        * [6] False Positive Rate (FPR)
+        * [7] False Negative Rate (FNR)
+        * [8] Accuracy
+        * [9] MCC
 
     Parameters
     ----------
-    y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
+    y : np.ndarray[bool, int32, int64, float32, float64]
         the ground truth labels, if different runs have different number of
         observations the n_obs parameter must be set to avoid computing metrics
         of the filled values. If ``y`` is one dimensional and ``score`` is not
         the ``y`` values are assumed to be the same for each run.
-    score : np.array[np.float[32/64]]
+    score : np.array[float32, float64]
         the classifier scores, if different runs have different number of
         observations the n_obs parameter must be set to avoid computing metrics
         of the filled values.
-    thresholds : np.array[np.float[32/64]]
+    thresholds : np.array[float32, float64]
         classification thresholds
-    n_obs : np.array[np.int64], default=None
+    n_obs : np.array[int64], default=None
         the number of observations per run, if None the same number of
         observations are assumed exist for each run.
     fill : double
@@ -486,10 +500,13 @@ def binary_metrics_runs_thresholds(
 
     Returns
     -------
-    tuple[np.array[np.int64], np.array[np.float64]]
-        confusion matrix and metrics array
-        the arrays are 3-dimensional where the first axis is the threshold,
-        the second the metric and the third the run
+    conf_mat : np.ndarray[int64]
+        3D array where the rows contain the counts for a threshold,
+        the columns the confusion matrix entries and the slices the counts for
+        a run
+    metrics : np.ndarray[float64]
+        3D array where the first axis is the threshold, the second the metrics
+        and the third the run
 
     """
     y = check_array(
