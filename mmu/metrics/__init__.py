@@ -9,6 +9,7 @@ from mmu.metrics.metrics import binary_metrics_runs
 from mmu.metrics.metrics import binary_metrics_thresholds
 from mmu.metrics.metrics import binary_metrics_runs_thresholds
 from mmu.metrics.metrics import binary_metrics_confusion_matrix
+from mmu.metrics.metrics import binary_metrics_confusion_matrices
 
 __all__ = [
     'binary_metrics',
@@ -16,6 +17,7 @@ __all__ = [
     'binary_metrics_thresholds',
     'binary_metrics_runs_thresholds',
     'binary_metrics_confusion_matrix',
+    'binary_metrics_confusion_matrices',
     'col_index',
     'col_names',
     'confusion_matrix',

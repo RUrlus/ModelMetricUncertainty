@@ -208,9 +208,56 @@ def binary_metrics_confusion_matrix(confusion_matrix, fill=0.0, return_df=False)
     confusion_matrix = check_array(
         confusion_matrix,
         max_dim=1,
+        target_order=0,
         dtypes=['int32', 'int64'],
     )
     metrics = _core.binary_metrics(confusion_matrix, fill)
+
+    if return_df:
+        return metrics_to_dataframe(metrics)
+    return metrics
+
+
+def binary_metrics_confusion_matrices(confusion_matrix, fill=0.0, return_df=False):
+    """Compute binary classification metrics.
+
+    Computes the following metrics:
+        0 - neg.precision aka Negative Predictive Value (NPV)
+        1 - pos.precision aka Positive Predictive Value (PPV)
+        2 - neg.recall aka True Negative Rate (TNR) aka Specificity
+        3 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+        4 - neg.f1 score
+        5 - pos.f1 score
+        6 - False Positive Rate (FPR)
+        7 - False Negative Rate (FNR)
+        8 - Accuracy
+        9 - MCC
+
+    Parameters
+    ----------
+    confusion_matrix : np.ndarray,
+        confusion_matrix as returned by mmu.confusion_matrices
+    fill : float, default=0.0
+        value to fill when a metric is not defined, e.g. divide by zero.
+    return_df : bool, default=False
+        return the metrics confusion matrix and metrics as a DataFrame
+
+    Returns
+    -------
+    metrics : np.ndarray, pd.DataFrame
+        the computed metrics
+
+    """
+    if not isinstance(fill, float):
+        raise TypeError("`fill` must be a float.")
+
+    confusion_matrix = check_array(
+        confusion_matrix,
+        max_dim=2,
+        target_order=0,
+        dtypes=['int32', 'int64'],
+    )
+    metrics = _core.binary_metrics_2d(confusion_matrix, fill)
 
     if return_df:
         return metrics_to_dataframe(metrics)
@@ -286,7 +333,7 @@ def binary_metrics_thresholds(
     if score.size != y.size:
         raise ValueError('`score` and `y` must have equal length.')
     conf_mat = _core.confusion_matrix_thresholds(y, score, thresholds)
-    metrics = _core.binary_metrics_thresholds(conf_mat, fill)
+    metrics = _core.binary_metrics_2d(conf_mat, fill)
 
     if return_df:
         return (
@@ -400,7 +447,7 @@ def binary_metrics_runs(
 
 
 def binary_metrics_runs_thresholds(
-    y, scores, thresholds, n_obs=None, fill=0.0, obs_axis=0):
+    y, score, thresholds, n_obs=None, fill=0.0, obs_axis=0):
     """Compute binary classification metrics over runs and thresholds.
 
     Computes the following metrics:
@@ -420,9 +467,9 @@ def binary_metrics_runs_thresholds(
     y : np.array[np.bool / np.int[32/64] / np.float[32/64]]
         the ground truth labels, if different runs have different number of
         observations the n_obs parameter must be set to avoid computing metrics
-        of the filled values. If ``y`` is one dimensional and ``scores`` is not
+        of the filled values. If ``y`` is one dimensional and ``score`` is not
         the ``y`` values are assumed to be the same for each run.
-    scores : np.array[np.float[32/64]]
+    score : np.array[np.float[32/64]]
         the classifier scores, if different runs have different number of
         observations the n_obs parameter must be set to avoid computing metrics
         of the filled values.
@@ -453,16 +500,16 @@ def binary_metrics_runs_thresholds(
         dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['y'],
     )
 
-    scores = check_array(
-        scores,
+    score = check_array(
+        score,
         axis=obs_axis,
         target_axis=obs_axis,
         max_dim=2,
         dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
     )
 
-    n_runs = scores.shape[1 - obs_axis]
-    max_obs = scores.shape[obs_axis]
+    n_runs = score.shape[1 - obs_axis]
+    max_obs = score.shape[obs_axis]
 
     if y.shape[1] < 2:
         y = np.tile(y, (y.shape[0], n_runs))
@@ -472,9 +519,9 @@ def binary_metrics_runs_thresholds(
         n_obs = np.repeat(max_obs, n_runs)
 
     cm = _core.confusion_matrix_runs_thresholds(
-        y, scores, thresholds, n_obs
+        y, score, thresholds, n_obs
     )
-    mtr = _core.binary_metrics_flattened(cm, fill)
+    mtr = _core.binary_metrics_2d(cm, fill)
 
     # cm and mtr are both flat arrays with order conf_mat, thresholds, runs
     # as this is fastest to create. However, how the cubes will be sliced
