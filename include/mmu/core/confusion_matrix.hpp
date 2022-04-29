@@ -28,9 +28,18 @@
 namespace mmu {
 namespace core {
 
+/* Check if a is greater or equal to b taking into account floating point noise
+ *
+ * Note that this function is assymmetric for the equality check as it uses
+ * the scale of `b` to determine the tollerance.
+ */
 template <typename T1, typename T2, isFloat<T1> = true, isFloat<T2> = true>
-bool greater_equal_tol(T1 a, T2 b, double rtol = 1e-05, double atol = 1e-8) {
-    return std::abs(a - b) <= (atol + rtol * std::max(std::abs(b), std::abs(a))) || a > b;
+bool greater_equal_tol(const T1 a, const T2 b, const double rtol = 1e-05, const double atol = 1e-8) {
+    double delta = a - b;
+    double scaled_tol = atol + rtol * std::abs(b);
+    // the first condition checks if a and b are approximately equal
+    // the second condition checks if a is greater than b given the tollerance
+    return std::abs(delta) <= scaled_tol || delta > scaled_tol;
 }
 
 /* Fill binary confusion matrix based on true labels y and estimated labels yhat
