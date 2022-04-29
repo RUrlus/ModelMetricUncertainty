@@ -237,7 +237,7 @@ inline py::array_t<int64_t> confusion_matrix_runs(
  * - confusion matrix
  */
 template <typename T1, typename T2, isFloat<T2> = true>
-inline py::tuple confusion_matrix_thresholds(
+inline py::array_t<int64_t> confusion_matrix_thresholds(
     const py::array_t<T1>& y,
     const py::array_t<T2>& score,
     const py::array_t<T2>& thresholds
@@ -290,7 +290,7 @@ inline py::tuple confusion_matrix_thresholds(
  *   * metrics
  */
 template <typename T1, typename T2, isFloat<T2> = true>
-inline py::tuple confusion_matrix_runs_thresholds(
+inline py::array_t<int64_t> confusion_matrix_runs_thresholds(
     const py::array_t<T1>& y,
     const py::array_t<T2>& score,
     const py::array_t<T2>& thresholds,
