@@ -1,4 +1,7 @@
 from mmu.metrics.confmat import confusion_matrix
+from mmu.metrics.confmat import confusion_matrices
+from mmu.metrics.confmat import confusion_matrices_thresholds
+from mmu.metrics.confmat import confusion_matrices_runs_thresholds
 from mmu.metrics.confmat import confusion_matrix_to_dataframe
 from mmu.metrics.confmat import confusion_matrices_to_dataframe
 from mmu.metrics.metrics import col_index
@@ -21,6 +24,9 @@ __all__ = [
     'col_index',
     'col_names',
     'confusion_matrix',
+    'confusion_matrices',
+    'confusion_matrices_thresholds',
+    'confusion_matrices_runs_thresholds',
     'confusion_matrix_to_dataframe',
     'confusion_matrices_to_dataframe',
     'metrics_to_dataframe',
