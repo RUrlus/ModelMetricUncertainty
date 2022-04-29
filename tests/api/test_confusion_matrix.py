@@ -226,7 +226,7 @@ def test_confusion_matrix_runs():
         sk_conf_mats = np.empty((4, 4), dtype=np.int64)
         for i in range(4):
             sk_conf_mats[i, :] = skm.confusion_matrix(y[:, i], yhat[:, i]).flatten()
-        conf_mat = _core.confusion_matrix_runs(y, yhat, 0)
+        conf_mat = mmu.confusion_matrices(y, yhat)
         assert np.array_equal(conf_mat, sk_conf_mats), (
             f"test failed for dtypes: {y_dtype}, {yhat_dtype}"
         )
@@ -245,7 +245,26 @@ def test_confusion_matrix_score_runs():
         for i in range(4):
             yhat = greater_equal_tol(score[:, i], 0.5, return_dtype=np.bool_)
             sk_conf_mats[i, :] = skm.confusion_matrix(y[:, i], yhat).flatten()
-        conf_mat = _core.confusion_matrix_score_runs(y, score, 0.5, 0)
+        conf_mat = mmu.confusion_matrices(y, score=score, threshold=0.5)
+        assert np.array_equal(conf_mat, sk_conf_mats), (
+            f"test failed for dtypes: {y_dtype}, {proba_dtype}"
+        )
+
+
+def test_confusion_matrices_thresholds():
+    thresholds = np.random.uniform(0, 1, 10)
+    for y_dtype, proba_dtype in itertools.product(Y_DTYPES, PROBA_DTYPES):
+        score, _, y = generate_test_labels(
+            N=1000,
+            y_dtype=y_dtype,
+            proba_dtype=proba_dtype
+        )
+
+        sk_conf_mats = np.empty((10, 4), dtype=np.int64)
+        for i in range(10):
+            yhat = greater_equal_tol(score, thresholds[i], return_dtype=np.bool_)
+            sk_conf_mats[i, :] = skm.confusion_matrix(y, yhat).flatten()
+        conf_mat = mmu.confusion_matrices_thresholds(y, score=score, thresholds=thresholds)
         assert np.array_equal(conf_mat, sk_conf_mats), (
             f"test failed for dtypes: {y_dtype}, {proba_dtype}"
         )
