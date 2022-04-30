@@ -152,7 +152,9 @@ inline py::array_t<int64_t> confusion_matrix_runs(
     auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_runs);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
 
-    #pragma omp parallel for
+    #pragma omp parallel shared(n_obs, n_runs, y_ptr, score_ptr, threshold, cm_ptr)
+    {
+    #pragma omp for
     for (ssize_t i = 0; i < n_runs; i++) {
         // fill confusion matrix
         core::confusion_matrix<T1, T2>(
@@ -163,6 +165,7 @@ inline py::array_t<int64_t> confusion_matrix_runs(
             cm_ptr + (i * 4)
         );
     }
+    }  // pragma omp parallel
     return conf_mat;
 }
 
@@ -212,7 +215,9 @@ inline py::array_t<int64_t> confusion_matrix_runs(
     auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_runs);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
 
-    #pragma omp parallel for
+    #pragma omp parallel shared(n_obs, n_runs, y_ptr, yhat_ptr, cm_ptr)
+    {
+    #pragma omp for
     for (size_t i = 0; i < n_runs; i++) {
         core::confusion_matrix<T1, T2>(
             n_obs,
@@ -221,6 +226,7 @@ inline py::array_t<int64_t> confusion_matrix_runs(
             cm_ptr + (i * 4)
         );
     }
+    }  // pragma omp parallel
     return conf_mat;
 }
 
@@ -255,22 +261,24 @@ inline py::array_t<int64_t> confusion_matrix_thresholds(
     const size_t n_obs = std::min(y.size(), score.size());
     const size_t n_thresholds = thresholds.size();
 
+    // allocate confusion_matrix
+    auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_thresholds);
     // get ptr
     T1* y_ptr = npy::get_data(y);
     T2* score_ptr = npy::get_data(score);
     T2* threshold_ptr = npy::get_data(thresholds);
-
-    // allocate confusion_matrix
-    auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_thresholds);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
+    #pragma omp parallel shared(n_obs, n_thresholds, y_ptr, score_ptr, threshold_ptr, cm_ptr)
+    {
 
-    #pragma omp parallel for private(y_ptr, score_ptr)
+    #pragma omp for
     for (size_t i = 0; i < n_thresholds; i++) {
         // fill confusion matrix
         core::confusion_matrix<T1, T2>(
             n_obs, y_ptr, score_ptr, threshold_ptr[i], cm_ptr + (i * 4)
         );
     }
+    }  // pragma omp parallel
     return conf_mat;
 }
 
@@ -315,6 +323,7 @@ inline py::array_t<int64_t> confusion_matrix_runs_thresholds(
     const size_t n_runs = n_obs.size();
     const size_t n_thresholds = thresholds.size();
     const size_t max_obs = *std::max_element(n_obs_ptr, n_obs_ptr + n_runs);
+    const size_t cm_offset = n_thresholds * 4;
 
     // allocate confusion_matrix
     auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_thresholds * n_runs);
@@ -324,14 +333,15 @@ inline py::array_t<int64_t> confusion_matrix_runs_thresholds(
     int64_t* const cm_ptr = npy::get_data(conf_mat);
 
     // Bookkeeping variables
-    const size_t cm_offset = n_thresholds * 4;
+    #pragma omp parallel shared(n_runs, n_thresholds, y_ptr, score_ptr, thresholds_ptr, n_obs_ptr, cm_ptr)
+    {
 
     T1* o_y_ptr;
     T2* o_score_ptr;
     size_t o_n_obs;
     int64_t* o_cm_ptr;
 
-    #pragma omp parallel for private(o_n_obs, o_y_ptr, o_cm_ptr)
+    #pragma omp for
     for (size_t r = 0; r < n_runs; r++) {
         o_n_obs = n_obs_ptr[r];
         o_y_ptr = y_ptr + (r * max_obs);
@@ -348,6 +358,7 @@ inline py::array_t<int64_t> confusion_matrix_runs_thresholds(
             );
         }
     }
+    }  // pragma omp parallel
     return conf_mat;
 }
 
