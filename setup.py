@@ -76,5 +76,6 @@ if __name__ == '__main__':
             f"-DMMU_VERSION_INFO:STRING={VERSION}",
             f"-DPython3_EXECUTABLE:STRING={sys.executable}",
             f"-Dpybind11_DIR:STRING={pybind11.get_cmake_dir()}",
+            "-DMMU_ENABLE_ARCH_FLAGS:BOOL=ON",
         ]
     )
