@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 
 
 def generate_data(
-    n_samples=10000, n_sets=1, proba_dtype=np.float64, yhat_dtype=np.int64,
-    y_dtype=np.int64
+    n_samples=10000, n_sets=1, score_dtype=np.float64, yhat_dtype=np.int64,
+    y_dtype=np.int64, random_state=None
 ):
     """Generate data from a logistic process.
 
@@ -14,7 +14,7 @@ def generate_data(
         number of samples to generate for each set
     n_sets : int, default=1
         number of sets to generate, each containing ``n_samples``
-    proba_dtype : np.dtype, default=np.float64
+    score_dtype : np.dtype, default=np.float64
         dtype for generated probabilities
     yhat_dtype : np.dtype, default=np.int64
         dtype for generated estimated labels
@@ -23,7 +23,7 @@ def generate_data(
 
     Returns
     -------
-    proba : np.ndarray
+    score : np.ndarray
         array of shape (n_samples, n_sets) with generated
         probabilities of dtype ``proba_dtype``
     yhat : np.ndarray
@@ -34,12 +34,13 @@ def generate_data(
         true labels of dtype ``y_dtype``
 
     """
+    rng = np.random.default_rng(random_state)
     t_samples = n_samples * n_sets
-    proba = np.random.beta(5, 3, size=t_samples).astype(proba_dtype)  # type: ignore
-    yhat = np.rint(proba).astype(yhat_dtype)
-    y = np.random.binomial(1, np.mean(proba), t_samples).astype(y_dtype)  # type: ignore
+    score = rng.beta(5, 3, size=t_samples).astype(score_dtype)  # type: ignore
+    yhat = np.rint(score).astype(yhat_dtype)
+    y = rng.binomial(1, score, t_samples).astype(y_dtype)  # type: ignore
     return (
-        proba.reshape(n_samples, n_sets),
+        score.reshape(n_samples, n_sets),
         yhat.reshape(n_samples, n_sets),
         y.reshape(n_samples, n_sets),
     )
