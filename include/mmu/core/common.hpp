@@ -25,9 +25,16 @@ typedef SSIZE_T ssize_t;
 #endif
 
 
+#include <random>
 #include <type_traits>
 
+#include <pcg_random.hpp>
+#include <pcg_extras.hpp>
+
 namespace mmu {
+
+typedef pcg_engines::setseq_dxsm_128_64 pcg64_dxsm;
+typedef pcg_extras::seed_seq_from<std::random_device> pcg_seed_seq;
 
 template<typename T>
 using isInt = std::enable_if_t<std::is_integral<T>::value, bool>;

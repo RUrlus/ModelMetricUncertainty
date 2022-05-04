@@ -67,6 +67,7 @@ TARGET_INCLUDE_DIRECTORIES(mmu_mmu
     INTERFACE
         ${PROJECT_SOURCE_DIR}/include/
         ${Python3_INCLUDE_DIRS}
+        ${PROJECT_SOURCE_DIR}/external/pcg-cpp/include
 )
 
 IF(MMU_DEV_MODE)
