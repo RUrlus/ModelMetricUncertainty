@@ -4,6 +4,10 @@
 #ifndef INCLUDE_MMU_CORE_CONFUSION_MATRIX_HPP_
 #define INCLUDE_MMU_CORE_CONFUSION_MATRIX_HPP_
 
+#if defined(MMU_HAS_OPENMP_SUPPORT)
+#include <omp.h>
+#endif
+
 #include <cmath>
 #include <string>
 #include <limits>
@@ -12,6 +16,7 @@
 #include <type_traits>
 
 #include <mmu/core/common.hpp>
+#include <mmu/core/multinomial.hpp>
 
 /*                  pred
  *                0     1
@@ -184,6 +189,65 @@ inline void confusion_matrix(
         conf_mat[(*y > epsilon) * 2 + greater_equal_tol(*score, threshold)]++; score++; y++;
     }
 }
+
+template <typename T, isInt<T> = true>
+inline T* generate_confusion_matrices(
+    const size_t n_matrices,
+    const size_t N,
+    const double* probas,
+    const uint64_t seed = 0,
+    T* samples = nullptr
+) {
+    if (!samples) {
+        samples = reinterpret_cast<T*>(std::malloc(n_matrices * 4 * sizeof(double)));
+    }
+    pcg64_dxsm rng;
+    if (seed == 0) {
+        pcg_seed_seq seed_source;
+        rng.seed(seed_source);
+    } else {
+        rng.seed(seed);
+    }
+
+    for (size_t i = 0; i < n_matrices; i++) {
+        multinomial_rvs<T, 4>(rng, N, probas, samples);
+        samples += 4;
+    }
+    return samples;
+}
+
+#if defined(MMU_HAS_OPENMP_SUPPORT)
+template <typename T, isInt<T> = true>
+inline T* generate_confusion_matrices_mt(
+    const size_t n_matrices,
+    const size_t N,
+    const double* probas,
+    const uint64_t seed = 0,
+    T* samples = nullptr
+) {
+    if (!samples) {
+        samples = reinterpret_cast<T*>(std::malloc(n_matrices * 4 * sizeof(double)));
+    }
+    pcg64_dxsm global_rng;
+    if (seed == 0) {
+        pcg_seed_seq seed_source;
+        global_rng.seed(seed_source);
+    } else {
+        global_rng.seed(seed);
+    }
+#pragma omp parallel shared(N, probas, samples)
+    {
+        pcg64_dxsm rng = global_rng;
+        rng.set_stream(omp_get_thread_num() + 1);
+
+#pragma omp for
+        for (size_t i = 0; i < n_matrices; i++) {
+            multinomial_rvs<T, 4>(rng, N, probas, samples + (i * 4));
+        }
+    }  // omp parallel
+    return samples;
+}
+#endif  // MMU_HAS_OPENMP_SUPPORT
 
 }  // namespace core
 }  // namespace mmu
