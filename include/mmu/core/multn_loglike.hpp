@@ -170,3 +170,45 @@ inline double wilks_loglike_diff(const double prec, const double rec, const int6
     return nll_h0 - nll_h1;
 }  // wilks_loglike_diff
 
+/* Determine grid for precision and recall based on their marginal std
+ * deviations assuming a Multivariate Normal
+ *
+ *
+ * Returns
+ * -------
+ * a = precision range
+ * b = recall range
+ *
+ * Note that both need to freed
+ */
+inline std::pair<double*, double*> get_pr_grid(
+    const size_t n_bins,
+    const int64_t* __restrict conf_mat,
+    const size_t n_sigmas = 7,
+    double epsilon = 1e-4
+) {
+    const double max_prec_clip = conf_mat[1] == 0 ? 0.0 : epsilon;
+    const double max_rec_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
+    // computes prec, prec_sigma, rec, rec_sigma accounting for edge cases
+    std::array<double, 4> prec_rec;
+    pr_mvn_sigma(conf_mat, prec_rec.begin());
+
+    auto ns = static_cast<double>(n_sigmas);
+    const double ns_prec_sigma = ns * prec_rec[1];
+    const double ns_rec_sigma = ns * prec_rec[3];
+
+    const double prec_max = std::min(prec_rec[0] + ns_prec_sigma, 1 - max_prec_clip);
+    const double prec_min = std::max(prec_rec[0] - ns_prec_sigma, epsilon);
+    double* prec_range = linspace(prec_min, prec_max, n_bins);
+
+    const double rec_max = std::min(prec_rec[2] + ns_rec_sigma, 1. - max_rec_clip);
+    const double rec_min = std::max(prec_rec[2] - ns_rec_sigma, epsilon);
+    double* rec_range = linspace(rec_min, rec_max, n_bins);
+
+    return std::make_pair(prec_range, rec_range);
+}  // get_pr_grid
+
+}  // namespace core
+}  // namespace mmu
+
+#endif  // INCLUDE_MMU_CORE_MULTN_LOGLIKE_HPP_
