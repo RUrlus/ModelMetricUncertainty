@@ -69,30 +69,30 @@ inline void pr_mvn_error(
      */
     const double alpha_lb = alpha / 2;
     const double alpha_ub = 1.0 - alpha_lb;
-    const auto FP = static_cast<double>(conf_mat[1]);
-    const auto FN = static_cast<double>(conf_mat[2]);
-    const auto TP = static_cast<double>(conf_mat[3]);
+    const auto fp = static_cast<double>(conf_mat[1]);
+    const auto fn = static_cast<double>(conf_mat[2]);
+    const auto tp = static_cast<double>(conf_mat[3]);
 
-    const auto TP_FN = static_cast<double>(conf_mat[2] + conf_mat[3]);
-    const auto TP_FP = static_cast<double>(conf_mat[1] + conf_mat[3]);
+    const auto tp_fn = static_cast<double>(conf_mat[2] + conf_mat[3]);
+    const auto tp_fp = static_cast<double>(conf_mat[1] + conf_mat[3]);
 
-    const double fn_tp_sq = std::pow(TP_FN, 2.);
-    const double fp_tp_sq = std::pow(TP_FP, 2.);
+    const double fn_tp_sq = std::pow(tp_fn, 2.);
+    const double fp_tp_sq = std::pow(tp_fp, 2.);
 
-    const double recall_d_TP = FN / fn_tp_sq;
-    const double recall_d_FN = - TP / fn_tp_sq;
-    const double precision_d_TP = FP / fp_tp_sq;
-    const double precision_d_FP = - TP / fp_tp_sq;
+    const double recall_d_tp = fn / fn_tp_sq;
+    const double recall_d_fn = - tp / fn_tp_sq;
+    const double precision_d_tp = fp / fp_tp_sq;
+    const double precision_d_fp = - tp / fp_tp_sq;
 
-    const double TP_var = std::max(TP, 1.0);
-    const double FN_var = std::max(FN, 1.0);
-    const double FP_var = std::max(FP, 1.0);
+    const double tp_var = std::max(tp, 1.0);
+    const double fn_var = std::max(fn, 1.0);
+    const double fp_var = std::max(fp, 1.0);
 
     // precision
-    double prec = TP / (TP_FP);
+    double prec = tp / (tp_fp);
     double prec_var = (
-        std::pow(precision_d_TP, 2) * TP_var
-        + std::pow(precision_d_FP, 2) * FP_var
+        std::pow(precision_d_tp, 2) * tp_var
+        + std::pow(precision_d_fp, 2) * fp_var
     );
     double prec_sigma = std::sqrt(prec_var);
     metrics[0] = prec;
@@ -100,10 +100,10 @@ inline void pr_mvn_error(
     metrics[2] = norm_ppf(prec, prec_sigma, alpha_ub);
 
     // recall
-    double rec = TP / (TP_FN);
+    double rec = tp / (tp_fn);
     double rec_var = (
-        std::pow(recall_d_TP, 2) * TP_var
-        + std::pow(recall_d_FN, 2) * FN_var
+        std::pow(recall_d_tp, 2) * tp_var
+        + std::pow(recall_d_fn, 2) * fn_var
     );
     double rec_sigma = std::sqrt(rec_var);
     metrics[3] = rec;
@@ -111,7 +111,7 @@ inline void pr_mvn_error(
     metrics[5] = norm_ppf(rec, rec_sigma, alpha_ub);
 
     // covariance
-    double cov = recall_d_TP * precision_d_TP * TP_var;
+    double cov = recall_d_tp * precision_d_tp * tp_var;
     metrics[6] = prec_var;
     metrics[7] = cov;
     metrics[8] = cov;
