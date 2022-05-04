@@ -88,11 +88,16 @@ TARGET_LINK_LIBRARIES(
 )
 
 IF (OpenMP_CXX_FOUND)
-  TARGET_LINK_LIBRARIES(
-      mmu_mmu
-      INTERFACE
-          OpenMP::OpenMP_CXX
-  )
+    TARGET_COMPILE_DEFINITIONS(
+        mmu_mmu
+        INTERFACE
+        MMU_HAS_OPENMP_SUPPORT=TRUE
+    )
+    TARGET_LINK_LIBRARIES(
+        mmu_mmu
+        INTERFACE
+            OpenMP::OpenMP_CXX
+    )
 ENDIF ()
 
 ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/src/bindings)
