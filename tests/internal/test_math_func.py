@@ -4,6 +4,8 @@ from scipy.stats import norm
 
 from mmu.lib._mmu_core_tests import norm_ppf
 from mmu.lib._mmu_core_tests import erfinv as cpp_erfinv
+from mmu.lib._mmu_core_tests import binomial_rvs
+from mmu.lib._mmu_core_tests import multinomial_rvs
 
 
 def test_erfinv():
@@ -40,3 +42,36 @@ def test_norm_ppf():
         ppf = norm_ppf(mu, sigma, p)
         cnt += np.isclose(ppf, scp_ppf, atol=1e-15)
     assert cnt == N
+
+
+def test_binomial_rvs():
+    p = 0.23
+    n = 10
+    size = 100000
+
+    outp = binomial_rvs(size, n, p, seed=890714, stream=0)
+    probas = outp / n
+    assert np.isclose(probas.mean(), p, rtol=5e-4)
+    assert np.max(outp) <= 10
+
+    p = 0.78
+    n = 1000
+    size = 100000
+
+    outp = binomial_rvs(size, n, p, seed=890714, stream=0)
+    probas = outp / n
+    assert np.isclose(probas.mean(), p, rtol=5e-4)
+    assert np.max(outp) <= 1000
+
+
+def test_multinomial_rvs():
+    rng = np.random.default_rng(87326134)
+    p = rng.dirichlet(np.ones(4))
+    n = 10
+    size=400_000
+
+    outp = multinomial_rvs(size, n, p, seed=87326134, stream=0)
+    obs_probas = (outp / n).mean(0)
+
+    assert np.isclose(obs_probas, p, rtol=1e-3).all()
+    assert np.max(outp) <= n

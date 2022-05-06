@@ -27,6 +27,7 @@ typedef SSIZE_T ssize_t;
 
 #include <random>
 #include <type_traits>
+#include <cstring> // for memset
 
 #include <pcg_random.hpp>
 #include <pcg_extras.hpp>
@@ -39,6 +40,13 @@ typedef pcg_engines::setseq_dxsm_128_64 pcg64_dxsm;
 typedef pcg_extras::seed_seq_from<std::random_device> pcg_seed_seq;
 
 }  // namespace random
+
+template <typename T>
+inline void zero_array(T* ptr, size_t n_elem) {
+    // zero the memory
+    memset(ptr, 0, n_elem * sizeof(T));
+}
+
 }  // namespace core
 
 template<typename T>

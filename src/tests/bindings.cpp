@@ -21,6 +21,7 @@ PYBIND11_MODULE(_mmu_core_tests, m) {
     bind_allocate_n_confusion_matrices(m);
     bind_erfinv(m);
     bind_norm_ppf(m);
+    bind_binomial_rvs(m);
     bind_multinomial_rvs(m);
 }
 

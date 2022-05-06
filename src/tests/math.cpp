@@ -26,26 +26,63 @@ void bind_norm_ppf(py::module &m) {
     );
 }
 
+py::array_t<int64_t> binomial_rvs(
+    const int64_t n_samples,
+    const int64_t n,
+    const double p,
+    const uint64_t seed,
+    const uint64_t stream
+) {
+    py::array_t<int64_t> result(n_samples);
+    int64_t* ptr = result.mutable_data();
+    mmu::core::random::binomial_rvs(n_samples, n, p, ptr, seed, stream);
+    return result;
+}
+
+
+void bind_binomial_rvs(py::module &m) {
+    m.def(
+        "binomial_rvs",
+        &binomial_rvs,
+        py::arg("n_samples"),
+        py::arg("n"),
+        py::arg("p"),
+        py::arg("seed"),
+        py::arg("stream")
+    );
+}
+
+py::array_t<int64_t> multinomial_rvs(
+    const int64_t n_samples,
+    const int64_t n,
+    py::array_t<double>& p,
+    const uint64_t seed,
+    const uint64_t stream
+) {
+    py::array_t<int64_t> result(n_samples * p.size());
+    int64_t* ptr = result.mutable_data();
+    mmu::core::zero_array(ptr, result.size());
+    mmu::core::random::multinomial_rvs(
+        n_samples,
+        n,
+        p.size(),
+        p.mutable_data(),
+        ptr,
+        seed,
+        stream
+    );
+    return result.reshape({static_cast<ssize_t>(n_samples), p.size()});
+}
+
 void bind_multinomial_rvs(py::module &m) {
     m.def(
         "multinomial_rvs",
-        [](const int64_t n_samples, const int N, const py::array_t<double>& probas, const uint64_t seed) {
-            return multinomial_rvs<int>(n_samples, N, probas, seed);
-        },
+        &multinomial_rvs,
         py::arg("n_samples"),
-        py::arg("N"),
-        py::arg("probas"),
-        py::arg("seed")
-    );
-    m.def(
-        "multinomial_rvs",
-        [](const int64_t n_samples, const int64_t N, const py::array_t<double>& probas, const uint64_t seed) {
-            return multinomial_rvs<int64_t>(n_samples, N, probas, seed);
-        },
-        py::arg("n_samples"),
-        py::arg("N"),
-        py::arg("probas"),
-        py::arg("seed")
+        py::arg("n"),
+        py::arg("p"),
+        py::arg("seed"),
+        py::arg("stream")
     );
 }
 
