@@ -69,29 +69,65 @@ inline void pr_mvn_error(
      */
     const double alpha_lb = alpha / 2;
     const double alpha_ub = 1.0 - alpha_lb;
-    const int64_t itp = conf_mat[3];
-    const auto tp = static_cast<double>(conf_mat[3]);
+    const int64_t itp  = conf_mat[3];
+    const auto tp = static_cast<double>(itp);
 
-    const auto tp_fn = static_cast<double>(conf_mat[2] + conf_mat[3]);
-    const auto tp_fp = static_cast<double>(conf_mat[1] + conf_mat[3]);
+    const int64_t itp_fn = conf_mat[2] + conf_mat[3];
+    const bool tp_fn_nonzero = itp_fn > 0;
+    const auto tp_fn = static_cast<double>(itp_fn);
+
+    const int64_t itp_fp = conf_mat[3] + conf_mat[1];
+    const bool tp_fp_nonzero = itp_fp > 0;
+    const auto tp_fp = static_cast<double>(itp_fp);
 
     // precision
-    const double prec = tp / (tp_fp);
-    const double prec_var = (
-        static_cast<double>(conf_mat[3] * conf_mat[1]) /
-        static_cast<double>(std::pow(tp_fp, 3.0))
-    );
+    double prec;
+    double prec_var;
+    double prec_for_sigma;
+    // precision == 1
+    if (itp == itp_fp) {
+        prec = 1.0;
+        prec_for_sigma = static_cast<double>(itp_fp - 1) / tp_fp;
+        prec_var = (prec_for_sigma * (1 - prec_for_sigma)) / tp_fp;
+    } else if (tp_fp_nonzero) {
+        prec = tp / (tp_fp);
+        prec_var = (
+            static_cast<double>(conf_mat[3] * conf_mat[1]) /
+            static_cast<double>(std::pow(tp_fp, 3.0))
+        );
+    } else {
+        // precision == 0
+        prec = 0.0;
+        prec_for_sigma = 1.0 / tp_fp;
+        prec_var = (prec_for_sigma * (1 - prec_for_sigma)) / tp_fp;
+    }
     const double prec_sigma = std::sqrt(prec_var);
     metrics[0] = prec;
     metrics[1] = norm_ppf(prec, prec_sigma, alpha_lb);
     metrics[2] = norm_ppf(prec, prec_sigma, alpha_ub);
 
     // recall
-    const double rec = tp / (tp_fn);
-    const double rec_var = (
-        static_cast<double>(conf_mat[3] * conf_mat[2]) /
-        static_cast<double>(std::pow(tp_fn, 3.0))
-    );
+    double rec;
+    double rec_var;
+    double rec_for_sigma;
+    // precision == 1
+    if (itp == itp_fn) {
+        // recall == 1
+        rec = 1.0;
+        rec_for_sigma = static_cast<double>(itp_fn - 1) / tp_fn;
+        rec_var = (rec_for_sigma * (1 - rec_for_sigma)) / tp_fn;
+    } else if (tp_fn_nonzero) {
+        rec = tp / (tp_fn);
+        rec_var = (
+            static_cast<double>(conf_mat[3] * conf_mat[2]) /
+            static_cast<double>(std::pow(tp_fn, 3.0))
+        );
+    } else {
+        // recall == 0.0
+        rec = 0.0;
+        rec_for_sigma = 1.0 / tp_fn;
+        rec_var = (rec_for_sigma * (1 - rec_for_sigma)) / tp_fn;
+    }
     const double rec_sigma = std::sqrt(rec_var);
     metrics[3] = rec;
     metrics[4] = norm_ppf(rec, rec_sigma, alpha_lb);
