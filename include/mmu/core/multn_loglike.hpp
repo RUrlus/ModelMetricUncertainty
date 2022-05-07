@@ -51,7 +51,6 @@ inline double* linspace(const T start, T const end, const size_t steps, const bo
     }
     auto values = reinterpret_cast<double*>(std::malloc(steps * sizeof(double)));
     double delta;
-    double ub;
     if (inclusive) {
         delta = static_cast<double>(end - start) / static_cast<double>(steps - 1);
         values[steps - 1] = static_cast<double>(end);
@@ -61,7 +60,6 @@ inline double* linspace(const T start, T const end, const size_t steps, const bo
     }
     auto prev = static_cast<double>(start);
     values[0] = prev;
-    values[steps - 1] = ub;
     const size_t N = steps - 1;
     for (size_t i = 1; i < N; ++i) {
         prev += delta;
@@ -136,19 +134,19 @@ inline void constrained_fit_cmp(const double prec, const double rec, const doubl
  * We compute -2ln(L_h0) + 2ln(L_h1))
  *
  */
-inline double wilks_loglike_diff(const double prec, const double rec, const int64_t* __restrict conf_mat) {
+inline double prof_loglike(const double prec, const double rec, const int64_t* __restrict conf_mat) {
     const int64_t in3 = conf_mat[1] + conf_mat[2] + conf_mat[3];
     const auto n3 = static_cast<double>(in3);
     const auto n4 = static_cast<double>(conf_mat[0] + in3);
 
     // constitutes the optimal/unconstrained fit of a multinomial
-    const double x_tn = static_cast<double>(conf_mat[0]);
+    const auto x_tn = static_cast<double>(conf_mat[0]);
     const double h0_p_tn = x_tn / n4;
-    const double x_fp = static_cast<double>(conf_mat[1]);
+    const auto x_fp = static_cast<double>(conf_mat[1]);
     const double h0_p_fp = x_fp / n4;
-    const double x_fn = static_cast<double>(conf_mat[2]);
+    const auto x_fn = static_cast<double>(conf_mat[2]);
     const double h0_p_fn = x_fn / n4;
-    const double x_tp = static_cast<double>(conf_mat[3]);
+    const auto x_tp = static_cast<double>(conf_mat[3]);
     const double h0_p_tp = x_tp / n4;
 
     const double nll_h0 = (
@@ -168,7 +166,7 @@ inline double wilks_loglike_diff(const double prec, const double rec, const int6
         - 2. * xlogy(x_tp, p_h1[3])
     );
     return nll_h0 - nll_h1;
-}  // wilks_loglike_diff
+}  // prof_loglike
 
 /* Determine grid for precision and recall based on their marginal std
  * deviations assuming a Multivariate Normal
@@ -184,7 +182,7 @@ inline double wilks_loglike_diff(const double prec, const double rec, const int6
 inline std::pair<double*, double*> get_pr_grid(
     const size_t n_bins,
     const int64_t* __restrict conf_mat,
-    const size_t n_sigmas = 7,
+    const size_t n_sigmas = 6,
     double epsilon = 1e-4
 ) {
     const double max_prec_clip = conf_mat[1] == 0 ? 0.0 : epsilon;

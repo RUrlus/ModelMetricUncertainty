@@ -69,49 +69,39 @@ inline void pr_mvn_error(
      */
     const double alpha_lb = alpha / 2;
     const double alpha_ub = 1.0 - alpha_lb;
-    const auto fp = static_cast<double>(conf_mat[1]);
-    const auto fn = static_cast<double>(conf_mat[2]);
+    const int64_t itp = conf_mat[3];
     const auto tp = static_cast<double>(conf_mat[3]);
 
     const auto tp_fn = static_cast<double>(conf_mat[2] + conf_mat[3]);
     const auto tp_fp = static_cast<double>(conf_mat[1] + conf_mat[3]);
 
-    const double fn_tp_sq = std::pow(tp_fn, 2.);
-    const double fp_tp_sq = std::pow(tp_fp, 2.);
-
-    const double recall_d_tp = fn / fn_tp_sq;
-    const double recall_d_fn = - tp / fn_tp_sq;
-    const double precision_d_tp = fp / fp_tp_sq;
-    const double precision_d_fp = - tp / fp_tp_sq;
-
-    const double tp_var = std::max(tp, 1.0);
-    const double fn_var = std::max(fn, 1.0);
-    const double fp_var = std::max(fp, 1.0);
-
     // precision
-    double prec = tp / (tp_fp);
-    double prec_var = (
-        std::pow(precision_d_tp, 2) * tp_var
-        + std::pow(precision_d_fp, 2) * fp_var
+    const double prec = tp / (tp_fp);
+    const double prec_var = (
+        static_cast<double>(conf_mat[3] * conf_mat[1]) /
+        static_cast<double>(std::pow(tp_fp, 3.0))
     );
-    double prec_sigma = std::sqrt(prec_var);
+    const double prec_sigma = std::sqrt(prec_var);
     metrics[0] = prec;
     metrics[1] = norm_ppf(prec, prec_sigma, alpha_lb);
     metrics[2] = norm_ppf(prec, prec_sigma, alpha_ub);
 
     // recall
-    double rec = tp / (tp_fn);
-    double rec_var = (
-        std::pow(recall_d_tp, 2) * tp_var
-        + std::pow(recall_d_fn, 2) * fn_var
+    const double rec = tp / (tp_fn);
+    const double rec_var = (
+        static_cast<double>(conf_mat[3] * conf_mat[2]) /
+        static_cast<double>(std::pow(tp_fn, 3.0))
     );
-    double rec_sigma = std::sqrt(rec_var);
+    const double rec_sigma = std::sqrt(rec_var);
     metrics[3] = rec;
     metrics[4] = norm_ppf(rec, rec_sigma, alpha_lb);
     metrics[5] = norm_ppf(rec, rec_sigma, alpha_ub);
 
     // covariance
-    double cov = recall_d_tp * precision_d_tp * tp_var;
+    const double cov = (
+        static_cast<double>(itp * conf_mat[1] * conf_mat[2])
+        / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2))
+    );
     metrics[6] = prec_var;
     metrics[7] = cov;
     metrics[8] = cov;
@@ -137,8 +127,6 @@ inline void pr_mvn_sigma(
      *
      */
     const int64_t itp  = conf_mat[3];
-    const auto fp = static_cast<double>(conf_mat[1]);
-    const auto fn = static_cast<double>(conf_mat[2]);
     const auto tp = static_cast<double>(itp);
 
     const int64_t itp_fn = conf_mat[2] + conf_mat[3];
@@ -148,18 +136,6 @@ inline void pr_mvn_sigma(
     const int64_t itp_fp = conf_mat[3] + conf_mat[1];
     const bool tp_fp_nonzero = itp_fp > 0;
     const auto tp_fp = static_cast<double>(itp_fp);
-
-    const double fn_tp_sq = std::pow(tp_fn, 2.);
-    const double fp_tp_sq = std::pow(tp_fp, 2.);
-
-    const double recall_d_tp = fn / fn_tp_sq;
-    const double recall_d_fn = -1 * tp / fn_tp_sq;
-    const double precision_d_tp = fp / fp_tp_sq;
-    const double precision_d_fp = -1 * tp / fp_tp_sq;
-
-    const double tp_var = std::max(tp, 1.0);
-    const double fn_var = std::max(fn, 1.0);
-    const double fp_var = std::max(fp, 1.0);
 
     // precision
     double prec;
@@ -173,8 +149,8 @@ inline void pr_mvn_sigma(
     } else if (tp_fp_nonzero) {
         prec = tp / (tp_fp);
         prec_sigma = std::sqrt(
-            std::pow(precision_d_tp, 2) * tp_var
-            + std::pow(precision_d_fp, 2) * fp_var
+            static_cast<double>(conf_mat[3] * conf_mat[1]) /
+            static_cast<double>(std::pow(tp_fp, 3.0))
         );
     } else {
         // precision == 0
@@ -196,8 +172,8 @@ inline void pr_mvn_sigma(
     } else if (tp_fn_nonzero) {
         rec = tp / (tp_fn);
         rec_sigma = std::sqrt(
-            std::pow(recall_d_tp, 2) * tp_var
-            + std::pow(recall_d_fn, 2) * fn_var
+            static_cast<double>(conf_mat[3] * conf_mat[2]) /
+            static_cast<double>(std::pow(tp_fn, 3.0))
         );
     } else {
         // recall == 0.0
