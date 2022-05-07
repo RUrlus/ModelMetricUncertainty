@@ -91,8 +91,8 @@ inline void random_standard_uniform_fill(pcg64_dxsm& rng, int64_t cnt, double *o
 
 inline int64_t random_binomial_btpe(
     pcg64_dxsm& rng,
-    int64_t n,
-    double p,
+    const int64_t n,
+    const double p,
     binomial_t *binomial
 ) {
   double r, q, fm, p1, xm, xl, xr, c, laml, lamr, p2, p3, p4;
@@ -238,8 +238,8 @@ Step60:
 
 inline int64_t random_binomial_inversion(
     pcg64_dxsm& rng,
-    int64_t n,
-    double p,
+    const int64_t n,
+    const double p,
     binomial_t *binomial
 ) {
   double q, qn, np, px, U;
@@ -279,8 +279,8 @@ inline int64_t random_binomial_inversion(
 
 inline int64_t random_binomial(
     pcg64_dxsm& rng,
-    double p,
-    int64_t n,
+    const double p,
+    const int64_t n,
     binomial_t *binomial
 ) {
   double q;
@@ -306,10 +306,10 @@ inline int64_t random_binomial(
 
 inline void random_multinomial(
     pcg64_dxsm& rng,
-    int64_t n,
+    const int64_t n,
     int64_t *mnix,
-    double *pix,
-    int64_t d,
+    const double *pix,
+    const int64_t d,
     binomial_t *binomial
 ) {
   double remaining_p = 1.0;
