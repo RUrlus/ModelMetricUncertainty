@@ -35,12 +35,12 @@ namespace core {
  * the scale of `b` to determine the tollerance.
  */
 template <typename T1, typename T2, isFloat<T1> = true, isFloat<T2> = true>
-bool greater_equal_tol(const T1 a, const T2 b, const double rtol = 1e-05, const double atol = 1e-8) {
-    double delta = a - b;
-    double scaled_tol = atol + rtol * std::abs(b);
-    // the first condition checks if a and b are approximately equal
-    // the second condition checks if a is greater than b given the tollerance
-    return std::abs(delta) <= scaled_tol || delta > scaled_tol;
+inline bool greater_equal_tol(const T1 a, const T2 b, const double rtol = 1e-05, const double atol = 1e-8) {
+    const double delta = a - b;
+    const double scaled_tol = atol + rtol * b;
+    // the first condition checks if a is greater than b given the tollerance
+    // the second condition checks if a and b are approximately equal
+    return delta > scaled_tol || std::abs(delta) <= scaled_tol;
 }
 
 /* Fill binary confusion matrix based on true labels y and estimated labels yhat
