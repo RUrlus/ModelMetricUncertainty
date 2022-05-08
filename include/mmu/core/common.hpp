@@ -47,6 +47,12 @@ inline void zero_array(T* ptr, size_t n_elem) {
     memset(ptr, 0, n_elem * sizeof(T));
 }
 
+template <typename T, const size_t n_elem>
+inline void zero_array(T* ptr) {
+    // zero the memory
+    memset(ptr, 0, n_elem * sizeof(T));
+}
+
 }  // namespace core
 
 template<typename T>
