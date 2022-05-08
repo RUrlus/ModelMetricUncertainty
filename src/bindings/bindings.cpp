@@ -8,6 +8,7 @@
 #include <mmu/bindings/metrics.hpp>
 #include <mmu/bindings/utils.hpp>
 #include <mmu/bindings/mvn_error.hpp>
+#include <mmu/bindings/multn_loglike.hpp>
 
 namespace py = pybind11;
 
@@ -33,6 +34,9 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_pr_mvn_error(m);
     bind_pr_mvn_error_runs(m);
     bind_pr_curve_mvn_error(m);
+    // multn_loglike
+    bind_multinomial_uncertainty(m);
+    bind_simulated_multinomial_uncertainty(m);
 
 #if not defined OS_WIN
   #ifdef VERSION_INFO
