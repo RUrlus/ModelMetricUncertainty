@@ -75,7 +75,8 @@ inline double uint64_to_double(uint64_t rnd) {
 }
 
 inline double next_double(pcg64_dxsm& rng) {
-    return uint64_to_double(rng());
+    constexpr double rhs = 1.0 / 9007199254740992.0;
+    return (rng() >> 11) * rhs;
 }
 
 inline double random_standard_uniform(pcg64_dxsm& rng) {

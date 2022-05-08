@@ -80,7 +80,7 @@ inline int64_t* generate_confusion_matrices(
 ) {
     if (!result) {
         const size_t n_elem = n_matrices * 4;
-        result = reinterpret_cast<int64_t*>(std::malloc(n_elem * sizeof(int64_t)));
+        result = new int64_t[n_elem];
         zero_array(result, n_elem);
     }
 
@@ -114,7 +114,7 @@ inline int64_t* generate_confusion_matrices_mt(
 ) {
     if (!result) {
         const size_t n_elem = n_matrices * 4;
-        result = reinterpret_cast<int64_t*>(std::malloc(n_elem * sizeof(int64_t)));
+        result = new int64_t[n_elem];
         zero_array(result, n_elem);
     }
     random::pcg64_dxsm global_rng;

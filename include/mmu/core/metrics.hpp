@@ -37,6 +37,39 @@ inline void precision_recall(
     metrics[1] = P_nonzero ? tp / P : fill;
 }  // binary_metrics
 
+inline void precision_recall_ecc(
+    const int64_t* __restrict const conf_mat,
+    double* __restrict const metrics
+) {
+    // real true/positive observations [FN + TP]
+    const auto itp = conf_mat[3];
+    const auto tp = static_cast<double>(conf_mat[3]);
+
+    const int64_t itp_fn = conf_mat[2] + conf_mat[3];
+    const int64_t itp_fp = conf_mat[1] + conf_mat[3];
+
+    // metrics[0]  - pos.precision aka Positive Predictive Value (PPV)
+    if (itp == itp_fp) {
+        metrics[0] = 1.0;
+    } else if (itp_fp > 0) {
+        metrics[0] = tp / static_cast<double>(itp_fp);
+    } else {
+        // precision == 0
+        metrics[0] = 0.0;
+    }
+
+    // metrics[1]  - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+    if (itp == itp_fn) {
+        // recall == 1
+        metrics[1] = 1.0;
+    } else if (itp_fn > 0) {
+        metrics[1] = tp / static_cast<double>(itp_fn);
+    } else {
+        // recall == 0.0
+        metrics[1] = 0.0;
+    }
+}  // binary_metrics
+
 /* Sets the following values at metrics index:
  *    0 - neg.precision aka Negative Predictive Value
  *    1 - pos.precision aka Positive Predictive Value
