@@ -159,6 +159,65 @@ inline void get_pr_grid_delta(
     result[5] = rec_max;
 }  // get_pr_grid
 
+inline void get_pr_grid_bounds(
+    const int64_t prec_bins,
+    const int64_t rec_bins,
+    const int64_t* __restrict conf_mat,
+    const double* __restrict precs,
+    const double* __restrict recs,
+    int64_t* result,
+    const double n_sigmas = 6.0,
+    const double epsilon = 1e-4
+) {
+    const double max_prec_clip = conf_mat[1] == 0 ? 0.0 : epsilon;
+    const double max_rec_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
+    // computes prec, prec_sigma, rec, rec_sigma accounting for edge cases
+    std::array<double, 4> prec_rec;
+    pr_mvn_sigma(conf_mat, prec_rec.data());
+
+    const double ns_prec_sigma = n_sigmas * prec_rec[1];
+    const double prec_max = std::min(prec_rec[0] + ns_prec_sigma, 1 - max_prec_clip);
+    const double prec_min = std::max(prec_rec[0] - ns_prec_sigma, epsilon);
+    int64_t prec_idx_min = 0;
+    int64_t prec_idx_max = prec_bins;
+    for (int64_t i = 0; i < prec_bins; i++) {
+        if (prec_min < precs[i]) {
+            prec_idx_min = i - 1;
+            break;
+        }
+    }
+    result[0] = prec_idx_min > 0 ? prec_idx_min : 0;
+
+    for (int64_t i = prec_idx_min; i < rec_bins; i++) {
+        if (prec_max < precs[i]) {
+            prec_idx_max = i + 1;
+            break;
+        }
+    }
+    result[1] = prec_idx_max <= prec_bins ? prec_idx_max : prec_bins;
+
+    const double ns_rec_sigma = n_sigmas * prec_rec[3];
+    const double rec_max = std::min(prec_rec[2] + ns_rec_sigma, 1. - max_rec_clip);
+    const double rec_min = std::max(prec_rec[2] - ns_rec_sigma, epsilon);
+    int64_t rec_idx_min = 0;
+    int64_t rec_idx_max = rec_bins;
+    for (int64_t i = 0; i < rec_bins; i++) {
+        if (rec_min < recs[i]) {
+            rec_idx_min = i - 1;
+            break;
+        }
+    }
+    result[2] = rec_idx_min > 0 ? rec_idx_min : 0;
+
+    for (int64_t i = rec_idx_min; i < rec_bins; i++) {
+        if (rec_max < recs[i]) {
+            rec_idx_max = i + 1;
+            break;
+        }
+    }
+    result[3] = rec_idx_max <= rec_bins ? rec_idx_max : rec_bins;
+}  // get_pr_grid_bounds
+
 }  // namespace details
 
 /* Compute the most conservative probabilities for a given confusion matrix constrained by precision and recall.
@@ -328,20 +387,8 @@ inline void multn_uncertainty(
     double* result,
     double* bounds,
     const double n_sigmas = 6.0,
-    const double epsilon = 1e-4,
-    const uint64_t seed = 0,
-    const uint64_t stream = 0
+    const double epsilon = 1e-4
 ) {
-    random::pcg64_dxsm rng;
-    if (seed == 0) {
-        random::pcg_seed_seq seed_source;
-        rng.seed(seed_source);
-    } else if (stream != 0) {
-        rng.seed(seed, stream);
-    } else {
-        rng.seed(seed);
-    }
-
     // -- memory allocation --
     // memory to be used by constrained_fit_cmp
     std::array<double, 4> probas;
@@ -363,13 +410,61 @@ inline void multn_uncertainty(
     int64_t idx = 0;
     for (int64_t i = 0; i < n_bins; i++) {
         for (int64_t j = 0; j < n_bins; j++) {
-            // prof_loglike also sets p which we can re-use in prof_loglike sim
             result[idx] = prof_loglike(prec, recs[j], nll_ptr, p);
             idx++;
         }
         prec += prec_delta;
     }
 }  // multn_uncertainty
+
+inline void multn_uncertainty_over_grid(
+    const int64_t prec_bins,
+    const int64_t rec_bins,
+    const double* prec_grid,
+    const double* rec_grid,
+    const int64_t* __restrict conf_mat,
+    double* scores,
+    int64_t* idx_bounds,
+    const double n_sigmas = 6.0,
+    const double epsilon = 1e-4
+) {
+    // -- memory allocation --
+    // memory to be used by constrained_fit_cmp
+    std::array<double, 4> probas;
+    double* p = probas.data();
+    // -- memory allocation --
+
+    // obtain the indexes over which to loop
+    // sets prec_idx_min, prec_idx_max, rec_idx_min, rec_idx_max
+    details::get_pr_grid_bounds(
+        prec_bins, rec_bins, conf_mat,
+        prec_grid, rec_grid, idx_bounds,
+        n_sigmas, epsilon
+    );
+    const int64_t prec_idx_min = idx_bounds[0];
+    const int64_t prec_idx_max = idx_bounds[1];
+    const int64_t rec_idx_min = idx_bounds[2];
+    const int64_t rec_idx_max = idx_bounds[3];
+
+    auto nll_store = prof_loglike_t();
+    prof_loglike_t* nll_ptr = &nll_store;
+    set_prof_loglike_store(conf_mat, nll_ptr);
+
+    double prec;
+    double score;
+    int64_t idx;
+    for (int64_t i = prec_idx_min; i < prec_idx_max; i++) {
+        prec = prec_grid[i];
+        for (int64_t j = rec_idx_min; j < rec_idx_max; j++) {
+            score = prof_loglike(prec, rec_grid[j], nll_ptr, p);
+            idx = (i * rec_bins) + j;
+            // log likelihoods and thus always positive
+            if (score < scores[idx]) {
+                scores[idx] = score;
+            }
+        }
+    }
+}  // multn_uncertainty_over_grid
 
 inline double prof_loglike_simulation_cov(
     const int64_t n_sims,

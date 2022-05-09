@@ -12,9 +12,7 @@ py::tuple multinomial_uncertainty(
     const int64_t n_bins,
     const py::array_t<int64_t> conf_mat,
     const double n_sigmas,
-    const double epsilon,
-    const uint64_t seed,
-    const uint64_t stream
+    const double epsilon
 ) {
     if (!npy::is_well_behaved(conf_mat)) {
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
@@ -24,9 +22,40 @@ py::tuple multinomial_uncertainty(
     double* res_ptr = npy::get_data(result);
     double* bnds_ptr = npy::get_data(bounds);
     int64_t* cm_ptr = npy::get_data(conf_mat);
-    core::multn_uncertainty(n_bins, cm_ptr, res_ptr, bnds_ptr, n_sigmas, epsilon, seed, stream);
+    core::multn_uncertainty(n_bins, cm_ptr, res_ptr, bnds_ptr, n_sigmas, epsilon);
      return py::make_tuple(result, bounds);
 }  // multinomial_uncertainty
+
+py::array_t<int64_t> multinomial_uncertainty_over_grid(
+    const py::array_t<double> prec_grid,
+    const py::array_t<double> rec_grid,
+    const py::array_t<int64_t> conf_mat,
+    py::array_t<double> scores,
+    const double n_sigmas,
+    const double epsilon
+) {
+    if (
+        (!npy::is_well_behaved(prec_grid))
+        || (!npy::is_well_behaved(rec_grid))
+        || (!npy::is_well_behaved(conf_mat))
+        || (!npy::is_well_behaved(scores))
+    ) {
+        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    }
+    const int64_t prec_bins = prec_grid.size();
+    const int64_t rec_bins = rec_grid.size();
+    auto bounds = py::array_t<int64_t>({2, 2});
+    double* scores_ptr = npy::get_data(scores);
+    int64_t* bnds_ptr = npy::get_data(bounds);
+    int64_t* cm_ptr = npy::get_data(conf_mat);
+    double* precs = npy::get_data(prec_grid);
+    double* recs = npy::get_data(rec_grid);
+    core::multn_uncertainty_over_grid(
+        prec_bins, rec_bins, precs, recs, cm_ptr, scores_ptr,
+        bnds_ptr, n_sigmas, epsilon
+    );
+     return bounds;
+}  // multinomial_uncertainty_over_grid
 
 py::tuple simulated_multinomial_uncertainty(
     const int64_t n_sims,

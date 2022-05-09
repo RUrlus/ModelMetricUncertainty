@@ -25,12 +25,6 @@ void bind_multinomial_uncertainty(py::module &m) {
             grid boundaries
         epsilon : double, default=1e-4
             epsilon used to clip recall or precision at the 0, 1 boundaries
-        seed : int, default=0
-            seed for the random number generator, if equal to zero
-            the random device is used to generate a seed
-        stream : int, default=0
-            which of the 2^127 independent streams of the pcg64_dxsm to be used.
-            Parameter is ignored when seed == 0
 
         Returns
         -------
@@ -42,9 +36,45 @@ void bind_multinomial_uncertainty(py::module &m) {
         py::arg("n_bins"),
         py::arg("conf_mat"),
         py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4,
-        py::arg("seed") = 0,
-        py::arg("stream") = 0
+        py::arg("epsilon") = 1e-4
+    );
+}
+
+void bind_multinomial_uncertainty_over_grid(py::module &m) {
+    m.def(
+        "multinomial_uncertainty_over_grid",
+        &api::multinomial_uncertainty_over_grid,
+        R"pbdoc(Compute multinomial uncertainty.
+
+        Parameters
+        ----------
+        precs_grid : np.ndarray[float64]
+            the precision space over which to evaluate the uncertainty give the
+            confusion matrix
+        recs_grid : np.ndarray[float64]
+            the recall space over which to evaluate the uncertainty give the
+            confusion matrix
+        conf_mat : np.ndarray[int64]
+            the confusion matrix with flattened order: TN, FP, FN, TP
+        n_sigmas : double, default=6.0
+            number std deviations of the marginal distributions to use as
+            grid boundaries
+        epsilon : double, default=1e-4
+            epsilon used to clip recall or precision at the 0, 1 boundaries
+
+        Returns
+        -------
+        chi2 : np.array[np.float64]
+            chi2 score of the profile log-likelihoods over the Precision-Recall grid
+        bounds : np.array[np.float64]
+            the lower and upper bound of the grids for precision and recall respectively
+        )pbdoc",
+        py::arg("precs_grid"),
+        py::arg("recs_grid"),
+        py::arg("conf_mat"),
+        py::arg("scores"),
+        py::arg("n_sigmas") = 6.0,
+        py::arg("epsilon") = 1e-4
     );
 }
 

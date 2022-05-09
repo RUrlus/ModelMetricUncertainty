@@ -15,6 +15,7 @@ namespace mmu {
 namespace bindings {
 
 void bind_multinomial_uncertainty(py::module &m);
+void bind_multinomial_uncertainty_over_grid(py::module &m);
 void bind_simulated_multinomial_uncertainty(py::module &m);
 
 }  // namespace bindings

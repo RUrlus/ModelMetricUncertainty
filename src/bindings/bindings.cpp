@@ -36,6 +36,7 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_pr_curve_mvn_error(m);
     // multn_loglike
     bind_multinomial_uncertainty(m);
+    bind_multinomial_uncertainty_over_grid(m);
     bind_simulated_multinomial_uncertainty(m);
 
 #if not defined OS_WIN
