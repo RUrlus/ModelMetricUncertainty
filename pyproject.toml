@@ -5,7 +5,7 @@ requires = [
     "scikit-build>=0.14.1",
     "ninja; platform_system!='Windows'",
     "cmake>=3.16",
-    "oldest-supported-numpy",
+    "numpy>=1.18",
     "pybind11>=2.8.1",
 ]
 build-backend = "setuptools.build_meta"
