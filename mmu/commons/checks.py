@@ -47,13 +47,14 @@ def _check_array(
     else:
         raise TypeError('`dtype` must be a string or list-like strings')
 
-    arr = arr.squeeze()
-    ndim = arr.ndim
-    if ndim > max_dim:
+    ndims = 0
+    for s in arr.shape:
+        ndims += s > 1
+    if ndims > max_dim:
         raise ValueError(
             f'Array must be at most {max_dim} dimensional.'
         )
-    elif ndim < min_dim:
+    elif ndims < min_dim:
         raise ValueError(
             f'Array must have at least {min_dim} dimensions.'
         )
@@ -78,7 +79,7 @@ def _check_array(
     convert += (
         not arr.flags.aligned
         or (order == -1)
-        or ((ndim > 1) and (order != target_order))
+        or ((ndims > 1) and (order != target_order))
     )
 
     if convert > 0:
@@ -133,8 +134,6 @@ def check_array(
     """
     # fast path, already a numpy array and of a numeric type we know how to
     # handle
-    if axis is not None:
-        target_axis = axis
     if isinstance(arr, np.ndarray) and arr.dtype in _FAST_PATH_TYPES:
         return _check_array(
             arr=arr,
@@ -158,12 +157,18 @@ def check_array(
         kwargs['ensure_2d'] = min_dim == 2
     kwargs['dtype'] = dtype or DEFAULT_DTYPES
 
-    arr = arr.squeeze()
-    ndim = arr.ndim
-    if ndim > max_dim:
+    ndims = 0
+    for s in arr.shape:
+        ndims += s > 1
+    if ndims > max_dim:
         raise ValueError(
             f'Array must be at most {max_dim} dimensional.'
         )
+    elif ndims < min_dim:
+        raise ValueError(
+            f'Array must have at least {min_dim} dimensions.'
+        )
+
     # check if array has assumed layout row, column wise
     axis = axis or np.argmax(arr.shape)
     if axis != target_axis:
@@ -180,7 +185,7 @@ def check_array(
     if (
         (not arr.flags.aligned)
         or (order == -1)
-        or (ndim > 1 and order != target_order)
+        or (ndims > 1 and order != target_order)
     ):
         kwargs['order'] = _ORDER_SH[target_order]
     else:

@@ -415,6 +415,7 @@ def binary_metrics_runs(
         y,
         axis=obs_axis,
         target_axis=obs_axis,
+        target_order=1-obs_axis,
         max_dim=2,
         dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['y'],
     )
@@ -424,6 +425,7 @@ def binary_metrics_runs(
             score,
             axis=obs_axis,
             target_axis=obs_axis,
+            target_order=1-obs_axis,
             max_dim=2,
             dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
         )
@@ -438,6 +440,7 @@ def binary_metrics_runs(
             yhat,
             axis=obs_axis,
             target_axis=obs_axis,
+            target_order=1-obs_axis,
             max_dim=2,
             dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['yhat'],
         )
@@ -513,6 +516,7 @@ def binary_metrics_runs_thresholds(
         y,
         axis=obs_axis,
         target_axis=obs_axis,
+        target_order=1-obs_axis,
         max_dim=2,
         dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['y'],
     )
@@ -521,7 +525,14 @@ def binary_metrics_runs_thresholds(
         score,
         axis=obs_axis,
         target_axis=obs_axis,
+        target_order=1-obs_axis,
         max_dim=2,
+        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
+    )
+
+    thresholds = check_array(
+        thresholds,
+        max_dim=1,
         dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
     )
 
