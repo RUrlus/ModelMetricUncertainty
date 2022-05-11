@@ -63,7 +63,8 @@ def _check_array(
         raise ValueError('Non-finite values encountered')
 
     # check if array has assumed layout row, column wise
-    axis = axis or np.argmax(arr.shape)
+    if axis is None:
+        axis = np.argmax(arr.shape)
     if axis != target_axis:
         arr = arr.T
 
@@ -170,7 +171,8 @@ def check_array(
         )
 
     # check if array has assumed layout row, column wise
-    axis = axis or np.argmax(arr.shape)
+    if axis is None:
+        axis = np.argmax(arr.shape)
     if axis != target_axis:
         arr = arr.T
 
