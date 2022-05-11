@@ -133,6 +133,8 @@ def check_array(
     """
     # fast path, already a numpy array and of a numeric type we know how to
     # handle
+    if axis is not None:
+        target_axis = axis
     if isinstance(arr, np.ndarray) and arr.dtype in _FAST_PATH_TYPES:
         return _check_array(
             arr=arr,

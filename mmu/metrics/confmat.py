@@ -163,6 +163,7 @@ def confusion_matrices(
     # condition checks
     y = check_array(
         y,
+        axis=obs_axis,
         max_dim=2,
         target_order=1,
         dtypes=_CONF_MAT_SUPPORTED_DTYPES['y'],
@@ -171,6 +172,7 @@ def confusion_matrices(
     if score is not None:
         score = check_array(
             score,
+            axis=obs_axis,
             max_dim=2,
             target_order=1,
             dtype=_CONF_MAT_SUPPORTED_DTYPES['score'],
@@ -183,6 +185,7 @@ def confusion_matrices(
     elif yhat is not None:
         yhat = check_array(
             yhat,
+            axis=obs_axis,
             max_dim=2,
             target_order=1,
             dtype=_CONF_MAT_SUPPORTED_DTYPES['yhat'],
