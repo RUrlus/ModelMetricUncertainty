@@ -57,6 +57,36 @@ py::array_t<int64_t> multinomial_uncertainty_over_grid(
      return bounds;
 }  // multinomial_uncertainty_over_grid
 
+void multinomial_uncertainty_over_grid_thresholds(
+    const int64_t n_conf_mats,
+    const py::array_t<double> prec_grid,
+    const py::array_t<double> rec_grid,
+    const py::array_t<int64_t> conf_mat,
+    py::array_t<double> scores,
+    const double n_sigmas,
+    const double epsilon
+) {
+    if (
+        (!npy::is_well_behaved(prec_grid))
+        || (!npy::is_well_behaved(rec_grid))
+        || (!npy::is_well_behaved(conf_mat))
+        || (!npy::is_well_behaved(scores))
+    ) {
+        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    }
+    core::multn_uncertainty_over_grid_thresholds(
+        prec_grid.size(),
+        rec_grid.size(),
+        n_conf_mats,
+        npy::get_data(prec_grid),
+        npy::get_data(rec_grid),
+        npy::get_data(conf_mat),
+        npy::get_data(scores),
+        n_sigmas,
+        epsilon
+    );
+}  // multinomial_uncertainty_over_grid
+
 py::tuple simulated_multinomial_uncertainty(
     const int64_t n_sims,
     const int64_t n_bins,

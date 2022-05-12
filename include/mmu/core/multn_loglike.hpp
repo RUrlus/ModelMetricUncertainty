@@ -4,6 +4,10 @@
 #ifndef INCLUDE_MMU_CORE_MULTN_LOGLIKE_HPP_
 #define INCLUDE_MMU_CORE_MULTN_LOGLIKE_HPP_
 
+#if defined(MMU_HAS_OPENMP_SUPPORT)
+#include <omp.h>
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -158,6 +162,96 @@ inline void get_pr_grid_delta(
     result[4] = details::linspace_for_gen(rec_min, rec_max, n_bins);
     result[5] = rec_max;
 }  // get_pr_grid
+
+class PrGridBounds {
+    const int64_t n_prec_bins;
+    const int64_t n_rec_bins;
+    const double n_sigmas;
+    const double epsilon;
+    double max_prec_clip;
+    double max_rec_clip;
+    double prec_max;
+    double prec_min;
+    double rec_max;
+    double rec_min;
+    double ns_prec_sigma;
+    double ns_rec_sigma;
+    const double* __restrict precs;
+    const double* __restrict recs;
+    std::array<double, 4> prec_rec;
+
+ public:
+    int64_t prec_idx_min = 0;
+    int64_t prec_idx_max = 0;
+    int64_t rec_idx_min = 0;
+    int64_t rec_idx_max = 0;
+
+    PrGridBounds(
+        const int64_t n_prec_bins,
+        const int64_t n_rec_bins,
+        const double n_sigmas,
+        const double epsilon,
+        const double* __restrict precs,
+        const double* __restrict recs
+    ) : n_prec_bins{n_prec_bins},
+        n_rec_bins{n_rec_bins},
+        n_sigmas{n_sigmas},
+        epsilon{epsilon},
+        precs{precs},
+        recs{recs}
+    {}
+
+    void compute_bounds(const int64_t* __restrict conf_mat) {
+        max_prec_clip = conf_mat[1] == 0 ? 0.0 : epsilon;
+        max_rec_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
+        // computes prec, prec_sigma, rec, rec_sigma accounting for edge cases
+        pr_mvn_sigma(conf_mat, prec_rec.data());
+
+        ns_prec_sigma = n_sigmas * prec_rec[1];
+        prec_max = std::min(prec_rec[0] + ns_prec_sigma, 1 - max_prec_clip);
+        prec_min = std::max(prec_rec[0] - ns_prec_sigma, epsilon);
+        prec_idx_min = 0;
+        prec_idx_max = n_prec_bins;
+
+        int64_t i;
+        for (i = 0; i < n_prec_bins; i++) {
+            if (prec_min < precs[i]) {
+                prec_idx_min = i - 1;
+                break;
+            }
+        }
+        prec_idx_min = prec_idx_min > 0 ? prec_idx_min : 0;
+
+        for (i = prec_idx_min; i < n_rec_bins; i++) {
+            if (prec_max < precs[i]) {
+                prec_idx_max = i + 1;
+                break;
+            }
+        }
+        prec_idx_max = prec_idx_max <= n_prec_bins ? prec_idx_max : n_prec_bins;
+
+        ns_rec_sigma = n_sigmas * prec_rec[3];
+        rec_max = std::min(prec_rec[2] + ns_rec_sigma, 1. - max_rec_clip);
+        rec_min = std::max(prec_rec[2] - ns_rec_sigma, epsilon);
+        rec_idx_min = 0;
+        rec_idx_max = n_rec_bins;
+        for (i = 0; i < n_rec_bins; i++) {
+            if (rec_min < recs[i]) {
+                rec_idx_min = i - 1;
+                break;
+            }
+        }
+        rec_idx_min = rec_idx_min > 0 ? rec_idx_min : 0;
+
+        for (i = rec_idx_min; i < n_rec_bins; i++) {
+            if (rec_max < recs[i]) {
+                rec_idx_max = i + 1;
+                break;
+            }
+        }
+        rec_idx_max = rec_idx_max <= n_rec_bins ? rec_idx_max : n_rec_bins;
+    }
+};
 
 inline void get_pr_grid_bounds(
     const int64_t prec_bins,
@@ -465,6 +559,59 @@ inline void multn_uncertainty_over_grid(
         }
     }
 }  // multn_uncertainty_over_grid
+
+inline void multn_uncertainty_over_grid_thresholds(
+    const int64_t n_prec_bins,
+    const int64_t n_rec_bins,
+    const int64_t n_conf_mats,
+    const double* prec_grid,
+    const double* rec_grid,
+    const int64_t* __restrict conf_mat,
+    double* scores,
+    const double n_sigmas = 6.0,
+    const double epsilon = 1e-4
+) {
+    // -- memory allocation --
+    // memory to be used by constrained_fit_cmp
+    std::array<double, 4> probas;
+    double* p = probas.data();
+
+    auto nll_store = prof_loglike_t();
+    prof_loglike_t* nll_ptr = &nll_store;
+
+    auto bounds = details::PrGridBounds(
+        n_prec_bins,
+        n_rec_bins,
+        n_sigmas,
+        epsilon,
+        prec_grid,
+        rec_grid
+    );
+
+    double prec;
+    double score;
+    int64_t idx;
+    // -- memory allocation --
+
+    for (int64_t k = 0; k < n_conf_mats; k++) {
+        // update to new conf_mat
+        set_prof_loglike_store(conf_mat, nll_ptr);
+        bounds.compute_bounds(conf_mat);
+
+        for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max; i++) {
+            prec = prec_grid[i];
+            for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max; j++) {
+                score = prof_loglike(prec, rec_grid[j], nll_ptr, p);
+                idx = (i * n_rec_bins) + j;
+                if (score < scores[idx]) {
+                    scores[idx] = score;
+                }
+            }
+        }
+        // increment ptr
+        conf_mat += 4;
+    }
+}  // multn_uncertainty_over_grid_thresholds
 
 inline double prof_loglike_simulation_cov(
     const int64_t n_sims,

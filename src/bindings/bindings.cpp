@@ -37,6 +37,7 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     // multn_loglike
     bind_multinomial_uncertainty(m);
     bind_multinomial_uncertainty_over_grid(m);
+    bind_multinomial_uncertainty_over_grid_thresholds(m);
     bind_simulated_multinomial_uncertainty(m);
 
 #if not defined OS_WIN

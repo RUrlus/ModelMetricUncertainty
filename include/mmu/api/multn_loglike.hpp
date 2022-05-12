@@ -33,6 +33,16 @@ py::array_t<int64_t> multinomial_uncertainty_over_grid(
     const double epsilon
 );
 
+void multinomial_uncertainty_over_grid_thresholds(
+    const int64_t n_conf_mats,
+    const py::array_t<double> prec_grid,
+    const py::array_t<double> rec_grid,
+    const py::array_t<int64_t> conf_mat,
+    py::array_t<double> scores,
+    const double n_sigmas,
+    const double epsilon
+);
+
 py::tuple simulated_multinomial_uncertainty(
     const int64_t n_sims,
     const int64_t n_bins,
