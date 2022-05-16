@@ -10,20 +10,13 @@ _ORDER_SH = {
     1: 'F',
 }
 
-_FAST_PATH_TYPES =  {
-    np.dtype('bool'),
-    np.dtype('int64'),
-    np.dtype('int32'),
-    np.dtype('float32'),
-    np.dtype('float64'),
-}
-
-DEFAULT_DTYPES = [i for i in _FAST_PATH_TYPES]
+from mmu.commons.types import _convert_to_ext_types
+from mmu.commons.types import _is_ext_compat
 
 
 def _check_array(
     arr,
-    dtype,
+    dtype_check,
     axis=None,
     target_axis=0,
     target_order=1,
@@ -33,19 +26,9 @@ def _check_array(
 ):
     """Specialisation of check_array for Numpy arrays."""
     convert = copy
-    if isinstance(dtype, str):
-        dtype_ = np.dtype(dtype)
-        convert += arr.dtype != dtype_
-    elif isinstance(dtype, np.dtype):
-        convert += arr.dtype != dtype
-    elif isinstance(dtype, (list, tuple, set)):
-        dtypes_ = [np.dtype(t) for t in dtype]
-        convert += dtype not in dtypes_
-        dtype_ = dtypes_[0]
-    elif dtype is None:
-        dtype_ = None
-    else:
-        raise TypeError('`dtype` must be a string or list-like strings')
+
+    c, dtype = dtype_check(arr)
+    convert += c
 
     ndims = 0
     for s in arr.shape:
@@ -84,7 +67,7 @@ def _check_array(
     )
 
     if convert > 0:
-        return np.asarray(arr, order=_ORDER_SH[target_order], dtype=dtype_)  # type: ignore
+        return np.asarray(arr, order=_ORDER_SH[target_order], dtype=dtype)  # type: ignore
     return arr
 
 
@@ -95,7 +78,7 @@ def check_array(
     target_order=1,
     min_dim=1,
     max_dim=2,
-    dtype=None,
+    dtype_check=_convert_to_ext_types,
     copy=False,
     **kwargs
 ):
@@ -135,7 +118,7 @@ def check_array(
     """
     # fast path, already a numpy array and of a numeric type we know how to
     # handle
-    if isinstance(arr, np.ndarray) and arr.dtype in _FAST_PATH_TYPES:
+    if isinstance(arr, np.ndarray) and _is_ext_compat(arr):
         return _check_array(
             arr=arr,
             axis=axis,
@@ -143,7 +126,7 @@ def check_array(
             target_order=target_order,
             min_dim=min_dim,
             max_dim=max_dim,
-            dtype=dtype,
+            dtype_check=dtype_check,
             copy=copy,
         )
     # slow path handles more types
@@ -156,7 +139,9 @@ def check_array(
 
     if 'ensure_2d' not in kwargs:
         kwargs['ensure_2d'] = min_dim == 2
-    kwargs['dtype'] = dtype or DEFAULT_DTYPES
+
+    _, dtype = dtype_check(arr)
+    kwargs['dtype'] = dtype
 
     ndims = 0
     for s in arr.shape:

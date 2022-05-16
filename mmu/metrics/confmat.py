@@ -2,12 +2,8 @@ import numpy as np
 import pandas as pd
 from mmu.lib import _core
 from mmu.commons import check_array
-
-_CONF_MAT_SUPPORTED_DTYPES = {
-    'y': ['bool', 'int32', 'int64', 'float32', 'float64'],
-    'yhat': ['bool', 'int32', 'int64', 'float32', 'float64'],
-    'score': ['float32', 'float64']
-}
+from mmu.commons import _convert_to_ext_types
+from mmu.commons import _convert_to_float
 
 
 def confusion_matrix_to_dataframe(conf_mat):
@@ -89,14 +85,14 @@ def confusion_matrix(y, yhat=None, score=None, threshold=0.5, return_df=False):
     y = check_array(
         y,
         max_dim=1,
-        dtypes=_CONF_MAT_SUPPORTED_DTYPES['y'],
+        dtype_check=_convert_to_ext_types
     )
 
     if score is not None:
         score = check_array(
             score,
             max_dim=1,
-            dtype=_CONF_MAT_SUPPORTED_DTYPES['score'],
+            dtype_check=_convert_to_float,
         )
         if not isinstance(threshold, float):
             raise TypeError("`threshold` must be a float if score is not None")
@@ -107,7 +103,7 @@ def confusion_matrix(y, yhat=None, score=None, threshold=0.5, return_df=False):
         yhat = check_array(
             yhat,
             max_dim=1,
-            dtype=_CONF_MAT_SUPPORTED_DTYPES['yhat'],
+            dtype_check=_convert_to_ext_types,
         )
         if yhat.size != y.size:
             raise ValueError('`yhat` and `y` must have equal length.')
@@ -167,7 +163,7 @@ def confusion_matrices(
         target_axis=obs_axis,
         target_order=1-obs_axis,
         max_dim=2,
-        dtypes=_CONF_MAT_SUPPORTED_DTYPES['y'],
+        dtype_check=_convert_to_ext_types,
     )
 
     if score is not None:
@@ -177,7 +173,7 @@ def confusion_matrices(
             target_axis=obs_axis,
             target_order=1-obs_axis,
             max_dim=2,
-            dtype=_CONF_MAT_SUPPORTED_DTYPES['score'],
+            dtype_check=_convert_to_float,
         )
         if not isinstance(threshold, float):
             raise TypeError("`threshold` must be a float if score is not None")
@@ -191,7 +187,7 @@ def confusion_matrices(
             target_axis=obs_axis,
             target_order=1-obs_axis,
             max_dim=2,
-            dtype=_CONF_MAT_SUPPORTED_DTYPES['yhat'],
+            dtype_check=_convert_to_ext_types,
         )
         if yhat.size != y.size:
             raise ValueError('`yhat` and `y` must have equal length.')
@@ -236,20 +232,20 @@ def confusion_matrices_thresholds(y, score, thresholds, return_df=False):
         y,
         max_dim=2,
         target_order=1,
-        dtypes=_CONF_MAT_SUPPORTED_DTYPES['y'],
+        dtype_check=_convert_to_ext_types,
     )
 
     score = check_array(
         score,
         max_dim=2,
         target_order=1,
-        dtype=_CONF_MAT_SUPPORTED_DTYPES['score'],
+        dtype_check=_convert_to_float,
     )
 
     thresholds = check_array(
         thresholds,
         max_dim=1,
-        dtypes=_CONF_MAT_SUPPORTED_DTYPES['score'],
+        dtype_check=_convert_to_float,
     )
 
     if score.size != y.size:
@@ -307,7 +303,7 @@ def confusion_matrices_runs_thresholds(
         target_axis=obs_axis,
         target_order=1-obs_axis,
         max_dim=2,
-        dtypes=_CONF_MAT_SUPPORTED_DTYPES['y'],
+        dtype_check=_convert_to_ext_types,
     )
 
     score = check_array(
@@ -316,13 +312,13 @@ def confusion_matrices_runs_thresholds(
         target_axis=obs_axis,
         target_order=1-obs_axis,
         max_dim=2,
-        dtypes=_CONF_MAT_SUPPORTED_DTYPES['score'],
+        dtype_check=_convert_to_float,
     )
 
     thresholds = check_array(
         thresholds,
         max_dim=1,
-        dtypes=_CONF_MAT_SUPPORTED_DTYPES['score'],
+        dtype_check=_convert_to_float,
     )
 
     n_runs = score.shape[1 - obs_axis]

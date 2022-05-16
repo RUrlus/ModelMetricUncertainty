@@ -3,6 +3,9 @@ import numpy as np
 import pandas as pd
 
 from mmu.commons import check_array
+from mmu.commons import _convert_to_float
+from mmu.commons import _convert_to_int
+from mmu.commons import _convert_to_ext_types
 from mmu.metrics.confmat import confusion_matrix_to_dataframe
 from mmu.metrics.confmat import confusion_matrices_to_dataframe
 from mmu.metrics.confmat import confusion_matrices
@@ -12,7 +15,6 @@ from mmu.lib._mmu_core import pr_mvn_error
 from mmu.lib._mmu_core import pr_mvn_error_runs
 from mmu.lib._mmu_core import pr_curve_mvn_error
 from mmu.metrics.confmat import confusion_matrix
-from mmu.metrics.confmat import _CONF_MAT_SUPPORTED_DTYPES
 
 
 def precision_recall_uncertainty(
@@ -109,7 +111,7 @@ def precision_recall_uncertainty_confusion_matrix(
     conf_mat = check_array(
         conf_mat,
         max_dim=1,
-        dtype=np.int64,
+        dtype_check=_convert_to_int
     )
     mtr = pr_mvn_error(conf_mat, alpha)
     cov = mtr[-4:].reshape(2, 2)
@@ -166,7 +168,7 @@ def precision_recall_uncertainty_confusion_matrices(
         target_axis=0,
         target_order=0,
         max_dim=2,
-        dtype=np.int64,
+        dtype_check=_convert_to_int,
     )
     mtr = pr_mvn_error_runs(conf_mat, alpha)
     cov = mtr[:, -4:]
@@ -316,7 +318,7 @@ class PrecisionRecallCurveUncertainty():
             axis=0,
             min_dim=2,
             max_dim=2,
-            dtype=['int32', 'int64']
+            dtype_check=_convert_to_int,
         )
         self._fit(alpha or self.alpha)
 
@@ -338,8 +340,8 @@ class PrecisionRecallCurveUncertainty():
             the density in the confidence interval
 
         """
-        X = check_array(X, max_dim=1, dtype=_CONF_MAT_SUPPORTED_DTYPES['score'])
-        y = check_array(y, max_dim=1, dtype=_CONF_MAT_SUPPORTED_DTYPES['y'])
+        X = check_array(X, max_dim=1, dtype=_convert_to_float)
+        y = check_array(y, max_dim=1, dtype=_convert_to_ext_types)
 
         n_thresholds = n_thresholds or self.n_thresholds
 

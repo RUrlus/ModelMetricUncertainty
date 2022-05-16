@@ -6,11 +6,9 @@ from mmu.commons import check_array
 from mmu.metrics.confmat import confusion_matrix_to_dataframe
 from mmu.metrics.confmat import confusion_matrices_to_dataframe
 
-_BINARY_METRICS_SUPPORTED_DTYPES = {
-    'y': ['bool', 'int32', 'int64', 'float32', 'float64'],
-    'yhat': ['bool', 'int32', 'int64', 'float32', 'float64'],
-    'score': ['float32', 'float64']
-}
+from mmu.commons import _convert_to_ext_types
+from mmu.commons import _convert_to_int
+from mmu.commons import _convert_to_float
 
 col_index = {
     'neg.precision': 0,
@@ -133,14 +131,14 @@ def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df
     y = check_array(
         y,
         max_dim=1,
-        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['y'],
+        dtype_check=_convert_to_ext_types
     )
 
     if score is not None:
         score = check_array(
             score,
             max_dim=1,
-            dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
+            dtype_check=_convert_to_float,
         )
         if not isinstance(threshold, float):
             raise TypeError("`threshold` must be a float if score is not None")
@@ -152,7 +150,7 @@ def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df
         yhat = check_array(
             yhat,
             max_dim=1,
-            dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['yhat'],
+            dtype_check=_convert_to_ext_types,
         )
         if yhat.size != y.size:
             raise ValueError('`yhat` and `y` must have equal length.')
@@ -212,7 +210,7 @@ def binary_metrics_confusion_matrix(confusion_matrix, fill=0.0, return_df=False)
         confusion_matrix,
         max_dim=1,
         target_order=0,
-        dtypes=['int32', 'int64'],
+        dtype_check=_convert_to_int,
     )
     metrics = _core.binary_metrics(confusion_matrix, fill)
 
@@ -261,7 +259,7 @@ def binary_metrics_confusion_matrices(confusion_matrix, fill=0.0, return_df=Fals
         confusion_matrix,
         max_dim=2,
         target_order=0,
-        dtypes=['int32', 'int64'],
+        dtype_check=_convert_to_int,
     )
     metrics = _core.binary_metrics_2d(confusion_matrix, fill)
 
@@ -324,19 +322,19 @@ def binary_metrics_thresholds(
     y = check_array(
         y,
         max_dim=1,
-        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['y'],
+        dtype_check=_convert_to_ext_types,
     )
 
     score = check_array(
         score,
         max_dim=1,
-        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
+        dtype_check=_convert_to_float,
     )
 
     thresholds = check_array(
         thresholds,
         max_dim=1,
-        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
+        dtype_check=_convert_to_float,
     )
 
     if score.size != y.size:
@@ -417,7 +415,7 @@ def binary_metrics_runs(
         target_axis=obs_axis,
         target_order=1-obs_axis,
         max_dim=2,
-        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['y'],
+        dtype_check=_convert_to_ext_types,
     )
 
     if score is not None:
@@ -427,7 +425,7 @@ def binary_metrics_runs(
             target_axis=obs_axis,
             target_order=1-obs_axis,
             max_dim=2,
-            dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
+            dtype_check=_convert_to_float,
         )
         if not isinstance(threshold, float):
             raise TypeError("`threshold` must be a float if score is not None")
@@ -442,7 +440,7 @@ def binary_metrics_runs(
             target_axis=obs_axis,
             target_order=1-obs_axis,
             max_dim=2,
-            dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['yhat'],
+            dtype_check=_convert_to_ext_types,
         )
         if yhat.size != y.size:
             raise ValueError('`yhat` and `y` must have equal length.')
@@ -518,7 +516,7 @@ def binary_metrics_runs_thresholds(
         target_axis=obs_axis,
         target_order=1-obs_axis,
         max_dim=2,
-        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['y'],
+        dtype_check=_convert_to_ext_types,
     )
 
     score = check_array(
@@ -527,13 +525,13 @@ def binary_metrics_runs_thresholds(
         target_axis=obs_axis,
         target_order=1-obs_axis,
         max_dim=2,
-        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
+        dtype_check=_convert_to_float,
     )
 
     thresholds = check_array(
         thresholds,
         max_dim=1,
-        dtypes=_BINARY_METRICS_SUPPORTED_DTYPES['score'],
+        dtype_check=_convert_to_float,
     )
 
     n_runs = score.shape[1 - obs_axis]
