@@ -2,6 +2,8 @@ import mmu.metrics as metrics
 import mmu.methods as methods
 import mmu.stats as stats
 
+from mmu.lib import MMU_MT_SUPPORT as _MMU_MT_SUPPORT
+
 from mmu.metrics import binary_metrics
 from mmu.metrics import binary_metrics_runs
 from mmu.metrics import binary_metrics_thresholds
@@ -24,6 +26,7 @@ from mmu.methods import precision_recall_uncertainty_confusion_matrices
 from mmu.methods import PrecisionRecallCurveUncertainty
 
 __all__ = [
+    '_MMU_MT_SUPPORT',
     'binary_metrics',
     'binary_metrics_runs',
     'binary_metrics_thresholds',
