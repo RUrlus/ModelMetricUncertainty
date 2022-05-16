@@ -113,6 +113,8 @@ def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df
     threshold : float, default=0.5
         the classification threshold to which the classifier score is evaluated,
         is inclusive.
+    fill : float, default=0.0
+        value to fill when a metric is not defined, e.g. divide by zero.
     return_df : bool, default=False
         return confusion matrix as pd.DataFrame
 
@@ -579,3 +581,64 @@ def binary_metrics_runs_thresholds(
         # change order s.t. we have thresholds, metrics, runs
         mtr = np.swapaxes(mtr.T, 0, 1)
     return cm, mtr
+
+
+def precision_recall_curve(y, score, thresholds=None, fill=0.0, return_df=False):
+    """Compute precision and recall over the thresholds.
+
+    Parameters
+    ----------
+    y : np.ndarray[bool, int32, int64, float32, float64]
+        true labels for observations
+    score : np.ndarray[float32, float64]
+        the classifier score to be evaluated against the `threshold`, i.e.
+        `yhat` = `score` >= `threshold`
+    threshold : np.ndarray[float32, float64]
+        the classification thresholds to which the classifier score is evaluated,
+        is inclusive.
+    fill : float, default=0.0
+        value to fill when a metric is not defined, e.g. divide by zero.
+    return_df : bool, default=False
+        return confusion matrix as pd.DataFrame
+
+    Returns
+    -------
+    precision : np.ndarray[float64]
+        the precision for each threshold
+    recall : np.ndarray[float64]
+        the recall for each threshold
+
+    """
+    if not isinstance(fill, float):
+        raise TypeError("`fill` must be a float.")
+
+    y = check_array(
+        y,
+        max_dim=1,
+        dtype_check=_convert_to_ext_types,
+    )
+
+    score = check_array(
+        score,
+        max_dim=1,
+        dtype_check=_convert_to_float,
+    )
+
+    thresholds = check_array(
+        thresholds,
+        max_dim=1,
+        dtype_check=_convert_to_float,
+    )
+
+    if score.size != y.size:
+        raise ValueError('`score` and `y` must have equal length.')
+    conf_mat = _core.confusion_matrix_thresholds(y, score, thresholds)
+    metrics = _core.binary_metrics_2d(conf_mat, fill)
+
+    if return_df:
+        df = pd.DataFrame(metrics[:, [1, 3]], columns=['precision', 'recall'])
+        df['thresholds'] = thresholds
+        return df
+    return metrics[:, [1, 3]].copy(order='F')
+
+

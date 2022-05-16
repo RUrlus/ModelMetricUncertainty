@@ -4,6 +4,7 @@ import mmu.stats as stats
 
 from mmu.lib import MMU_MT_SUPPORT as _MMU_MT_SUPPORT
 
+from mmu.metrics import auto_thresholds
 from mmu.metrics import binary_metrics
 from mmu.metrics import binary_metrics_runs
 from mmu.metrics import binary_metrics_thresholds
@@ -17,6 +18,7 @@ from mmu.metrics import confusion_matrices_runs_thresholds
 from mmu.metrics import confusion_matrix_to_dataframe
 from mmu.metrics import confusion_matrices_to_dataframe
 from mmu.metrics import metrics_to_dataframe
+from mmu.metrics import pr_curve, precision_recall_curve
 from mmu.commons.utils import generate_data
 
 from mmu.methods import precision_recall_uncertainty
@@ -27,6 +29,7 @@ from mmu.methods import PrecisionRecallCurveUncertainty
 
 __all__ = [
     '_MMU_MT_SUPPORT',
+    'auto_thresholds',
     'binary_metrics',
     'binary_metrics_runs',
     'binary_metrics_thresholds',
@@ -43,6 +46,8 @@ __all__ = [
     'metrics',
     'methods',
     'metrics_to_dataframe',
+    'pr_curve',
+    'precision_recall_curve',
     'precision_recall_uncertainty',
     'precision_recall_uncertainty_runs',
     'precision_recall_uncertainty_confusion_matrix',

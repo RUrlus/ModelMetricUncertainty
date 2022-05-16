@@ -13,7 +13,10 @@ from mmu.metrics.metrics import binary_metrics_thresholds
 from mmu.metrics.metrics import binary_metrics_runs_thresholds
 from mmu.metrics.metrics import binary_metrics_confusion_matrix
 from mmu.metrics.metrics import binary_metrics_confusion_matrices
+from mmu.metrics.metrics import precision_recall_curve
+from mmu.metrics.utils import auto_thresholds
 
+pr_curve = precision_recall_curve
 bmetrics = binary_metrics
 bmetrics_runs = binary_metrics_runs
 bmetrics_thresh = binary_metrics_thresholds
@@ -30,6 +33,7 @@ conf_mat_to_df = confusion_matrix_to_dataframe
 conf_mats_to_df = confusion_matrices_to_dataframe
 
 __all__ = [
+    'auto_thresholds',
     'bmetrics',
     'bmetrics_runs',
     'bmetrics_thresh',
@@ -57,4 +61,6 @@ __all__ = [
     'confusion_matrix_to_dataframe',
     'confusion_matrices_to_dataframe',
     'metrics_to_dataframe',
+    'pr_curve',
+    'precision_recall_curve',
 ]

@@ -208,15 +208,12 @@ def confusion_matrices_thresholds(y, score, thresholds, return_df=False):
     ----------
     y : np.ndarray[bool, int32, int64, float32, float64]
         true labels for observations
-    score : np.ndarray[float32, float64], default=None
+    score : np.ndarray[float32, float64]
         the classifier score to be evaluated against the `threshold`, i.e.
-        `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
-        if both are provided, this parameter is ignored.
-    thresholds : np.ndarray[float32, float64]
+        `yhat` = `score` >= `threshold`.
+    thresholds : np.ndarray[float32, float64], default=None
         the classification thresholds for which the classifier score is evaluated,
         is inclusive.
-    fill : float, default=0.0
-        value to fill when a metric is not defined, e.g. divide by zero.
     return_df : bool, default=False
         return the metrics confusion matrix and metrics as a DataFrame
 
