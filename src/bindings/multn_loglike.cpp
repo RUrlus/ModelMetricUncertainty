@@ -64,13 +64,12 @@ void bind_multinomial_uncertainty_over_grid(py::module &m) {
 
         Returns
         -------
-        bounds : np.array[np.float64]
-            the lower and upper bound of the grids for precision and recall respectively
+        scores : np.ndarray[float64]
+            array with the minimum profile log likelihood scores.
         )pbdoc",
         py::arg("precs_grid"),
         py::arg("recs_grid"),
         py::arg("conf_mat"),
-        py::arg("scores"),
         py::arg("n_sigmas") = 6.0,
         py::arg("epsilon") = 1e-4
     );
@@ -94,21 +93,22 @@ void bind_multinomial_uncertainty_over_grid_thresholds(py::module &m) {
             confusion matrix
         conf_mat : np.ndarray[int64]
             the confusion matrices with flattened order: TN, FP, FN, TP
-        score : np.ndarray[float64]
-            the array where the minimum loglike score will be stored.
-            Note must initialised with values greater than 1e4
         n_sigmas : double, default=6.0
             number std deviations of the marginal distributions to use as
             grid boundaries
         epsilon : double, default=1e-4
             epsilon used to clip recall or precision at the 0, 1 boundaries
 
+        Returns
+        -------
+        scores : np.ndarray[float64]
+            array with the minimum profile log likelihood scores over the thresholds.
+
         )pbdoc",
         py::arg("n_conf_mats"),
         py::arg("precs_grid"),
         py::arg("recs_grid"),
         py::arg("conf_mat"),
-        py::arg("scores"),
         py::arg("n_sigmas") = 6.0,
         py::arg("epsilon") = 1e-4
     );

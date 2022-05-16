@@ -494,7 +494,9 @@ inline void multn_uncertainty(
     double prec = bounds[0];
     const double prec_delta = bounds[1];
     const double rec_delta = bounds[4];
-    auto recs_safe = std::unique_ptr<double[]>(details::linspace(bounds[3], bounds[5], n_bins, rec_delta));
+    auto recs_safe = std::unique_ptr<double[]>(
+        details::linspace(bounds[3], bounds[5], n_bins, rec_delta)
+    );
     double* recs = recs_safe.get();
 
     auto nll_store = prof_loglike_t();
@@ -512,26 +514,34 @@ inline void multn_uncertainty(
 }  // multn_uncertainty
 
 inline void multn_uncertainty_over_grid(
-    const int64_t prec_bins,
-    const int64_t rec_bins,
+    const int64_t n_prec_bins,
+    const int64_t n_rec_bins,
     const double* prec_grid,
     const double* rec_grid,
     const int64_t* __restrict conf_mat,
     double* scores,
-    int64_t* idx_bounds,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4
 ) {
+
+    // give scores a high enough initial value that the chi2 p-values will be close to zero
+    std::fill(scores, scores + n_prec_bins * n_rec_bins, 1e4);
     // -- memory allocation --
     // memory to be used by constrained_fit_cmp
     std::array<double, 4> probas;
     double* p = probas.data();
+
+    std::array<int64_t, 6> bounds;
+    int64_t* idx_bounds = bounds.data();
+
+    auto nll_store = prof_loglike_t();
+    prof_loglike_t* nll_ptr = &nll_store;
     // -- memory allocation --
 
     // obtain the indexes over which to loop
     // sets prec_idx_min, prec_idx_max, rec_idx_min, rec_idx_max
     details::get_pr_grid_bounds(
-        prec_bins, rec_bins, conf_mat,
+        n_prec_bins, n_rec_bins, conf_mat,
         prec_grid, rec_grid, idx_bounds,
         n_sigmas, epsilon
     );
@@ -540,18 +550,18 @@ inline void multn_uncertainty_over_grid(
     const int64_t rec_idx_min = idx_bounds[2];
     const int64_t rec_idx_max = idx_bounds[3];
 
-    auto nll_store = prof_loglike_t();
-    prof_loglike_t* nll_ptr = &nll_store;
     set_prof_loglike_store(conf_mat, nll_ptr);
 
     double prec;
     double score;
     int64_t idx;
+    int64_t odx;
     for (int64_t i = prec_idx_min; i < prec_idx_max; i++) {
         prec = prec_grid[i];
+        odx = i * n_rec_bins;
         for (int64_t j = rec_idx_min; j < rec_idx_max; j++) {
             score = prof_loglike(prec, rec_grid[j], nll_ptr, p);
-            idx = (i * rec_bins) + j;
+            idx = odx + j;
             // log likelihoods and thus always positive
             if (score < scores[idx]) {
                 scores[idx] = score;
@@ -571,6 +581,9 @@ inline void multn_uncertainty_over_grid_thresholds(
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4
 ) {
+    // give scores a high enough initial value that the chi2 p-values will be close to zero
+    std::fill(scores, scores + n_prec_bins * n_rec_bins, 1e4);
+
     // -- memory allocation --
     // memory to be used by constrained_fit_cmp
     std::array<double, 4> probas;
@@ -726,8 +739,7 @@ inline void simulate_multn_uncertainty(
     const int64_t n_sims,
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,
-    double* result,
-    double* bounds,
+    double* scores,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4,
     const uint64_t seed = 0,
@@ -747,30 +759,40 @@ inline void simulate_multn_uncertainty(
     // memory to be used by constrained_fit_cmp
     std::array<double, 4> probas;
     double* p = probas.data();
-    // -- memory allocation --
-
-    // obtain prec_start, prec_delta, rec_start, rec_delta are set
-    details::get_pr_grid_delta(n_bins, conf_mat, bounds, n_sigmas, epsilon);
-    double prec = bounds[0];
-    const double prec_delta = bounds[1];
-    const double rec_delta = bounds[4];
-    auto recs_safe = std::unique_ptr<double[]>(details::linspace(bounds[3], bounds[5], n_bins, rec_delta));
-    double* recs = recs_safe.get();
-
-    auto nll_store = prof_loglike_t();
-    prof_loglike_t* nll_ptr = &nll_store;
-    set_prof_loglike_store(conf_mat, nll_ptr);
-    const int64_t n = nll_ptr->in;
-
-    auto binom_store = random::details::binomial_t();
-    random::details::binomial_t* sptr = &binom_store;
 
     // allocate memory block to be used by multinomial
     std::array<int64_t, 4> mult;
     int64_t* mult_ptr = mult.data();
 
+    // array used to store probabilities for the multinomial alternative
     std::array<double, 4> p_sim;
     double* p_sim_ptr = p_sim.data();
+
+    // array used to store the bounds of loops
+    std::array<double, 6> bounds;
+
+    // struct used by the multinomial generation
+    auto binom_store = random::details::binomial_t();
+    random::details::binomial_t* sptr = &binom_store;
+
+    // struct used to store the elements used in the computation
+    // of the profile log-likelihood
+    auto nll_store = prof_loglike_t();
+    prof_loglike_t* nll_ptr = &nll_store;
+    // -- memory allocation --
+
+    // obtain prec_start, prec_delta, rec_start, rec_delta are set
+    details::get_pr_grid_delta(n_bins, conf_mat, bounds.data(), n_sigmas, epsilon);
+    double prec = bounds[0];
+    const double prec_delta = bounds[1];
+    const double rec_delta = bounds[4];
+    auto recs_safe = std::unique_ptr<double[]>(
+        details::linspace(bounds[3], bounds[5], n_bins, rec_delta)
+    );
+    double* recs = recs_safe.get();
+
+    set_prof_loglike_store(conf_mat, nll_ptr);
+    const int64_t n = nll_ptr->in;
 
     double rec;
     double nll_obs;
@@ -780,7 +802,7 @@ inline void simulate_multn_uncertainty(
             // prof_loglike also sets p which we can re-use in prof_loglike sim
             rec = recs[j];
             nll_obs = prof_loglike(prec, rec, nll_ptr, p);
-            result[idx] = prof_loglike_simulation_cov(
+            scores[idx] = prof_loglike_simulation_cov(
                 n_sims, rng, prec, rec, nll_obs, n, p, sptr, mult_ptr, p_sim_ptr
             );
             idx++;
