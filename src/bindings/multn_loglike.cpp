@@ -114,6 +114,52 @@ void bind_multinomial_uncertainty_over_grid_thresholds(py::module &m) {
     );
 }
 
+#ifdef MMU_HAS_OPENMP_SUPPORT
+void bind_multinomial_uncertainty_over_grid_thresholds_mt(py::module &m) {
+    m.def(
+        "multinomial_uncertainty_over_grid_thresholds_mt",
+        &api::multn_uncertainty_over_grid_thresholds_mt,
+        R"pbdoc(Compute minimum profile loglike scores for each confusion matrix and grid.
+
+        Parameters
+        ----------
+        n_conf_mats : int
+            number of confusion matrices to evaluate
+        precs_grid : np.ndarray[float64]
+            the precision space over which to evaluate the uncertainty give the
+            confusion matrix
+        recs_grid : np.ndarray[float64]
+            the recall space over which to evaluate the uncertainty give the
+            confusion matrix
+        conf_mat : np.ndarray[int64]
+            the confusion matrices with flattened order: TN, FP, FN, TP
+        n_sigmas : double, default=6.0
+            number std deviations of the marginal distributions to use as
+            grid boundaries
+        epsilon : double, default=1e-4
+            epsilon used to clip recall or precision at the 0, 1 boundaries
+        n_threads : int, default=4
+            number of threads to use in the computation. Keep in mind that
+            each thread requires it's own block of size
+            (precs_grid.size * recs_grid.size)
+
+        Returns
+        -------
+        scores : np.ndarray[float64]
+            array with the minimum profile log likelihood scores over the thresholds.
+
+        )pbdoc",
+        py::arg("n_conf_mats"),
+        py::arg("precs_grid"),
+        py::arg("recs_grid"),
+        py::arg("conf_mat"),
+        py::arg("n_sigmas") = 6.0,
+        py::arg("epsilon") = 1e-4,
+        py::arg("n_threads") = 4
+    );
+}
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
 void bind_simulated_multinomial_uncertainty(py::module &m) {
     m.def(
         "simulated_multinomial_uncertainty",

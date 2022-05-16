@@ -613,6 +613,92 @@ inline void multn_uncertainty_over_grid_thresholds(
     }
 }  // multn_uncertainty_over_grid_thresholds
 
+#ifdef MMU_HAS_OPENMP_SUPPORT
+inline void multn_uncertainty_over_grid_thresholds_mt(
+    const int64_t n_prec_bins,
+    const int64_t n_rec_bins,
+    const int64_t n_conf_mats,
+    const double* prec_grid,
+    const double* rec_grid,
+    const int64_t* __restrict conf_mat,
+    double* scores,
+    const double n_sigmas = 6.0,
+    const double epsilon = 1e-4,
+    const int64_t n_threads = 4
+) {
+    const int64_t n_elem = n_prec_bins * n_rec_bins;
+    const int64_t t_elem = n_elem * n_threads;
+    auto thread_scores = std::unique_ptr<double[]>(new double[t_elem]);
+
+    std::fill(thread_scores.get(), thread_scores.get() + t_elem, 1e4);
+#pragma omp parallel num_threads(n_threads) shared(n_prec_bins, n_rec_bins, n_conf_mats, prec_grid, rec_grid, conf_mat, n_sigmas, epsilon)
+    {
+        double* thread_block = thread_scores.get() + (omp_get_thread_num() * n_elem);
+
+        // -- memory allocation --
+        // memory to be used by constrained_fit_cmp
+        std::array<double, 4> probas;
+        double* p = probas.data();
+
+        auto nll_store = prof_loglike_t();
+        prof_loglike_t* nll_ptr = &nll_store;
+
+        auto bounds = details::PrGridBounds(
+            n_prec_bins,
+            n_rec_bins,
+            n_sigmas,
+            epsilon,
+            prec_grid,
+            rec_grid
+        );
+
+        double prec;
+        double score;
+        int64_t idx;
+        // -- memory allocation --
+        const int64_t* lcm;
+
+#pragma omp for
+        for (int64_t k = 0; k < n_conf_mats; k++) {
+            lcm = conf_mat + (k * 4);
+            // update to new conf_mat
+            set_prof_loglike_store(lcm, nll_ptr);
+            bounds.compute_bounds(lcm);
+
+            for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max; i++) {
+                prec = prec_grid[i];
+                for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max; j++) {
+                    score = prof_loglike(prec, rec_grid[j], nll_ptr, p);
+                    idx = (i * n_rec_bins) + j;
+                    if (score < thread_block[idx]) {
+                        thread_block[idx] = score;
+                    }
+                }
+            }
+        }
+    } // omp parallel
+
+    // collect the scores
+    auto offsets = std::unique_ptr<int64_t[]>(new int64_t[n_threads]);
+    for (int64_t j = 0; j < n_threads; j++) {
+        offsets[j] = j * n_elem;
+    }
+
+    double tscore;
+    double min_score;
+    for (int64_t i = 0; i < n_elem; i++) {
+        min_score = 1e4;
+        for (int64_t j = 0; j < n_threads; j++) {
+            tscore = thread_scores[i + offsets[j]];
+            if (tscore < min_score) {
+                min_score = tscore;
+            }
+        }
+        scores[i] = min_score;
+    }
+}  // multn_uncertainty_over_grid_thresholds_mt
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
 inline double prof_loglike_simulation_cov(
     const int64_t n_sims,
     random::pcg64_dxsm& rng,

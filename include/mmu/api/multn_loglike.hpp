@@ -24,26 +24,36 @@ py::tuple multinomial_uncertainty(
     const double epsilon
 );
 
-py::array_t<int64_t> multinomial_uncertainty_over_grid(
+py::array_t<double> multinomial_uncertainty_over_grid(
     const py::array_t<double> prec_grid,
     const py::array_t<double> rec_grid,
     const py::array_t<int64_t> conf_mat,
-    py::array_t<double> scores,
     const double n_sigmas,
     const double epsilon
 );
 
-void multinomial_uncertainty_over_grid_thresholds(
+py::array_t<double> multinomial_uncertainty_over_grid_thresholds(
     const int64_t n_conf_mats,
     const py::array_t<double> prec_grid,
     const py::array_t<double> rec_grid,
     const py::array_t<int64_t> conf_mat,
-    py::array_t<double> scores,
     const double n_sigmas,
     const double epsilon
 );
 
-py::tuple simulated_multinomial_uncertainty(
+#ifdef MMU_HAS_OPENMP_SUPPORT
+py::array_t<double> multn_uncertainty_over_grid_thresholds_mt(
+    const int64_t n_conf_mats,
+    const py::array_t<double> prec_grid,
+    const py::array_t<double> rec_grid,
+    const py::array_t<int64_t> conf_mat,
+    const double n_sigmas,
+    const double epsilon,
+    const int64_t n_threads
+);
+#endif // MMU_HAS_OPENMP_SUPPORT
+
+py::array_t<double> simulated_multinomial_uncertainty(
     const int64_t n_sims,
     const int64_t n_bins,
     const py::array_t<int64_t> conf_mat,

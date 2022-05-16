@@ -38,6 +38,9 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_multinomial_uncertainty(m);
     bind_multinomial_uncertainty_over_grid(m);
     bind_multinomial_uncertainty_over_grid_thresholds(m);
+#ifdef MMU_HAS_OPENMP_SUPPORT
+    bind_multinomial_uncertainty_over_grid_thresholds_mt(m);
+#endif  // MMU_HAS_OPENMP_SUPPORT
     bind_simulated_multinomial_uncertainty(m);
 
 #if not defined OS_WIN
