@@ -10,15 +10,15 @@ namespace api {
 
 py::tuple multinomial_uncertainty(
     const int64_t n_bins,
-    const py::array_t<int64_t> conf_mat,
+    const i64arr conf_mat,
     const double n_sigmas,
     const double epsilon
 ) {
     if (!npy::is_well_behaved(conf_mat)) {
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
     }
-    auto result = py::array_t<double>({n_bins, n_bins});
-    auto bounds = py::array_t<double>({2, 3});
+    auto result = f64arr({n_bins, n_bins});
+    auto bounds = f64arr({2, 3});
     double* res_ptr = npy::get_data(result);
     double* bnds_ptr = npy::get_data(bounds);
     int64_t* cm_ptr = npy::get_data(conf_mat);
@@ -26,10 +26,10 @@ py::tuple multinomial_uncertainty(
      return py::make_tuple(result, bounds);
 }  // multinomial_uncertainty
 
-py::array_t<double> multinomial_uncertainty_over_grid(
-    const py::array_t<double> prec_grid,
-    const py::array_t<double> rec_grid,
-    const py::array_t<int64_t> conf_mat,
+f64arr multinomial_uncertainty_over_grid(
+    const f64arr prec_grid,
+    const f64arr rec_grid,
+    const i64arr conf_mat,
     const double n_sigmas,
     const double epsilon
 ) {
@@ -42,7 +42,7 @@ py::array_t<double> multinomial_uncertainty_over_grid(
     }
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();
-    auto scores = py::array_t<double>({prec_bins, rec_bins});
+    auto scores = f64arr({prec_bins, rec_bins});
     core::multn_uncertainty_over_grid(
         prec_bins,
         rec_bins,
@@ -56,11 +56,11 @@ py::array_t<double> multinomial_uncertainty_over_grid(
      return scores;
 }  // multinomial_uncertainty_over_grid
 
-py::array_t<double> multinomial_uncertainty_over_grid_thresholds(
+f64arr multinomial_uncertainty_over_grid_thresholds(
     const int64_t n_conf_mats,
-    const py::array_t<double> prec_grid,
-    const py::array_t<double> rec_grid,
-    const py::array_t<int64_t> conf_mat,
+    const f64arr prec_grid,
+    const f64arr rec_grid,
+    const i64arr conf_mat,
     const double n_sigmas,
     const double epsilon
 ) {
@@ -73,7 +73,7 @@ py::array_t<double> multinomial_uncertainty_over_grid_thresholds(
     }
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();
-    auto scores = py::array_t<double>({prec_bins, rec_bins});
+    auto scores = f64arr({prec_bins, rec_bins});
     core::multn_uncertainty_over_grid_thresholds(
         prec_bins,
         rec_bins,
@@ -89,11 +89,11 @@ py::array_t<double> multinomial_uncertainty_over_grid_thresholds(
 }  // multinomial_uncertainty_over_grid
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-py::array_t<double> multn_uncertainty_over_grid_thresholds_mt(
+f64arr multn_uncertainty_over_grid_thresholds_mt(
     const int64_t n_conf_mats,
-    const py::array_t<double> prec_grid,
-    const py::array_t<double> rec_grid,
-    const py::array_t<int64_t> conf_mat,
+    const f64arr prec_grid,
+    const f64arr rec_grid,
+    const i64arr conf_mat,
     const double n_sigmas,
     const double epsilon,
     const int64_t n_threads
@@ -107,7 +107,7 @@ py::array_t<double> multn_uncertainty_over_grid_thresholds_mt(
     }
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();
-    auto scores = py::array_t<double>({prec_bins, rec_bins});
+    auto scores = f64arr({prec_bins, rec_bins});
     core::multn_uncertainty_over_grid_thresholds_mt(
         prec_bins,
         rec_bins,
@@ -124,10 +124,10 @@ py::array_t<double> multn_uncertainty_over_grid_thresholds_mt(
 }  // multinomial_uncertainty_over_grid_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-py::array_t<double> simulated_multinomial_uncertainty(
+f64arr simulated_multinomial_uncertainty(
     const int64_t n_sims,
     const int64_t n_bins,
-    const py::array_t<int64_t> conf_mat,
+    const i64arr conf_mat,
     const double n_sigmas,
     const double epsilon,
     const uint64_t seed,
@@ -136,7 +136,7 @@ py::array_t<double> simulated_multinomial_uncertainty(
     if (!npy::is_well_behaved(conf_mat)) {
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
     }
-    auto scores = py::array_t<double>({n_bins, n_bins});
+    auto scores = f64arr({n_bins, n_bins});
     core::simulate_multn_uncertainty(
         n_sims,
         n_bins,

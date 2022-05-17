@@ -18,6 +18,7 @@
 #include <mmu/core/common.hpp>
 #include <mmu/core/confusion_matrix.hpp>
 #include <mmu/api/numpy.hpp>
+#include <mmu/api/common.hpp>
 
 namespace py = pybind11;
 
@@ -46,7 +47,7 @@ namespace api {
  * - confusion matrix
  */
 template <typename T1, typename T2>
-py::array_t<int64_t> confusion_matrix(
+i64arr confusion_matrix(
     const py::array_t<T1>& y,
     const py::array_t<T2>& yhat
 ) {
@@ -79,7 +80,7 @@ py::array_t<int64_t> confusion_matrix(
  * - confusion matrix
  */
 template <typename T1, typename T2, isFloat<T2> = true>
-py::array_t<int64_t> confusion_matrix(
+i64arr confusion_matrix(
     const py::array_t<T1>& y,
     const py::array_t<T2>& score,
     const T2 threshold
@@ -117,7 +118,7 @@ py::array_t<int64_t> confusion_matrix(
  * - confusion matrix
  */
 template <typename T1, typename T2, isFloat<T2> = true>
-inline py::array_t<int64_t> confusion_matrix_runs(
+inline i64arr confusion_matrix_runs(
     const py::array_t<T1>& y,
     const py::array_t<T2>& score,
     const T2 threshold,
@@ -181,7 +182,7 @@ inline py::array_t<int64_t> confusion_matrix_runs(
  * - confusion matrix
  */
 template <typename T1, typename T2>
-inline py::array_t<int64_t> confusion_matrix_runs(
+inline i64arr confusion_matrix_runs(
     const py::array_t<T1>& y,
     const py::array_t<T2>& yhat,
     const int obs_axis
@@ -243,7 +244,7 @@ inline py::array_t<int64_t> confusion_matrix_runs(
  * - confusion matrix
  */
 template <typename T1, typename T2, isFloat<T2> = true>
-inline py::array_t<int64_t> confusion_matrix_thresholds(
+inline i64arr confusion_matrix_thresholds(
     const py::array_t<T1>& y,
     const py::array_t<T2>& score,
     const py::array_t<T2>& thresholds
@@ -298,11 +299,11 @@ inline py::array_t<int64_t> confusion_matrix_thresholds(
  *   * metrics
  */
 template <typename T1, typename T2, isFloat<T2> = true>
-inline py::array_t<int64_t> confusion_matrix_runs_thresholds(
+inline i64arr confusion_matrix_runs_thresholds(
     const py::array_t<T1>& y,
     const py::array_t<T2>& score,
     const py::array_t<T2>& thresholds,
-    const py::array_t<int64_t>& n_obs
+    const i64arr& n_obs
 ) {
     // condition checks
     if (!(

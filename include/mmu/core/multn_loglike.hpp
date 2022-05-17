@@ -735,6 +735,7 @@ inline double prof_loglike_simulation_cov(
     return static_cast<double>(checks) / n_sims;
 } // prof_loglike_simulation_cov
 
+
 inline void simulate_multn_uncertainty(
     const int64_t n_sims,
     const int64_t n_bins,
@@ -810,6 +811,84 @@ inline void simulate_multn_uncertainty(
         prec += prec_delta;
     }
 } // simulate_multn_uncertainty
+
+#ifdef MMU_HAS_OPENMP_SUPPORT
+inline void simulate_multn_uncertainty_mt(
+    const int64_t n_sims,
+    const int64_t n_bins,
+    const int64_t* __restrict conf_mat,
+    double* scores,
+    const double n_sigmas = 6.0,
+    const double epsilon = 1e-4,
+    const uint64_t seed = 0,
+    const uint64_t stream = 0
+) {
+    random::pcg64_dxsm rng;
+    if (seed == 0) {
+        random::pcg_seed_seq seed_source;
+        rng.seed(seed_source);
+    } else if (stream != 0) {
+        rng.seed(seed, stream);
+    } else {
+        rng.seed(seed);
+    }
+
+    // -- memory allocation --
+    // memory to be used by constrained_fit_cmp
+    std::array<double, 4> probas;
+    double* p = probas.data();
+
+    // allocate memory block to be used by multinomial
+    std::array<int64_t, 4> mult;
+    int64_t* mult_ptr = mult.data();
+
+    // array used to store probabilities for the multinomial alternative
+    std::array<double, 4> p_sim;
+    double* p_sim_ptr = p_sim.data();
+
+    // array used to store the bounds of loops
+    std::array<double, 6> bounds;
+
+    // struct used by the multinomial generation
+    auto binom_store = random::details::binomial_t();
+    random::details::binomial_t* sptr = &binom_store;
+
+    // struct used to store the elements used in the computation
+    // of the profile log-likelihood
+    auto nll_store = prof_loglike_t();
+    prof_loglike_t* nll_ptr = &nll_store;
+    // -- memory allocation --
+
+    // obtain prec_start, prec_delta, rec_start, rec_delta are set
+    details::get_pr_grid_delta(n_bins, conf_mat, bounds.data(), n_sigmas, epsilon);
+    double prec = bounds[0];
+    const double prec_delta = bounds[1];
+    const double rec_delta = bounds[4];
+    auto recs_safe = std::unique_ptr<double[]>(
+        details::linspace(bounds[3], bounds[5], n_bins, rec_delta)
+    );
+    double* recs = recs_safe.get();
+
+    set_prof_loglike_store(conf_mat, nll_ptr);
+    const int64_t n = nll_ptr->in;
+
+    double rec;
+    double nll_obs;
+    int64_t idx = 0;
+    for (int64_t i = 0; i < n_bins; i++) {
+        for (int64_t j = 0; j < n_bins; j++) {
+            // prof_loglike also sets p which we can re-use in prof_loglike sim
+            rec = recs[j];
+            nll_obs = prof_loglike(prec, rec, nll_ptr, p);
+            scores[idx] = prof_loglike_simulation_cov(
+                n_sims, rng, prec, rec, nll_obs, n, p, sptr, mult_ptr, p_sim_ptr
+            );
+            idx++;
+        }
+        prec += prec_delta;
+    }
+} // simulate_multn_uncertainty_mt
+#endif  // MMU_HAS_OPENMP_SUPPORT
 
 }  // namespace core
 }  // namespace mmu
