@@ -58,7 +58,7 @@ def _plot_pr_ellipse(
 
     # we multiply the radius by 2 because width and height are diameters
     scales *= 2
-    rec_rad, prec_rad, angle = _get_radii_and_angle(cov_mat)
+    prec_rad, rec_rad, angle = _get_radii_and_angle(cov_mat)
 
     n_levels = scales.size
     for i in range(n_levels):
