@@ -17,10 +17,10 @@ from mmu.metrics.metrics import precision_recall
 from mmu.metrics.metrics import precision_recall_curve
 from mmu.metrics.utils import auto_thresholds
 
-from mmu.methods.pr_lep import precision_recall_uncertainty
-from mmu.methods.pr_lep import precision_recall_uncertainty_runs
-from mmu.methods.pr_lep import precision_recall_uncertainty_confusion_matrix
-from mmu.methods.pr_lep import precision_recall_uncertainty_confusion_matrices
+from mmu.metrics.pr_lep import precision_recall_uncertainty
+from mmu.metrics.pr_lep import precision_recall_uncertainty_runs
+from mmu.metrics.pr_lep import precision_recall_uncertainty_confusion_matrix
+from mmu.metrics.pr_lep import precision_recall_uncertainty_confusion_matrices
 
 bmetrics = binary_metrics
 bmetrics_runs = binary_metrics_runs
