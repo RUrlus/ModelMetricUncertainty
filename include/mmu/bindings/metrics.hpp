@@ -18,6 +18,10 @@ void bind_binary_metrics(py::module &m);
 void bind_binary_metrics_2d(py::module &m);
 void bind_binary_metrics_flattened(py::module &m);
 
+void bind_precision_recall(py::module &m);
+void bind_precision_recall_2d(py::module &m);
+void bind_precision_recall_flattened(py::module &m);
+
 }  // namespace bindings
 }  // namespace mmu
 
