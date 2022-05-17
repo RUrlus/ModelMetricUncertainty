@@ -87,15 +87,15 @@ f64arr pr_mvn_error_runs(
 
     const size_t n_runs = conf_mat.shape(0);
 
-    auto metrics = f64arr(n_runs * 10);
+    auto metrics = f64arr({n_runs, static_cast<size_t>(10)});
     double* const metrics_ptr = npy::get_data(metrics);
 
     // compute metrics
-    #pragma omp parallel for
+    #pragma omp parallel for shared(cm_ptr, metrics_ptr)
     for (size_t i = 0; i < n_runs; i++) {
         core::pr_mvn_error(cm_ptr + (i * 4), metrics_ptr + (i * 10), alpha);
     }
-    return metrics.reshape({n_runs, static_cast<size_t>(10)});
+    return metrics;
 }
 
 /* Compute the Precision-Recall curve and its uncertainty.
@@ -136,12 +136,129 @@ f64arr pr_curve_mvn_error(
     auto metrics = f64arr({n_mats, static_cast<size_t>(10)});
     double* const metrics_ptr = npy::get_data(metrics);
 
-    #pragma omp parallel for
+    #pragma omp parallel for shared(cm_ptr, metrics_ptr)
     for (size_t i = 0; i < n_mats; i++) {
-        core::pr_mvn_error(cm_ptr + (i * 4), metrics_ptr + (1 * 10), alpha);
+        core::pr_mvn_error(cm_ptr + (i * 4), metrics_ptr + (i * 10), alpha);
     }
     return metrics;
 }
+
+/* Compute the Precision-Recall and their covariance.
+ *
+ * --- Parameters ---
+ * - conf_mat : confusion_matrix
+ *
+ * --- Returns ---
+ * - metrics with columns
+ *     0. precision
+ *     1. recall
+ *     2. V[precision]
+ *     3. COV[precision, recall]
+ *     4. V[recall]
+ *     5. COV[precision, recall]
+ */
+f64arr pr_mvn_cov(
+    const i64arr& conf_mat
+) {
+    // condition checks
+    if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
+        throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
+    }
+    size_t ndim = conf_mat.ndim();
+    if (ndim > 2 || conf_mat.size() != 4) {
+        throw std::runtime_error("`conf_mat` should have shape (2, 2) or (4,).");
+    }
+    // allocate memory confusion_matrix
+    int64_t* const cm_ptr = npy::get_data(conf_mat);;
+
+    auto metrics = f64arr(6);
+    double* const metrics_ptr = npy::get_data(metrics);
+
+    // compute metrics
+    core::pr_mvn_cov(cm_ptr, metrics_ptr);
+    return metrics;
+}
+
+/* Compute the Precision-Recall and their covariance.
+ *
+ * --- Parameters ---
+ * - conf_mat : confusion_matrix
+ * - alpha : the density inside the confidence interval
+ *
+ * --- Returns ---
+ * - metrics with columns
+ *     0. precision
+ *     1. recall
+ *     2. V[precision]
+ *     3. COV[precision, recall]
+ *     4. V[recall]
+ *     5. COV[precision, recall]
+ */
+f64arr pr_mvn_cov_runs(const i64arr& conf_mat) {
+    // condition checks
+    if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
+        throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
+    }
+    size_t ndim = conf_mat.ndim();
+    if (ndim != 2 || conf_mat.shape(1) != 4) {
+        throw std::runtime_error("`conf_mat` should have shape (N, 4).");
+    }
+    // allocate memory confusion_matrix
+    int64_t* const cm_ptr = npy::get_data(conf_mat);;
+
+    const size_t n_runs = conf_mat.shape(0);
+
+    auto metrics = f64arr({n_runs, static_cast<size_t>(6)});
+    double* const metrics_ptr = npy::get_data(metrics);
+
+    // compute metrics
+    #pragma omp parallel for shared(cm_ptr, metrics_ptr)
+    for (size_t i = 0; i < n_runs; i++) {
+        core::pr_mvn_cov(cm_ptr + (i * 4), metrics_ptr + (i * 6));
+    }
+    return metrics;
+}
+
+
+/* Compute the Precision-Recall curve and its uncertainty.
+ *
+ * --- Parameters ---
+ * - conf_mat : confusion_matrix
+ * - alpha : the density inside the confidence interval
+ *
+ * --- Returns ---
+ * - metrics with columns
+ *     0. precision
+ *     1. recall
+ *     2. V[precision]
+ *     3. COV[precision, recall]
+ *     4. V[recall]
+ *     5. COV[precision, recall]
+ */
+f64arr pr_curve_mvn_cov(const i64arr& conf_mat) {
+    // condition checks
+    if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
+        throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
+    }
+    size_t ndim = conf_mat.ndim();
+    if (ndim > 2 || conf_mat.shape(1) != 4) {
+        throw std::runtime_error("`conf_mat` should have shape (N, 4).");
+    }
+    size_t n_mats = conf_mat.shape(0);
+    // allocate memory confusion_matrix
+    int64_t* const cm_ptr = npy::get_data(conf_mat);;
+
+    auto metrics = f64arr({n_mats, static_cast<size_t>(6)});
+    double* const metrics_ptr = npy::get_data(metrics);
+
+    #pragma omp parallel for shared(cm_ptr, metrics_ptr)
+    for (size_t i = 0; i < n_mats; i++) {
+        core::pr_mvn_cov(cm_ptr + (i * 4), metrics_ptr + (i * 6));
+    }
+    return metrics;
+}
+
+
 
 }  // namespace api
 }  // namespace mmu

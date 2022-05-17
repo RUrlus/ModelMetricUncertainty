@@ -38,6 +38,89 @@ inline double norm_ppf(const T mu, const T sigma, const T p) {
  * Another way of thinking about this as a Multivariate Normal over the Poisson errors.
  * Sets the following values at metrics index:
  *    0 - pos.precision aka Positive Predictive Value
+ *    3 - pos.recall aka True Positive Rate aka Sensitivity
+ *    4 - variance of precision
+ *    5 - covariance precision, recall
+ *    6 - variance of recall
+ *    7 - covariance precision, recall
+ */
+template<typename T, isInt<T> = true>
+inline void pr_mvn_cov(
+    T* __restrict const conf_mat,
+    double* __restrict const metrics
+) {
+    /*
+     *                  pred
+     *                0     1
+     *  actual  0    TN    FP
+     *          1    FN    TP
+     *
+     *  Flattened we have:
+     *  0 TN
+     *  1 FP
+     *  2 FN
+     *  3 TP
+     *
+     */
+    const int64_t itp  = conf_mat[3];
+    const auto tp = static_cast<double>(itp);
+
+    const int64_t itp_fn = conf_mat[2] + conf_mat[3];
+    const bool tp_fn_nonzero = itp_fn > 0;
+    const auto tp_fn = static_cast<double>(itp_fn);
+
+    const int64_t itp_fp = conf_mat[3] + conf_mat[1];
+    const bool tp_fp_nonzero = itp_fp > 0;
+    const auto tp_fp = static_cast<double>(itp_fp);
+
+    // precision
+    // precision == 1
+    if (itp == itp_fp) {
+        metrics[0] = 1.0;
+        metrics[2] = 0.0;
+    } else if (tp_fp_nonzero) {
+        metrics[0] = tp / (tp_fp);
+        metrics[2] = (
+            static_cast<double>(conf_mat[3] * conf_mat[1]) /
+            static_cast<double>(std::pow(tp_fp, 3.0))
+        );
+    } else {
+        // precision == 0
+        metrics[0] = 0.0;
+        metrics[2] = NAN;
+    }
+
+    // recall
+    if (itp == itp_fn) {
+        // recall == 1.0
+        metrics[1] = 1.0;
+        metrics[5] = 0.0;
+    } else if (tp_fn_nonzero) {
+        metrics[1] = tp / (tp_fn);
+        // rec_var
+        metrics[5] = (
+            static_cast<double>(conf_mat[3] * conf_mat[2]) /
+            static_cast<double>(std::pow(tp_fn, 3.0))
+        );
+    } else {
+        // recall == 0.0
+        metrics[1] = 0.0;
+        metrics[5] = NAN;
+    }
+
+    // covariance
+    metrics[3] = metrics[4] = (
+        static_cast<double>(itp * conf_mat[1] * conf_mat[2])
+        / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2))
+    );
+}  // pr_mvn_error
+
+/* This function computes the uncertainty on the precision-recall curve
+ * using linear error propagation over the Poisson error.
+ *
+ * Another way of thinking about this as a Multivariate Normal over the Poisson errors.
+ * Sets the following values at metrics index:
+ *    0 - pos.precision aka Positive Predictive Value
  *    1 - lower-bound of marginal CI precision
  *    2 - upper-bound of marginal CI precision
  *    3 - pos.recall aka True Positive Rate aka Sensitivity
@@ -81,67 +164,59 @@ inline void pr_mvn_error(
     const auto tp_fp = static_cast<double>(itp_fp);
 
     // precision
-    double prec;
-    double prec_var;
-    double prec_for_sigma;
-    // precision == 1
+    double val;
+    double val_var;
+    double val_sigma;
     if (itp == itp_fp) {
-        prec = 1.0;
-        prec_for_sigma = static_cast<double>(itp_fp - 1) / tp_fp;
-        prec_var = (prec_for_sigma * (1 - prec_for_sigma)) / tp_fp;
+        // precision == 1
+        metrics[0] = metrics[1] = metrics[2] = 1.0;
+        metrics[6] = 0.;
     } else if (tp_fp_nonzero) {
-        prec = tp / (tp_fp);
-        prec_var = (
+        val = tp / (tp_fp);
+        val_var = (
             static_cast<double>(conf_mat[3] * conf_mat[1]) /
             static_cast<double>(std::pow(tp_fp, 3.0))
         );
+        val_sigma = std::sqrt(val_var);
+        metrics[0] = val;
+        metrics[1] = norm_ppf(val, val_sigma, alpha_lb);
+        metrics[2] = norm_ppf(val, val_sigma, alpha_ub);
+        metrics[6] = val_var;
+
     } else {
         // precision == 0
-        prec = 0.0;
-        prec_for_sigma = 1.0 / tp_fp;
-        prec_var = (prec_for_sigma * (1 - prec_for_sigma)) / tp_fp;
+        metrics[0] = metrics[1] = metrics[2] = 0.0;
+        metrics[6] = NAN;
     }
-    const double prec_sigma = std::sqrt(prec_var);
-    metrics[0] = prec;
-    metrics[1] = norm_ppf(prec, prec_sigma, alpha_lb);
-    metrics[2] = norm_ppf(prec, prec_sigma, alpha_ub);
 
     // recall
-    double rec;
-    double rec_var;
-    double rec_for_sigma;
-    // precision == 1
     if (itp == itp_fn) {
-        // recall == 1
-        rec = 1.0;
-        rec_for_sigma = static_cast<double>(itp_fn - 1) / tp_fn;
-        rec_var = (rec_for_sigma * (1 - rec_for_sigma)) / tp_fn;
+        // recall == 1.0
+        metrics[3] = metrics[4] = metrics[5] = 1.0;
+        metrics[9] = 0.;
     } else if (tp_fn_nonzero) {
-        rec = tp / (tp_fn);
-        rec_var = (
+        val = tp / (tp_fn);
+        // rec_var
+        val_var = (
             static_cast<double>(conf_mat[3] * conf_mat[2]) /
             static_cast<double>(std::pow(tp_fn, 3.0))
         );
+        val_sigma = std::sqrt(val_var);
+        metrics[3] = val;
+        metrics[4] = norm_ppf(val, val_sigma, alpha_lb);
+        metrics[5] = norm_ppf(val, val_sigma, alpha_ub);
+        metrics[9] = val_var;
     } else {
         // recall == 0.0
-        rec = 0.0;
-        rec_for_sigma = 1.0 / tp_fn;
-        rec_var = (rec_for_sigma * (1 - rec_for_sigma)) / tp_fn;
+        metrics[3] = metrics[4] = metrics[5] = 1.0;
+        metrics[9] = NAN;
     }
-    const double rec_sigma = std::sqrt(rec_var);
-    metrics[3] = rec;
-    metrics[4] = norm_ppf(rec, rec_sigma, alpha_lb);
-    metrics[5] = norm_ppf(rec, rec_sigma, alpha_ub);
 
     // covariance
-    const double cov = (
+    metrics[7] = metrics[8] = (
         static_cast<double>(itp * conf_mat[1] * conf_mat[2])
         / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2))
     );
-    metrics[6] = prec_var;
-    metrics[7] = cov;
-    metrics[8] = cov;
-    metrics[9] = rec_var;
 }  // pr_mvn_error
 
 template<typename T, isInt<T> = true>

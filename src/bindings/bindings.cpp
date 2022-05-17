@@ -37,6 +37,10 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_pr_mvn_error(m);
     bind_pr_mvn_error_runs(m);
     bind_pr_curve_mvn_error(m);
+
+    bind_pr_mvn_cov(m);
+    bind_pr_mvn_cov_runs(m);
+    bind_pr_curve_mvn_cov(m);
     // multn_loglike
     bind_multinomial_uncertainty(m);
     bind_multinomial_uncertainty_over_grid(m);

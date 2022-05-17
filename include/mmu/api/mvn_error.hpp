@@ -28,6 +28,10 @@ f64arr pr_mvn_error(const i64arr& conf_mat, double alpha);
 f64arr pr_mvn_error_runs(const i64arr& conf_mat, double alpha);
 f64arr pr_curve_mvn_error(const i64arr& conf_mat, double alpha);
 
+f64arr pr_mvn_cov(const i64arr& conf_mat);
+f64arr pr_mvn_cov_runs(const i64arr& conf_mat);
+f64arr pr_curve_mvn_cov(const i64arr& conf_mat);
+
 }  // namespace api
 }  // namespace mmu
 
