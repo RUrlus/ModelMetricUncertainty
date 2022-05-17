@@ -356,6 +356,9 @@ class PrecisionRecallEllipticalUncertainty:
         levels : Union[int, float, np.ndarray, None] = None,
         uncertainties : str = 'test',
         ax=None,
+        cmap_name : str = 'Blues',
+        equal_aspect : bool = False,
+        limit_axis : bool = True,
     ):
         """Plot elliptical confidence interval(s) for precision and recall
 
@@ -376,6 +379,12 @@ class PrecisionRecallEllipticalUncertainty:
             that `add_train_uncertainty` has been called.
         ax : matplotlib.axes.Axes, default=None
             Pre-existing axes for the plot
+        cmap_name : str, default='Blues'
+            matplotlib cmap name to use for CIs
+        equal_aspect : bool, default=False
+            enforce square axis
+        limit_axis : bool, default=True
+            allow ax to be limited for optimal CI plot
 
         Returns
         -------
@@ -448,7 +457,10 @@ class PrecisionRecallEllipticalUncertainty:
             cov_mat,
             scales,
             labels,
-            ax
+            cmap_name=cmap_name,
+            ax=ax,
+            equal_aspect=equal_aspect,
+            limit_axis=limit_axis,
         )
 
 
@@ -750,8 +762,10 @@ class PrecisionRecallMultinomialUncertainty:
     def plot(
         self,
         levels : Union[int, float, np.ndarray, None] = None,
-        uncertainties : str = 'test',
         ax=None,
+        cmap_name : str = 'Blues',
+        equal_aspect : bool = False,
+        limit_axis : bool = True,
     ):
         """Plot confidence interval(s) for precision and recall
 
@@ -765,6 +779,12 @@ class PrecisionRecallMultinomialUncertainty:
             By default we plot 1, 2 and 3 std deviations
         ax : matplotlib.axes.Axes, default=None
             Pre-existing axes for the plot
+        cmap_name : str, default='Blues'
+            matplotlib cmap name to use for CIs
+        equal_aspect : bool, default=False
+            enforce square axis
+        limit_axis : bool, default=True
+            allow ax to be limited for optimal CI plot
 
         Returns
         -------
@@ -816,5 +836,8 @@ class PrecisionRecallMultinomialUncertainty:
             self._bounds,
             levels,
             labels,
-            ax=ax
+            cmap_name=cmap_name,
+            ax=ax,
+            equal_aspect=equal_aspect,
+            limit_axis=limit_axis,
         )

@@ -41,7 +41,8 @@ def _plot_pr_ellipse(
     ax=None,
     cmap_name=None,
     legend_loc=None,
-    equal_aspect=True
+    equal_aspect=True,
+    limit_axis=True
 ):
     if cmap_name is None:
         cmap_name = 'Blues'
@@ -83,20 +84,21 @@ def _plot_pr_ellipse(
         zorder=n_levels + 1
     )
 
-    # we need to hide the right and top spines
-    # in order to see the curve at the border:
-    ylim_lb, ylim_ub = ax.get_ylim()  # type: ignore
-    ylim_lb = max(-0.001, ylim_lb)
-    ylim_ub = min(1.001, ylim_ub)
-    ax.set_ylim(ylim_lb, ylim_ub)  # type: ignore
+    if limit_axis:
+        # we need to hide the right and top spines
+        # in order to see the curve at the border:
+        ylim_lb, ylim_ub = ax.get_ylim()  # type: ignore
+        ylim_lb = max(-0.001, ylim_lb)
+        ylim_ub = min(1.001, ylim_ub)
+        ax.set_ylim(ylim_lb, ylim_ub)  # type: ignore
 
-    xlim_lb, xlim_ub = ax.get_xlim()  # type: ignore
-    xlim_lb = max(-0.001, xlim_lb)
-    xlim_ub = min(1.001, xlim_ub)
-    ax.set_xlim(xlim_lb, xlim_ub)  # type: ignore
+        xlim_lb, xlim_ub = ax.get_xlim()  # type: ignore
+        xlim_lb = max(-0.001, xlim_lb)
+        xlim_ub = min(1.001, xlim_ub)
+        ax.set_xlim(xlim_lb, xlim_ub)  # type: ignore
 
-    ax.spines['right'].set_visible(False)  # type: ignore
-    ax.spines['top'].set_visible(False)  # type: ignore
+        ax.spines['right'].set_visible(False)  # type: ignore
+        ax.spines['top'].set_visible(False)  # type: ignore
 
     ax.set_xlabel('Recall', fontsize=14)  # type: ignore
     ax.set_ylabel('Precision', fontsize=14)  # type: ignore

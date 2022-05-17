@@ -63,13 +63,14 @@ def _plot_pr_contours(
     cmap_name=None,
     ax=None,
     legend_loc=None,
-    equal_aspect=True
+    equal_aspect=True,
+    limit_axis=True,
 ):
     if cmap_name is None:
         cmap_name = 'Blues'
     if legend_loc is None:
         # likely to be the best place for pr curve
-        legend_loc = 'lower center'
+        legend_loc = 'lower left'
 
     if ax is None:
         fig, ax = plt.subplots(figsize=(12,8))
@@ -100,15 +101,16 @@ def _plot_pr_contours(
     ax.set_ylabel('Precision', fontsize=14)  # type: ignore
     ax.tick_params(labelsize=12)  # type: ignore
 
-    ylim_lb, ylim_ub = ax.get_ylim()  # type: ignore
-    ylim_lb = max(-0.001, ylim_lb)
-    ylim_ub = min(1.001, ylim_ub)
-    ax.set_ylim(ylim_lb, ylim_ub)  # type: ignore
+    if limit_axis:
+        ylim_lb, ylim_ub = ax.get_ylim()  # type: ignore
+        ylim_lb = max(-0.001, ylim_lb)
+        ylim_ub = min(1.001, ylim_ub)
+        ax.set_ylim(ylim_lb, ylim_ub)  # type: ignore
 
-    xlim_lb, xlim_ub = ax.get_xlim()  # type: ignore
-    xlim_lb = max(-0.001, xlim_lb)
-    xlim_ub = min(1.001, xlim_ub)
-    ax.set_xlim(xlim_lb, xlim_ub)  # type: ignore
+        xlim_lb, xlim_ub = ax.get_xlim()  # type: ignore
+        xlim_lb = max(-0.001, xlim_lb)
+        xlim_ub = min(1.001, xlim_ub)
+        ax.set_xlim(xlim_lb, xlim_ub)  # type: ignore
 
     if equal_aspect:
         ax.set_aspect('equal')  # type: ignore
