@@ -22,7 +22,7 @@ class PrecisionRecallEllipticalUncertainty:
 
     Model's the linearly propogated errors of the confusion matrix as a
     bivariate Normal distribution. Note that this method is not valid
-    for low statistic test sets or for precision/recall close to 1.0/0.0.
+    for low statistic sets or for precision/recall close to 1.0/0.0.
     In these scenarios the `PrecisionRecallMultinomialUncertainty` class should
     be used.
 
@@ -108,10 +108,30 @@ class PrecisionRecallEllipticalUncertainty:
         elif (1 - self.recall) < 1e-12:
             warnings.warn("`recall` is close to one, COV[P, R] is not valid")
         self.cov_mat = out[2:].reshape(2, 2)
+        # n * p * (1 - p) > 10
+
+        # check if we have enough power for binomial approximation
+        fcmat = self.conf_mat.flatten()  # type: ignore
+        # p = TP / P + N
+        p = fcmat[3] / fcmat.sum()
+        n = min(fcmat[1] + fcmat[3], fcmat[2] + fcmat[3])
+        min_val_score = n * p * (1 - p)
+        if min_val_score <= 10.0:
+            warnings.warn(
+                "Low statistics, Normal approximation to Binomial may not be"
+                f" robust for the observed confusion matrix probabilities"
+                " and counts"
+            )
 
     @classmethod
     def from_scores(cls, y : np.ndarray, score : np.ndarray, threshold : float = 0.5):
         """Compute elliptical uncertainty on precision and recall.
+
+        Model's the linearly propogated errors of the confusion matrix as a
+        bivariate Normal distribution. Note that this method is not valid
+        for low statistic sets or for precision/recall close to 1.0/0.0.
+        In these scenarios the `PrecisionRecallMultinomialUncertainty` class should
+        be used.
 
         Parameters
         ----------
@@ -137,6 +157,12 @@ class PrecisionRecallEllipticalUncertainty:
     def from_predictions(cls, y : np.ndarray, yhat : np.ndarray):
         """Compute elliptical uncertainty on precision and recall.
 
+        Model's the linearly propogated errors of the confusion matrix as a
+        bivariate Normal distribution. Note that this method is not valid
+        for low statistic sets or for precision/recall close to 1.0/0.0.
+        In these scenarios the `PrecisionRecallMultinomialUncertainty` class should
+        be used.
+
         Parameters
         ----------
         y : np.ndarray
@@ -154,6 +180,12 @@ class PrecisionRecallEllipticalUncertainty:
     @classmethod
     def from_confusion_matrix(cls, conf_mat : np.ndarray):
         """Compute elliptical uncertainty on precision and recall.
+
+        Model's the linearly propogated errors of the confusion matrix as a
+        bivariate Normal distribution. Note that this method is not valid
+        for low statistic sets or for precision/recall close to 1.0/0.0.
+        In these scenarios the `PrecisionRecallMultinomialUncertainty` class should
+        be used.
 
         Parameters
         ----------
@@ -177,7 +209,13 @@ class PrecisionRecallEllipticalUncertainty:
         y : np.ndarray,
         threshold : float = 0.5
     ):
-        """Compute uncertainty from classifier.
+        """Compute elliptical uncertainty on precision and recall.
+
+        Model's the linearly propogated errors of the confusion matrix as a
+        bivariate Normal distribution. Note that this method is not valid
+        for low statistic sets or for precision/recall close to 1.0/0.0.
+        In these scenarios the `PrecisionRecallMultinomialUncertainty` class should
+        be used.
 
         Parameters
         ----------
@@ -211,6 +249,27 @@ class PrecisionRecallEllipticalUncertainty:
         threshold : float = 0.5,
         obs_axis : int = 0,
     ):
+        """Incorporate the sampling uncertainty of the train set.
+
+        Parameters
+        ----------
+        y : np.ndarray[bool, int32, int64, float32, float64]
+            true labels for observations
+        yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
+            the predicted labels, the same dtypes are supported as y. Can be `None`
+            if `score` is not `None`, if both are provided, `score` is ignored.
+        score : np.ndarray[float32, float64], default=None
+            the classifier score to be evaluated against the `threshold`, i.e.
+            `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
+            if both are provided, this parameter is ignored.
+        threshold : float, default=0.5
+            the classification threshold to which the classifier score is evaluated,
+            is inclusive.
+        obs_axis : int, default=0
+            the axis containing the observations for a single run, e.g. 0 when the
+            labels and scores are stored as columns
+
+        """
         self.train_conf_mats = confusion_matrices(
             y, yhat, scores, threshold, obs_axis
         )
