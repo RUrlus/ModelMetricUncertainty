@@ -1,7 +1,6 @@
 import mmu.metrics as metrics
 import mmu.methods as methods
 import mmu.stats as stats
-import mmu.viz as viz
 
 from mmu.lib import MMU_MT_SUPPORT as _MMU_MT_SUPPORT
 
@@ -52,5 +51,4 @@ __all__ = [
     'metrics',
     'methods',
     'stats',
-    'viz'
 ]
