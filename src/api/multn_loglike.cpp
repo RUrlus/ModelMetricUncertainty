@@ -18,7 +18,7 @@ py::tuple multinomial_uncertainty(
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
     }
     auto result = f64arr({n_bins, n_bins});
-    auto bounds = f64arr({2, 3});
+    auto bounds = f64arr({2, 2});
     double* res_ptr = npy::get_data(result);
     double* bnds_ptr = npy::get_data(bounds);
     int64_t* cm_ptr = npy::get_data(conf_mat);
