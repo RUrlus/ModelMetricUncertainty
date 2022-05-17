@@ -63,7 +63,7 @@ def _plot_pr_contours(
     cmap_name=None,
     ax=None,
     legend_loc=None,
-    equal_aspect=False
+    equal_aspect=True
 ):
     if cmap_name is None:
         cmap_name = 'Blues'
@@ -77,11 +77,13 @@ def _plot_pr_contours(
         fig = ax.get_figure()
 
     # create meshgrid for plotting
-    prec_grid = np.linspace(bounds[0], bounds[2], num=n_bins)
-    rec_grid = np.linspace(bounds[3], bounds[5], num=n_bins)
+    prec_grid = np.linspace(bounds[0], bounds[1], num=n_bins)
+    rec_grid = np.linspace(bounds[2], bounds[3], num=n_bins)
     RX, PY = np.meshgrid(rec_grid, prec_grid)
     colors = _get_color_hexes(cmap_name, n_colors=len(labels))
 
+    # add zero level to contours
+    levels = [0.0] + levels.tolist()
     # create contours
     ax.contourf(RX, PY, scores, levels=levels, colors=colors, alpha=0.8)  # type: ignore
     # plot precision recall

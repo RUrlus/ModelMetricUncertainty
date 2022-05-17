@@ -543,15 +543,17 @@ class PrecisionRecallMultinomialUncertainty:
             raise ValueError("`epsilon` must be  in [1e-15, 0.1]")
         self.epsilon = epsilon
 
+        self.precision, self.recall = _core.precision_recall(self.conf_mat)
         # compute scores
-        self.chi2_scores, self._bounds = _core.multinomial_uncertainty(
+        self.chi2_scores, bounds = _core.multinomial_uncertainty(
             n_bins=self.n_bins,
             conf_mat=self.conf_mat,
             n_sigmas=self.n_sigmas,
             epsilon=self.epsilon
         )
-        self.precision_bounds = self._bounds[[0, 2]].copy()
-        self.recall_bounds = self._bounds[[3, 5]].copy()
+        self.precision_bounds = bounds[0, :].copy()
+        self.recall_bounds = bounds[1, :].copy()
+        self._bounds = bounds.flatten()
 
     @classmethod
     def from_scores(cls,
