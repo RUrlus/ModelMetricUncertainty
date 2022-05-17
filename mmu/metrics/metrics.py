@@ -170,7 +170,7 @@ def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df
     return conf_mat, metrics
 
 
-def binary_metrics_confusion_matrix(confusion_matrix, fill=0.0, return_df=False):
+def binary_metrics_confusion_matrix(conf_mat, fill=0.0, return_df=False):
     """Compute binary classification metrics.
 
     Computes the following metrics where [i] indicates the i'th value in the
@@ -189,7 +189,7 @@ def binary_metrics_confusion_matrix(confusion_matrix, fill=0.0, return_df=False)
 
     Parameters
     ----------
-    confusion_matrix : np.ndarray[int32, int64],
+    conf_mat : np.ndarray[int32, int64],
         confusion_matrix as returned by mmu.confusion_matrix
     fill : float, default=0.0
         value to fill when a metric is not defined, e.g. divide by zero.
@@ -205,23 +205,23 @@ def binary_metrics_confusion_matrix(confusion_matrix, fill=0.0, return_df=False)
     if not isinstance(fill, float):
         raise TypeError("`fill` must be a float.")
 
-    if confusion_matrix.shape == (2, 2):
-        confusion_matrix = confusion_matrix.flatten()
+    if conf_mat.shape == (2, 2):
+        conf_mat = conf_mat.flatten()
 
-    confusion_matrix = check_array(
-        confusion_matrix,
+    conf_mat = check_array(
+        conf_mat,
         max_dim=1,
         target_order=0,
         dtype_check=_convert_to_int,
     )
-    metrics = _core.binary_metrics(confusion_matrix, fill)
+    metrics = _core.binary_metrics(conf_mat, fill)
 
     if return_df:
         return metrics_to_dataframe(metrics)
     return metrics
 
 
-def binary_metrics_confusion_matrices(confusion_matrix, fill=0.0, return_df=False):
+def binary_metrics_confusion_matrices(conf_mat, fill=0.0, return_df=False):
     """Compute binary classification metrics.
 
     Computes the following metrics where [i] indicates the i'th value in the
@@ -240,7 +240,7 @@ def binary_metrics_confusion_matrices(confusion_matrix, fill=0.0, return_df=Fals
 
     Parameters
     ----------
-    confusion_matrix : np.ndarray[int32, int64],
+    conf_mat : np.ndarray[int32, int64],
         confusion_matrix as returned by mmu.confusion_matrices, should have
         shape (N, 4) and be C-Contiguous
     fill : float, default=0.0
@@ -257,13 +257,13 @@ def binary_metrics_confusion_matrices(confusion_matrix, fill=0.0, return_df=Fals
     if not isinstance(fill, float):
         raise TypeError("`fill` must be a float.")
 
-    confusion_matrix = check_array(
-        confusion_matrix,
+    conf_mat = check_array(
+        conf_mat,
         max_dim=2,
         target_order=0,
         dtype_check=_convert_to_int,
     )
-    metrics = _core.binary_metrics_2d(confusion_matrix, fill)
+    metrics = _core.binary_metrics_2d(conf_mat, fill)
 
     if return_df:
         return metrics_to_dataframe(metrics)
@@ -310,7 +310,7 @@ def binary_metrics_thresholds(
 
     Returns
     -------
-    confusion_matrix : np.ndarray, pd.DataFrame
+    conf_mat : np.ndarray, pd.DataFrame
         the confusion_matrices where the rows contain the counts for a
         threshold, [i, 0] = TN, [i, 1] = FP, [i, 2] = FN, [i, 3] = TP
     metrics : np.ndarray, pd.DataFrame
@@ -398,7 +398,7 @@ def binary_metrics_runs(
 
     Returns
     -------
-    confusion_matrix : np.ndarray, pd.DataFrame
+    conf_mat : np.ndarray, pd.DataFrame
         the confusion_matrices where the rows contain the counts for a
         run, [i, 0] = TN, [i, 1] = FP, [i, 2] = FN, [i, 3] = TP
     metrics : np.ndarray, pd.DataFrame
@@ -583,6 +583,81 @@ def binary_metrics_runs_thresholds(
     return cm, mtr
 
 
+def precision_recall(y, yhat=None, score=None, threshold=None, fill=0.0, return_df=False):
+    r"""Compute precision and recall.
+
+
+    Parameters
+    ----------
+    y : np.ndarray[bool, int32, int64, float32, float64]
+        true labels for observations
+    yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
+        the predicted labels, the same dtypes are supported as y. Can be `None`
+        if `score` is not `None`, if both are provided, `score` is ignored.
+    score : np.ndarray[float32, float64], default=None
+        the classifier score to be evaluated against the `threshold`, i.e.
+        `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
+        if both are provided, this parameter is ignored.
+    threshold : float, default=0.5
+        the classification threshold to which the classifier score is evaluated,
+        is inclusive.
+    fill : float, default=0.0
+        value to fill when a metric is not defined, e.g. divide by zero.
+    return_df : bool, default=False
+        return confusion matrix as pd.DataFrame
+
+    Returns
+    -------
+    confusion_matrix : np.ndarray, pd.DataFrame
+        the confusion_matrix with layout
+        [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP
+    metrics : np.ndarray, pd.DataFrame
+        the computed metrics
+
+    """
+    if not isinstance(fill, float):
+        raise TypeError("`fill` must be a float.")
+
+    y = check_array(
+        y,
+        max_dim=1,
+        dtype_check=_convert_to_ext_types
+    )
+
+    if score is not None:
+        score = check_array(
+            score,
+            max_dim=1,
+            dtype_check=_convert_to_float,
+        )
+        if not isinstance(threshold, float):
+            raise TypeError("`threshold` must be a float if score is not None")
+        if score.size != y.size:
+            raise ValueError('`score` and `y` must have equal length.')
+        conf_mat = _core.confusion_matrix_score(y, score, threshold)
+
+    elif yhat is not None:
+        yhat = check_array(
+            yhat,
+            max_dim=1,
+            dtype_check=_convert_to_ext_types,
+        )
+        if yhat.size != y.size:
+            raise ValueError('`yhat` and `y` must have equal length.')
+        conf_mat = _core.confusion_matrix(y, yhat)
+    else:
+        raise TypeError("`yhat` must not be None if `score` is None")
+
+    metrics = _core.precision_recall(conf_mat, fill)
+
+    if return_df:
+        return (
+            confusion_matrix_to_dataframe(conf_mat),
+            pd.DataFrame(metrics, columns=['precision', 'recall'])
+        )
+    return conf_mat, metrics
+
+
 def precision_recall_curve(y, score, thresholds=None, fill=0.0, return_df=False):
     """Compute precision and recall over the thresholds.
 
@@ -639,6 +714,4 @@ def precision_recall_curve(y, score, thresholds=None, fill=0.0, return_df=False)
         df = pd.DataFrame(metrics[:, [1, 3]], columns=['precision', 'recall'])
         df['thresholds'] = thresholds
         return df
-    return metrics[:, [1, 3]].copy(order='F')
-
-
+    return metrics[:, 1].copy(), metrics[:, 3].copy()

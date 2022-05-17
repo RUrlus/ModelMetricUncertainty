@@ -1,362 +1,280 @@
 """Module containing the API for the precision-recall uncertainty modelled through profile log likelihoods."""
+import warnings
+from typing import Optional
+
 import numpy as np
 import pandas as pd
 
 from mmu.commons import check_array
-from mmu.commons import _convert_to_float
 from mmu.commons import _convert_to_int
-from mmu.commons import _convert_to_ext_types
+from mmu.metrics.confmat import confusion_matrix
 from mmu.metrics.confmat import confusion_matrix_to_dataframe
 from mmu.metrics.confmat import confusion_matrices_to_dataframe
 from mmu.metrics.confmat import confusion_matrices
+from mmu.viz.ellipse import _plot_pr_ellipse
 
 import mmu.lib._mmu_core as _core
-from mmu.lib._mmu_core import pr_mvn_error
-from mmu.lib._mmu_core import pr_mvn_error_runs
-from mmu.lib._mmu_core import pr_curve_mvn_error
-from mmu.metrics.confmat import confusion_matrix
 
 
-def precision_recall_uncertainty(
-    y, yhat=None, score=None, threshold=None, alpha=0.95, return_df=False
-):
-    """Compute Precision, Recall and their joint uncertainty.
+class PrecisionRecallEllipticalUncertainty:
+    """Precision-Recall uncertainty modelled as a Bivariate Normal.
 
-    The uncertainty on the precision and recall are computed
-    using a Multivariate Normal over the linearly propogated errors of the
-    confusion matrix.
+    Model's the linearly propogated errors of the confusion matrix as a
+    bivariate Normal distribution. Note that this method is not valid
+    for low statistic test sets or for precision/recall close to 1.0/0.0.
+    In these scenarios the `PrecisionRecallMultinomialUncertainty` class should
+    be used.
 
-    Parameters
-    ----------
-    y : np.ndarray
-        true labels for observations, supported dtypes are [bool, int32,
-        int64, float32, float64]
-    yhat : np.ndarray, default=None
-        the predicted labels, the same dtypes are supported as y. Can be `None`
-        if `score` is not `None`, if both are provided, `score` is ignored.
-    score : np.ndarray, default=None
-        the classifier score to be evaluated against the `threshold`, i.e.
-        `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
-        if both are provided, this parameter is ignored.
-        Supported dtypes are float32 and float64.
-    threshold : float, default=0.5
-        the classification threshold to which the classifier score is evaluated,
-        is inclusive.
-    alpha : float, default=0.95
-        the density in the confidence interval
-    return_df : bool, default=False
-        return confusion matrix and uncertainties as a pd.DataFrame
-
-    Returns
-    -------
-    confusion_matrix : np.ndarray, pd.DataFrame
-        the confusion_matrix
-    metrics : np.ndarray, pd.DataFrame
-        the precision, it's confidence interval and recall and it's confidence
-        interval
-    cov : np.ndarray, pd.DataFrame
-        covariance matrix of precision and recall
-
-    """
-    conf_mat = confusion_matrix(y, yhat, score, threshold, return_df=False)
-    mtr = pr_mvn_error(conf_mat, alpha)
-    cov = mtr[-4:].reshape(2, 2)
-    metrics = mtr[:-4]
-
-    if return_df:
-        cov_cols = ['precision', 'recall']
-        cov_df = pd.DataFrame(cov, index=cov_cols, columns=cov_cols)
-        metrics_df = pd.DataFrame(
-            index=['precision', 'recall'],
-            columns=['metric', 'lb_ci', 'ub_ci']
-        )
-        metrics_df.loc['precision', :] = metrics[:3]
-        metrics_df.loc['recall', :] = metrics[3:6]
-
-        return (confusion_matrix_to_dataframe(conf_mat), metrics_df, cov_df)
-    return conf_mat, metrics, cov
-
-
-def precision_recall_uncertainty_confusion_matrix(
-    conf_mat, alpha=0.95, return_df=False
-):
-    """Compute Precision, Recall and their joint uncertainty.
-
-    The uncertainty on the precision and recall are computed
-    using a Multivariate Normal over the linearly propogated errors of the
-    confusion matrix.
-
-    Parameters
+    Attributes
     ----------
     conf_mat : np.ndarray[int64]
-        the confusion_matrix whith flattened entries: TN, FP, FN, TP
-    alpha : float, default=0.95
-        the density in the confidence interval
-    return_df : bool, default=False
-        return confusion matrix and uncertainties as a pd.DataFrame
+        the confusion_matrix with layout
+        [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP
+        A DataFrame can be obtained by calling `get_conf_mat`.
+    precision : float
+        the Positive Predictive Value aka positive precision
+    recall : float
+        True Positive Rate aka Sensitivity aka positive recall
+    cov_mat : np.ndarray[float64]
+        the covariance matrix of precision and recall with layout
+        [0, 0] = V[P], [0, 1] = COV[P, R], [1, 0] = COV[P, R], [1, 1] = V[R]
+        A DataFrame can be obtained by calling `get_cov_mat`.
+    train_conf_mats : np.ndarray, optional
+        the confusion matrices from the multiple training runs.
+        Only set when `add_train_uncertainty` is called.
+        A DataFrame can be obtained by calling `get_train_conf_mats`
+    train_cov_mat : np.ndarray, optional
+        the precision, recall covariance matrix from the multiple training runs.
+        Only set when `add_train_uncertainty` is called.
+        A DataFrame can be obtained by calling `get_train_cov_mat`.
+    total_cov_mat : np.ndarray, optional
+        the precision, recall covariance matrix that combines the test and
+        training sampling uncertainty.
+        Only set when `add_train_uncertainty` is called.
+        A DataFrame can be obtained by calling `get_total_cov_mat`.
 
-    confusion_matrix : np.ndarray, pd.DataFrame
-
-    Returns
+    Methods
     -------
-    metrics : np.ndarray, pd.DataFrame
-        the precision, it's confidence interval and recall and it's confidence
-        interval
-    cov : np.ndarray, pd.DataFrame
-        covariance matrix of precision and recall
+    from_scores
+        compute the uncertainty based on classifier scores and true labels
+    from_predictions
+        compute the uncertainty based on predictions and true labels
+    from_confusion_matrix
+        compute the uncertainty based on a confusion matrix
+    from_classifier
+        compute the uncertainty based on classifier scores from a trained
+        classifier and true labels
+    add_train_uncertainty
+        the the training sampling uncertainty to the test uncertainty
+    plot
+        plot the joint uncertainty of precision and recall
+    get_conf_mat
+        get the confusion matrix
+    get_cov_mat
+        get the covariance matrix of the test uncertainty
+    get_train_cov_mat
+        get the covariance matrix of the train uncertainty
+    get_total_cov_mat
+        get the covariance matrix of the combined train and test uncertainty
+    get_train_conf_mats
+        get the confusion matrices over the training runs
 
     """
-    if conf_mat.shape == (2, 2):
-        conf_mat = conf_mat.ravel()
-    conf_mat = check_array(
-        conf_mat,
-        max_dim=1,
-        dtype_check=_convert_to_int
-    )
-    mtr = pr_mvn_error(conf_mat, alpha)
-    cov = mtr[-4:].reshape(2, 2)
-    metrics = mtr[:-4]
+    def __init__(self):
+        self.conf_mat = None
+        self.precision = None
+        self.recall = None
+        self.cov_mat = None
+        self.train_conf_mats = None
+        self.train_cov_mat = None
+        self.total_cov_mat = None
 
-    if return_df:
-        cov_cols = ['precision', 'recall']
-        cov_df = pd.DataFrame(cov, index=cov_cols, columns=cov_cols)
-        metrics_df = pd.DataFrame(
-            index=['precision', 'recall'],
-            columns=['metric', 'lb_ci', 'ub_ci']
-        )
-        metrics_df.loc['precision', :] = metrics[:3]
-        metrics_df.loc['recall', :] = metrics[3:6]
+    def _parse_threshold(self, threshold):
+        if not isinstance(threshold, float) or not (0.0 < threshold < 1.0):
+            raise TypeError("`threshold` must be a float in [0, 1]")
+        self.threshold = threshold
 
-        return (confusion_matrix_to_dataframe(conf_mat), metrics_df, cov_df)
-    return conf_mat, metrics, cov
+    def _compute_mvn_cov(self):
+        out = _core.pr_mvn_cov(self.conf_mat)
+        self.precision = out[0]
+        if self.precision < 1e-12:
+            warnings.warn("`precision` is close to zero, COV[P, R] is not valid")
+        elif (1 - self.precision) < 1e-12:
+            warnings.warn("`precision` is close to one, COV[P, R] is not valid")
+        self.recall = out[1]
+        if self.recall < 1e-12:
+            warnings.warn("`recall` is close to zero, COV[P, R] is not valid")
+        elif (1 - self.recall) < 1e-12:
+            warnings.warn("`recall` is close to one, COV[P, R] is not valid")
+        self.cov_mat = out[2:].reshape(2, 2)
 
-
-def precision_recall_uncertainty_confusion_matrices(
-    conf_mat, alpha=0.95, return_df=False
-):
-    """Compute Precision, Recall and their joint uncertainty.
-
-    The uncertainty on the precision and recall are computed
-    using a Multivariate Normal over the linearly propogated errors of the
-    confusion matrix.
-
-    Parameters
-    ----------
-    conf_mat : np.ndarray[int64]
-        the confusion_matrices whith columns: TN, FP, FN, TP
-    alpha : float, default=0.95
-        the density in the confidence interval
-    return_df : bool, default=False
-        return confusion matrix and uncertainties as a pd.DataFrame
-
-    confusion_matrix : np.ndarray, pd.DataFrame
-
-    Returns
-    -------
-    metrics : np.ndarray, pd.DataFrame
-        the precision, it's confidence interval and recall and it's confidence
-        interval
-    cov : np.ndarray, pd.DataFrame
-        covariance matrix of precision and recall
-
-    """
-    if conf_mat.shape == (2, 2):
-        conf_mat = conf_mat.ravel()
-
-    conf_mat = check_array(
-        conf_mat,
-        target_axis=0,
-        target_order=0,
-        max_dim=2,
-        dtype_check=_convert_to_int,
-    )
-    mtr = pr_mvn_error_runs(conf_mat, alpha)
-    cov = mtr[:, -4:]
-    metrics = mtr[:, :-4]
-
-    if return_df:
-        cov_cols = ['precision', 'recall']
-        cov_df = pd.DataFrame(cov, index=cov_cols, columns=cov_cols)
-        metrics_df = pd.DataFrame(
-            data=metrics,
-            columns=['precision', 'lb_ci', 'ub_ci', 'recall', 'lb_ci', 'ub_ci']
-        )
-        return metrics_df, cov_df
-    return metrics, cov
-
-
-def precision_recall_uncertainty_runs(
-    y, yhat=None, score=None, threshold=None, alpha=0.95, return_df=False
-):
-    """Compute Precision, Recall and their joint uncertainty over multiple runs.
-
-    The uncertainty on the precision and recall are computed
-    using a Multivariate Normal over the linearly propogated errors of the
-    confusion matrix.
-
-    Parameters
-    ----------
-    y : np.ndarray
-        true labels for observations, supported dtypes are [bool, int32,
-        int64, float32, float64]
-    yhat : np.ndarray, default=None
-        the predicted labels, the same dtypes are supported as y. Can be `None`
-        if `score` is not `None`, if both are provided, `score` is ignored.
-    score : np.ndarray, default=None
-        the classifier score to be evaluated against the `threshold`, i.e.
-        `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
-        if both are provided, this parameter is ignored.
-        Supported dtypes are float32 and float64.
-    threshold : float, default=0.5
-        the classification threshold to which the classifier score is evaluated,
-        is inclusive.
-    alpha : float, default=0.95
-        the density in the confidence interval
-    return_df : bool, default=False
-        return confusion matrix and uncertainties as a pd.DataFrame
-
-    Returns
-    -------
-    confusion_matrix : np.ndarray, pd.DataFrame
-        the confusion_matrix
-    metrics : np.ndarray, pd.DataFrame
-        the precision, it's confidence interval and recall and it's confidence
-        interval
-    cov : np.ndarray, pd.DataFrame
-        covariance matrix of precision and recall
-
-    """
-    conf_mat = confusion_matrices(y, yhat, score, threshold, return_df=False)
-    mtr = pr_mvn_error_runs(conf_mat, alpha)
-    cov = mtr[:, -4:]
-    metrics = mtr[:, :-4]
-
-    if return_df:
-        cov_cols = ['precision', 'recall']
-        cov_df = pd.DataFrame(cov, index=cov_cols, columns=cov_cols)
-        metrics_df = pd.DataFrame(
-            data=metrics,
-            columns=['precision', 'lb_ci', 'ub_ci', 'recall', 'lb_ci', 'ub_ci']
-        )
-        return (confusion_matrices_to_dataframe(conf_mat), metrics_df, cov_df)
-    return conf_mat, metrics, cov
-
-
-class PrecisionRecallCurveUncertainty():
-    """Estimate the uncertainty over the Precision and Recall as Multivariate
-    Normal.
-
-    Parameters
-    ----------
-    thresholds : np.ndarray[float32/64], default=None
-        the thresholds for the curve. If None a range of thresholds of
-        length `n_thresholds` spanning (0.0, 1.0) will be created
-    n_thresholds : int, default=1000
-        number of points used to compute the curve for.
-    alpha : float, default=0.95
-        the density in the confidence interval
-    """
-    def __init__(self, thresholds=None, n_thresholds=1000, alpha=0.95):
-        """Initialise the class.
+    def from_scores(self, y : np.ndarray, score : np.ndarray, threshold : float = 0.5):
+        """Compute elliptical uncertainty on precision and recall.
 
         Parameters
         ----------
-        thresholds : np.ndarray[float32/64], default=None
-            the thresholds for the curve. If None a range of thresholds of
-            length `n_thresholds` spanning (0.0, 1.0) will be created
-        n_thresholds : int, default=1000
-            number of points used to compute the curve for.
-        alpha : float, default=0.95
-            the density in the confidence interval
+        y : np.ndarray
+            true labels for observations, supported dtypes are [bool, int32,
+            int64, float32, float64]
+        score : np.ndarray, default=None
+            the classifier score to be evaluated against the `threshold`, i.e.
+            `yhat` = `score` >= `threshold`.
+            Supported dtypes are float32 and float64.
+        threshold : float, default=0.5
+            the classification threshold to which the classifier score is evaluated,
+            is inclusive.
 
         """
-        if (
-            thresholds is None
-            or (
-                isinstance(thresholds, np.ndarray)
-                and np.issubdtype(thresholds.dtype, np.floating)
-            )
-        ):
-            self.thresholds = thresholds
-        else:
-            raise TypeError("`thresholds` must be None or an ndarray of floats.")
+        self._parse_threshold(threshold)
+        self.conf_mat = confusion_matrix(y=y, score=score, threshold=threshold)
+        self._compute_mvn_cov()
+        return self
 
-        if isinstance(n_thresholds, int):
-            self.n_thresholds = n_thresholds
-        else:
-            raise TypeError("`n_thresholds` must be an int")
-        if isinstance(alpha, float) and (0.0 > alpha < 1.0):
-            self.alpha = alpha
-        else:
-            raise TypeError("`alpha` must be a float in (0.0, 1.0)")
-
-    def _fit(self, alpha):
-        mtr = pr_curve_mvn_error(self.conf_mat, alpha)
-        self.precision_ = mtr[:, 0]
-        self.recall_ = mtr[:, 3]
-        self.precision_ci_ = mtr[:, [1, 2]]
-        self.recall_ci_ = mtr[:, [4, 5]]
-        self.cov_ = mtr[:, -4:]
-
-    def fit(self, X, y=None, alpha=None):
-        """Compute the PR curve with uncertainties.
+    def from_predictions(self, y : np.ndarray, yhat : np.ndarray):
+        """Compute elliptical uncertainty on precision and recall.
 
         Parameters
         ----------
-        X : np.ndarray[int32/64]
-            2D array containing the confusion matrix with shape (N, 4) with
-            column order TN, FP, FN, TP
-        y : None
-            ignored and only present to comply with scikit api
-        alpha : float, default=None
-            the density in the confidence interval
+        y : np.ndarray
+            true labels for observations, supported dtypes are [bool, int32,
+            int64, float32, float64]
+        yhat : np.ndarray, default=None
+            the predicted labels, the same dtypes are supported as y.
 
         """
-        self.conf_mat = check_array(
-            X,
-            target_order=0,
-            axis=0,
-            min_dim=2,
-            max_dim=2,
-            dtype_check=_convert_to_int,
+        self.conf_mat = confusion_matrix(y=y, yhat=yhat)
+        self._compute_mvn_cov()
+        return self
+
+    def from_confusion_matrix(self, conf_mat : np.ndarray):
+        """Compute elliptical uncertainty on precision and recall.
+
+        Parameters
+        ----------
+        conf_mat : np.ndarray,
+            confusion matrix as returned by mmu.confusion_matrix, i.e.
+            with layout [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP or
+            the flattened equivalent. Supported dtypes are int32, int64
+
+        """
+        if conf_mat.shape == (2, 2):
+            conf_mat = conf_mat.ravel()
+        self.conf_mat = check_array(conf_mat, max_dim=1, dtype_check=_convert_to_int)
+        self._compute_mvn_cov()
+        return self
+
+    def from_classifier(self,
+        clf,
+        X : np.ndarray,
+        y : np.ndarray,
+        threshold : float = 0.5
+    ):
+        """Compute uncertainty from classifier.
+
+        Parameters
+        ----------
+        clf : sklearn.Predictor
+            a trained model with method `predict_proba`, used to compute
+            the classifier scores
+        X : np.ndarray
+            the feature array to be used to compute the classifier scores
+        y : np.ndarray
+            true labels for observations, supported dtypes are [bool, int32,
+            int64, float32, float64]
+        threshold : float, default=0.5
+            the classification threshold to which the classifier score is evaluated,
+            is inclusive.
+
+        """
+        self._parse_threshold(threshold)
+        if not hasattr(clf, 'predict_proba'):
+            raise TypeError("`clf` must have a method `predict_proba`")
+        score = clf.predict_proba(X)[:, 1]
+        self.conf_mat = confusion_matrix(y=y, score=score, threshold=threshold)
+        self._compute_mvn_cov()
+        return self
+
+    def add_train_uncertainty(
+        self,
+        y : np.ndarray,
+        yhat : Optional[np.ndarray] = None,
+        scores : Optional[np.ndarray] = None,
+        threshold : float = 0.5,
+        obs_axis : int = 0,
+    ):
+        self.train_conf_mats = confusion_matrices(
+            y, yhat, scores, threshold, obs_axis
         )
-        self._fit(alpha or self.alpha)
+        out = _core.precision_recall_2d(self.train_conf_mats)
+        self.train_precisions = out[:, 0]
+        self.train_recalls = out[:, 1]
+        self.train_cov_mat = np.cov(out, rowvar=False)
 
-    def fit_from_scores(self, X, y, thresholds=None, n_thresholds=None, alpha=None):
-        """Compute the PR curve with uncertainties from scores and labels.
-
-        Parameters
-        ----------
-        X : np.ndarray[float32/64]
-            1D array containing the classifier scores.
-        y : np.ndarray[bool, int, float]
-            1D array containing the true labels
-        thresholds : np.ndarray[float32/64], default=None
-            the thresholds for the curve. If None a range of thresholds of
-            length `n_thresholds` spanning (0.0, 1.0) will be created
-        n_thresholds : int, default=None
-            number of points used to compute the curve for.
-        alpha : float, default=None
-            the density in the confidence interval
-
-        """
-        X = check_array(X, max_dim=1, dtype=_convert_to_float)
-        y = check_array(y, max_dim=1, dtype=_convert_to_ext_types)
-
-        n_thresholds = n_thresholds or self.n_thresholds
-
-        if (
-            thresholds is not None
-            and not (
-                isinstance(thresholds, np.ndarray)
-                and np.issubdtype(thresholds.dtype, np.floating)
+        if self.cov_mat is None:
+            raise RuntimeError(
+                "the class needs to be initialised with from_*"
+                " before adding train uncertainty."
             )
-        ):
-            raise TypeError("`thresholds` must be None or an ndarray of floats.")
+        self.total_cov_mat = self.cov_mat + self.train_cov_mat
+
+    def get_conf_mat(self) -> pd.DataFrame:
+        """Obtain confusion matrix as a DataFrame."""
+        return confusion_matrix_to_dataframe(self.conf_mat)
+
+    def get_train_conf_mats(self) -> pd.DataFrame:
+        """Obtain confusion matrix as a DataFrame."""
+        return confusion_matrices_to_dataframe(self.train_conf_mats)
+
+    def _get_cov_mat(self, cov_mat):
+        cov_cols = ['precision', 'recall']
+        return pd.DataFrame(cov_mat, index=cov_cols, columns=cov_cols)
+
+    def get_cov_mat(self) -> pd.DataFrame:
+        """Obtain confusion matrix as a DataFrame."""
+        return self._get_cov_mat(self.cov_mat)
+
+    def get_train_cov_mat(self) -> pd.DataFrame:
+        return self._get_cov_mat(self.train_cov_mat)
+
+    def get_total_cov_mat(self) -> pd.DataFrame:
+        return self._get_cov_mat(self.total_cov_mat)
+
+    def plot(self, alpha=0.95, ax=None, uncertainties='test'):
+        """Plot `alpha` elliptical confidence interval for precision and recall."""
+        if self.cov_mat is None:
+            raise RuntimeError("the class needs to be initialised with from_*")
+        if not isinstance(alpha, float):
+            raise TypeError("`alpha` must be a float")
+        elif not (1e-12 <= alpha <= 1-1e-12):
+            raise ValueError("`alpha` must be in (0.0, 1.0)")
+
+        # -- parse uncertainties
+        if uncertainties == 'test':
+            cov_mat = self.cov_mat
+        elif uncertainties == 'all':
+            if self.total_cov_mat is not None:
+                cov_mat =  self.total_cov_mat
+            else:
+                raise RuntimeError(
+                    "`add_train_uncertainty` must have been called when"
+                    " `uncertainties`=='all'"
+                )
+        elif uncertainties == 'train':
+            if self.train_cov_mat is not None:
+                cov_mat = self.cov_mat
+            else:
+                raise RuntimeError(
+                    "`add_train_uncertainty` must have been called when"
+                    " `uncertainties`=='train'"
+                )
         else:
-            thresholds = thresholds or self.thresholds or np.linspace(
-                start=0., stop=1.0, endpoint=False, num=n_thresholds
+            raise ValueError(
+                "`uncertainties` must be one of {'test', 'train', 'all'}"
             )
-
-        self.conf_mat = _core.confusion_matrix_score_runs(y, X, thresholds)
-        self._fit(alpha or self.alpha)
+        return _plot_pr_ellipse(
+            self.precision,
+            self.recall,
+            cov_mat,
+            alpha,
+            ax
+        )
