@@ -46,13 +46,13 @@ def generate_data(
 
 
 class SeedGenerator:
-    """Generate sklearn compatible seeds/random_state as uint64's."""
+    """Generate sklearn compatible seeds/random_state as uint32's."""
     def _set_seeds(self):
        self.seeds = self.rng.integers(
             1000,
-            np.iinfo(np.uint64).max,
+            np.iinfo(np.uint32).max,
             100,
-            dtype=np.uint64
+            dtype=np.uint32
         )
 
     def __init__(self, seed=None):
@@ -73,3 +73,4 @@ class SeedGenerator:
         self._idx += 1
         if self._idx >= 99:
             self._set_seeds()
+        return seed
