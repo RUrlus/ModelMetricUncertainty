@@ -1,24 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
-from scipy.stats import chi2, norm
 
-def _get_scaling_factor(n_std=None, alpha=0.95):
-    """Compute critical value given a number of std devs or alpha."""
-    # Get the scale for 2 degrees of freedom confidence interval
-    # We use chi2 because the equation of an ellipse is a sum of squared variable,
-    # more details here https://www.visiondummy.com/2014/04/draw-error-ellipse-representing-covariance-matrix/
-    if isinstance(n_std, (int, float)):
-        alpha = 2. * (norm.cdf(n_std) - 0.5)
-    elif n_std is None:
-        if not isinstance(alpha, float):
-            raise TypeError("`alpha` must be a float")
-        elif not (1e-12 <= alpha <= 1-1e-12):
-            raise ValueError("`alpha` must be in (0.0, 1.0)")
-    else:
-        raise TypeError("`n_std` must be and float, int or None")
-    chi2_quantile = chi2.ppf(alpha, 2)
-    return np.sqrt(chi2_quantile), alpha
+from mmu.viz.utils import _get_color_hexes
+from mmu.viz.utils import _create_pr_legend_scatter
 
 
 def _get_radii_and_angle(cov_mat):
@@ -51,50 +36,67 @@ def _plot_pr_ellipse(
     precision,
     recall,
     cov_mat,
-    n_std=None,
-    alpha=0.95,
-    lim=1.0,
-    ax=None
+    scales,
+    labels,
+    ax=None,
+    cmap_name=None,
+    legend_loc=None,
+    equal_aspect=False
 ):
+    if cmap_name is None:
+        cmap_name = 'Blues'
+    if legend_loc is None:
+        # likely to be the best place for pr curve
+        legend_loc = 'lower center'
+
     if ax is None:
-        fig, ax = plt.subplots(figsize=(12, 8))
+        fig, ax = plt.subplots(figsize=(12,8))
     else:
         fig = ax.get_figure()
 
+    colors = _get_color_hexes(cmap_name, n_colors=len(labels))
+
     # we multiply the radius by 2 because width and height are diameters
-    scale, alpha = _get_scaling_factor(n_std, alpha) * 2
+    scales *= 2
     rec_rad, prec_rad, angle = _get_radii_and_angle(cov_mat)
 
-    ellipse = Ellipse(
-        (recall, precision),
-        width=scale * rec_rad,
-        height=scale * prec_rad,
-        angle=angle,
-        alpha=0.50,
-        color='C0'
-    )
-    ax.add_patch(ellipse)
+    n_levels = scales.size
+    for i in range(n_levels):
+        ellipse = Ellipse(
+            (recall, precision),
+            width=scales[i] * rec_rad,
+            height=scales[i] * prec_rad,
+            angle=angle,
+            alpha=0.5,
+            color=colors[i],
+            zorder=n_levels - i
+        )
+        ax.add_patch(ellipse)  # type: ignore
 
-    ax.scatter(
+    ax.scatter(  # type: ignore
         recall,
         precision,
-        label=r'$\hat{P}$, $\hat{R}$',
         color='black',
         marker='x',
         s=80,
         lw=3,
-        zorder=10
+        zorder=n_levels + 1
     )
-    ax.set_xlim((0, lim))
-    ax.set_ylim((0, lim))
 
-    # If limit is <=1.0 we don't need rectangle, but we need to hide the right and top spines
+    # we need to hide the right and top spines
     # in order to see the curve at the border:
-    ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)  # type: ignore
+    ax.spines['top'].set_visible(False)  # type: ignore
 
-    ax.set_xlabel('Recall')
-    ax.set_ylabel('Precision')
-    ax.set_title(f'Precision-Recall {round(alpha * 100, 3)}% CI')
+    ax.set_xlabel('Recall', fontsize=14)  # type: ignore
+    ax.set_ylabel('Precision', fontsize=14)  # type: ignore
+    ax.tick_params(labelsize=12)  # type: ignore
+
+    if equal_aspect:
+        ax.set_aspect('equal')  # type: ignore
+    # create custom legend with the correct colours and labels
+    handles = _create_pr_legend_scatter(colors, labels, (precision, recall))
+    ax.legend(handles=handles, loc=legend_loc)  # type: ignore
+    fig.tight_layout()
 
     return ax

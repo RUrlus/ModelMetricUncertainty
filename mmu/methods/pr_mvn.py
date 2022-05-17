@@ -1,9 +1,10 @@
 """Module containing the API for the precision-recall uncertainty modelled through profile log likelihoods."""
 import warnings
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
+import scipy.stats as sts
 
 from mmu.commons import check_array
 from mmu.commons import _convert_to_int
@@ -108,7 +109,8 @@ class PrecisionRecallEllipticalUncertainty:
             warnings.warn("`recall` is close to one, COV[P, R] is not valid")
         self.cov_mat = out[2:].reshape(2, 2)
 
-    def from_scores(self, y : np.ndarray, score : np.ndarray, threshold : float = 0.5):
+    @classmethod
+    def from_scores(cls, y : np.ndarray, score : np.ndarray, threshold : float = 0.5):
         """Compute elliptical uncertainty on precision and recall.
 
         Parameters
@@ -125,12 +127,14 @@ class PrecisionRecallEllipticalUncertainty:
             is inclusive.
 
         """
+        self = cls()
         self._parse_threshold(threshold)
         self.conf_mat = confusion_matrix(y=y, score=score, threshold=threshold)
         self._compute_mvn_cov()
         return self
 
-    def from_predictions(self, y : np.ndarray, yhat : np.ndarray):
+    @classmethod
+    def from_predictions(cls, y : np.ndarray, yhat : np.ndarray):
         """Compute elliptical uncertainty on precision and recall.
 
         Parameters
@@ -142,11 +146,13 @@ class PrecisionRecallEllipticalUncertainty:
             the predicted labels, the same dtypes are supported as y.
 
         """
+        self = cls()
         self.conf_mat = confusion_matrix(y=y, yhat=yhat)
         self._compute_mvn_cov()
         return self
 
-    def from_confusion_matrix(self, conf_mat : np.ndarray):
+    @classmethod
+    def from_confusion_matrix(cls, conf_mat : np.ndarray):
         """Compute elliptical uncertainty on precision and recall.
 
         Parameters
@@ -157,13 +163,15 @@ class PrecisionRecallEllipticalUncertainty:
             the flattened equivalent. Supported dtypes are int32, int64
 
         """
+        self = cls()
         if conf_mat.shape == (2, 2):
             conf_mat = conf_mat.ravel()
         self.conf_mat = check_array(conf_mat, max_dim=1, dtype_check=_convert_to_int)
         self._compute_mvn_cov()
         return self
 
-    def from_classifier(self,
+    @classmethod
+    def from_classifier(cls,
         clf,
         X : np.ndarray,
         y : np.ndarray,
@@ -186,6 +194,7 @@ class PrecisionRecallEllipticalUncertainty:
             is inclusive.
 
         """
+        self = cls()
         self._parse_threshold(threshold)
         if not hasattr(clf, 'predict_proba'):
             raise TypeError("`clf` must have a method `predict_proba`")
@@ -271,23 +280,33 @@ class PrecisionRecallEllipticalUncertainty:
         """
         return self._get_cov_mat(self.total_cov_mat)
 
+
+    def _get_scaling_factor_alpha(self, alphas):
+        """Compute critical value given a number alphas."""
+        # Get the scale for 2 degrees of freedom confidence interval
+        # We use chi2 because the equation of an ellipse is a sum of squared variable,
+        return np.sqrt(sts.chi2.ppf(alphas, 2))
+
+    def _get_scaling_factor_std(self, stds):
+        alphas = 2. * (sts.norm.cdf(stds) - 0.5)
+        return np.sqrt(sts.chi2.ppf(alphas, 2))
+
     def plot(
         self,
-        n_std : Optional[int] = None,
-        alpha : float = 0.95,
+        levels : Union[int, float, np.ndarray, None] = None,
         uncertainties : str = 'test',
         ax=None,
     ):
-        """Plot `alpha` elliptical confidence interval for precision and recall
+        """Plot `alpha` elliptical confidence interval(s) for precision and recall
 
         Parameters
         ----------
-        n_std : int, default=None
-            number of standard deviations to include in the confidence interval.
-            `n_std` takes precedence over `alpa`.
-        alpha : float, default=0.95
-            the total density of the confidence interval, is ignored when n_std
-            is not None
+        levels : int, float np.ndarray, default=np.array((1, 2, 3,))
+            if int(s) levels is treated as the number of standard deviations
+            for the confidence interval.
+            If float(s) it is taken to be the density to be contained in the
+            confidence interval
+            By default we plot 1, 2 and 3 std deviations
         uncertainties : str, default='test'
             which uncertainty to plot, 'test' indicates only the sampling
             uncertainty of the test set. 'train' only plots the sampling
@@ -329,12 +348,44 @@ class PrecisionRecallEllipticalUncertainty:
             raise ValueError(
                 "`uncertainties` must be one of {'test', 'train', 'all'}"
             )
+        # quick catch for list and tuples
+        if isinstance(levels, (list, tuple)):
+            levels = np.asarray(levels)
+
+        # transform levels into scaling factors for the ellipse
+        if levels is None:
+            scales = self._get_scaling_factor_std(np.array((1, 2, 3)))
+            labels = ['1 std dev CI', '2 std dev CI', '3 std dev CI']
+        elif isinstance(levels, int):
+            labels = [f'{levels} std dev CI']
+            scales = self._get_scaling_factor_std(np.array((levels,)))
+        elif (
+            isinstance(levels, np.ndarray)
+            and np.issubdtype(levels.dtype, np.integer)
+        ):
+            levels = np.sort(levels)
+            labels = [f'{l} std dev CI' for l in levels]
+            scales = self._get_scaling_factor_std(levels)
+        elif isinstance(levels, float):
+            labels = [f'{round(levels * 100, 3)}% CI']
+            scales = self._get_scaling_factor_alpha(np.array((levels,)))
+        elif (
+            isinstance(levels, np.ndarray)
+            and np.issubdtype(levels.dtype, np.floating)
+        ):
+            levels = np.sort(levels)
+            labels = [f'{round(l * 100, 3)}% CI' for l in levels]
+            scales = self._get_scaling_factor_alpha(levels)
+        else:
+            raise TypeError(
+                "`levels` must be a int, float, array-like or None"
+            )
 
         return _plot_pr_ellipse(
             self.precision,
             self.recall,
             cov_mat,
-            n_std,
-            alpha,
+            scales,
+            labels,
             ax
         )
