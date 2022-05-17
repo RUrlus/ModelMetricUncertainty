@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 def generate_data(
@@ -46,8 +45,31 @@ def generate_data(
     )
 
 
-def _set_plot_style():
-    plt.style.use('ggplot')
-    plt.rcParams['text.color'] = 'black'
-    plt.rcParams['figure.max_open_warning'] = 0
-    return [i['color'] for i in plt.rcParams['axes.prop_cycle']]  # type: ignore
+class SeedGenerator:
+    """Generate sklearn compatible seeds/random_state as uint64's."""
+    def _set_seeds(self):
+       self.seeds = self.rng.integers(
+            1000,
+            np.iinfo(np.uint64).max,
+            100,
+            dtype=np.uint64
+        )
+
+    def __init__(self, seed=None):
+        """Initialise the class."""
+        self.rng = np.random.default_rng(seed)
+        self._set_seeds()
+        self._idx = 0
+
+    def __call__(self):
+        """Draw seed from rng.
+
+        Returns
+        -------
+        seed : uint64
+            seed drawn from rng
+        """
+        seed = self.seeds[self._idx]
+        self._idx += 1
+        if self._idx >= 99:
+            self._set_seeds()
