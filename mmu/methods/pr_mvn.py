@@ -218,11 +218,23 @@ class PrecisionRecallEllipticalUncertainty:
         self.total_cov_mat = self.cov_mat + self.train_cov_mat
 
     def get_conf_mat(self) -> pd.DataFrame:
-        """Obtain confusion matrix as a DataFrame."""
+        """Obtain confusion matrix as a DataFrame.
+
+        Returns
+        -------
+        pd.DataFrame
+            the confusion matrix of the test set
+        """
         return confusion_matrix_to_dataframe(self.conf_mat)
 
     def get_train_conf_mats(self) -> pd.DataFrame:
-        """Obtain confusion matrix as a DataFrame."""
+        """Obtain confusion matrices as a DataFrame.
+
+        Returns
+        -------
+        pd.DataFrame
+            the confusion matrices of the training sets
+        """
         return confusion_matrices_to_dataframe(self.train_conf_mats)
 
     def _get_cov_mat(self, cov_mat):
@@ -230,23 +242,69 @@ class PrecisionRecallEllipticalUncertainty:
         return pd.DataFrame(cov_mat, index=cov_cols, columns=cov_cols)
 
     def get_cov_mat(self) -> pd.DataFrame:
-        """Obtain confusion matrix as a DataFrame."""
+        """Obtain covariance matrix of the test set.
+
+        Returns
+        -------
+        pd.DataFrame
+            the covariance matrix
+        """
         return self._get_cov_mat(self.cov_mat)
 
     def get_train_cov_mat(self) -> pd.DataFrame:
+        """Obtain covariance matrix of the train set.
+
+        Returns
+        -------
+        pd.DataFrame
+            the covariance matrix
+        """
         return self._get_cov_mat(self.train_cov_mat)
 
     def get_total_cov_mat(self) -> pd.DataFrame:
+        """Obtain covariance matrix of the train and test set combined.
+
+        Returns
+        -------
+        pd.DataFrame
+            the covariance matrix
+        """
         return self._get_cov_mat(self.total_cov_mat)
 
-    def plot(self, alpha=0.95, ax=None, uncertainties='test'):
-        """Plot `alpha` elliptical confidence interval for precision and recall."""
+    def plot(
+        self,
+        n_std : Optional[int] = None,
+        alpha : float = 0.95,
+        uncertainties : str = 'test',
+        ax=None,
+    ):
+        """Plot `alpha` elliptical confidence interval for precision and recall
+
+        Parameters
+        ----------
+        n_std : int, default=None
+            number of standard deviations to include in the confidence interval.
+            `n_std` takes precedence over `alpa`.
+        alpha : float, default=0.95
+            the total density of the confidence interval, is ignored when n_std
+            is not None
+        uncertainties : str, default='test'
+            which uncertainty to plot, 'test' indicates only the sampling
+            uncertainty of the test set. 'train' only plots the sampling
+            uncertainty of the train set. 'all' plots to toal uncertainty over
+            both the train and test sets. Note that 'train' and 'all' require
+            that `add_train_uncertainty` has been called.
+        ax : matplotlib.axes.Axes, default=None
+            Pre-existing axes for the plot
+
+        Returns
+        -------
+        ax : matplotlib.axes.Axes
+            the axis with the ellipse added to it
+
+        """
         if self.cov_mat is None:
             raise RuntimeError("the class needs to be initialised with from_*")
-        if not isinstance(alpha, float):
-            raise TypeError("`alpha` must be a float")
-        elif not (1e-12 <= alpha <= 1-1e-12):
-            raise ValueError("`alpha` must be in (0.0, 1.0)")
 
         # -- parse uncertainties
         if uncertainties == 'test':
@@ -271,10 +329,12 @@ class PrecisionRecallEllipticalUncertainty:
             raise ValueError(
                 "`uncertainties` must be one of {'test', 'train', 'all'}"
             )
+
         return _plot_pr_ellipse(
             self.precision,
             self.recall,
             cov_mat,
+            n_std,
             alpha,
             ax
         )

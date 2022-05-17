@@ -8,8 +8,15 @@ def _get_scaling_factor(n_std=None, alpha=0.95):
     # Get the scale for 2 degrees of freedom confidence interval
     # We use chi2 because the equation of an ellipse is a sum of squared variable,
     # more details here https://www.visiondummy.com/2014/04/draw-error-ellipse-representing-covariance-matrix/
-    if n_std is not None:
+    if isinstance(n_std, (int, float)):
         alpha = 2. * (norm.cdf(n_std) - 0.5)
+    elif n_std is None:
+        if not isinstance(alpha, float):
+            raise TypeError("`alpha` must be a float")
+        elif not (1e-12 <= alpha <= 1-1e-12):
+            raise ValueError("`alpha` must be in (0.0, 1.0)")
+    else:
+        raise TypeError("`n_std` must be and float, int or None")
     chi2_quantile = chi2.ppf(alpha, 2)
     return np.sqrt(chi2_quantile), alpha
 
@@ -44,7 +51,7 @@ def _plot_pr_ellipse(
     precision,
     recall,
     cov_mat,
-    norm_nstd=None,
+    n_std=None,
     alpha=0.95,
     lim=1.0,
     ax=None
@@ -55,7 +62,7 @@ def _plot_pr_ellipse(
         fig = ax.get_figure()
 
     # we multiply the radius by 2 because width and height are diameters
-    scale, alpha = _get_scaling_factor(norm_nstd, alpha) * 2
+    scale, alpha = _get_scaling_factor(n_std, alpha) * 2
     rec_rad, prec_rad, angle = _get_radii_and_angle(cov_mat)
 
     ellipse = Ellipse(
@@ -90,4 +97,4 @@ def _plot_pr_ellipse(
     ax.set_ylabel('Precision')
     ax.set_title(f'Precision-Recall {round(alpha * 100, 3)}% CI')
 
-    return fig
+    return ax
