@@ -46,8 +46,8 @@ def _plot_pr_ellipse(
     if cmap_name is None:
         cmap_name = 'Blues'
     if legend_loc is None:
-        # likely to be the best place for pr curve
-        legend_loc = 'lower center'
+        # likely to be the best place for a single ellipse
+        legend_loc = 'lower left'
 
     if ax is None:
         fig, ax = plt.subplots(figsize=(12,8))
@@ -85,6 +85,16 @@ def _plot_pr_ellipse(
 
     # we need to hide the right and top spines
     # in order to see the curve at the border:
+    ylim_lb, ylim_ub = ax.get_ylim()  # type: ignore
+    ylim_lb = max(0.0, ylim_lb)
+    ylim_ub = min(1.0, ylim_ub)
+    ax.set_ylim(ylim_lb, ylim_ub)  # type: ignore
+
+    xlim_lb, xlim_ub = ax.get_xlim()  # type: ignore
+    xlim_lb = max(0.0, xlim_lb)
+    xlim_ub = min(1.0, xlim_ub)
+    ax.set_xlim(xlim_lb, xlim_ub)  # type: ignore
+
     ax.spines['right'].set_visible(False)  # type: ignore
     ax.spines['top'].set_visible(False)  # type: ignore
 
@@ -96,7 +106,7 @@ def _plot_pr_ellipse(
         ax.set_aspect('equal')  # type: ignore
     # create custom legend with the correct colours and labels
     handles = _create_pr_legend_scatter(colors, labels, (precision, recall))
-    ax.legend(handles=handles, loc=legend_loc)  # type: ignore
+    ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
     fig.tight_layout()
 
     return ax

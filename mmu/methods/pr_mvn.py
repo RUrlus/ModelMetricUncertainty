@@ -355,16 +355,16 @@ class PrecisionRecallEllipticalUncertainty:
         # transform levels into scaling factors for the ellipse
         if levels is None:
             scales = self._get_scaling_factor_std(np.array((1, 2, 3)))
-            labels = ['1 std dev CI', '2 std dev CI', '3 std dev CI']
+            labels = [r'$1\sigma$ CI', r'$2\sigma$ CI', r'$3\sigma$ CI']
         elif isinstance(levels, int):
-            labels = [f'{levels} std dev CI']
+            labels = [f'{levels}' + r'$\sigma$ CI']
             scales = self._get_scaling_factor_std(np.array((levels,)))
         elif (
             isinstance(levels, np.ndarray)
             and np.issubdtype(levels.dtype, np.integer)
         ):
             levels = np.sort(levels)
-            labels = [f'{l} std dev CI' for l in levels]
+            labels = [f'{l}' + r'$\sigma$ CI' for l in levels]
             scales = self._get_scaling_factor_std(levels)
         elif isinstance(levels, float):
             labels = [f'{round(levels * 100, 3)}% CI']

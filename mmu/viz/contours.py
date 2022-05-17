@@ -45,6 +45,7 @@ def _plot_pr_curve_contours(
     if equal_aspect:
         ax.set_aspect('equal')  # type: ignore
     # create custom legend with the correct colours and labels
-    ax.legend(handles=_create_pr_legend(colors, labels), loc=legend_loc)  # type: ignore
+    handles = _create_pr_legend(colors, labels)
+    ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
     fig.tight_layout()
     return ax
