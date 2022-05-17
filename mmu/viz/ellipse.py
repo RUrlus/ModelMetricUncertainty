@@ -41,7 +41,7 @@ def _plot_pr_ellipse(
     ax=None,
     cmap_name=None,
     legend_loc=None,
-    equal_aspect=False
+    equal_aspect=True
 ):
     if cmap_name is None:
         cmap_name = 'Blues'
@@ -78,21 +78,21 @@ def _plot_pr_ellipse(
         precision,
         color='black',
         marker='x',
-        s=80,
-        lw=3,
+        s=50,
+        lw=2,
         zorder=n_levels + 1
     )
 
     # we need to hide the right and top spines
     # in order to see the curve at the border:
     ylim_lb, ylim_ub = ax.get_ylim()  # type: ignore
-    ylim_lb = max(0.0, ylim_lb)
-    ylim_ub = min(1.0, ylim_ub)
+    ylim_lb = max(-0.001, ylim_lb)
+    ylim_ub = min(1.001, ylim_ub)
     ax.set_ylim(ylim_lb, ylim_ub)  # type: ignore
 
     xlim_lb, xlim_ub = ax.get_xlim()  # type: ignore
-    xlim_lb = max(0.0, xlim_lb)
-    xlim_ub = min(1.0, xlim_ub)
+    xlim_lb = max(-0.001, xlim_lb)
+    xlim_ub = min(1.001, xlim_ub)
     ax.set_xlim(xlim_lb, xlim_ub)  # type: ignore
 
     ax.spines['right'].set_visible(False)  # type: ignore
