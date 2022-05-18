@@ -1,7 +1,9 @@
+import multiprocessing
 import numpy as np
 from sklearn.utils import check_array as sk_check_array
 
 from mmu.lib import _core
+from mmu import _MMU_MT_SUPPORT
 
 _ORDER_SH = {
     'C_CONTIGUOUS': 'C',
@@ -12,6 +14,22 @@ _ORDER_SH = {
 
 from mmu.commons.types import _convert_to_ext_types
 from mmu.commons.types import _is_ext_compat
+
+
+def _check_n_threads(n_threads):
+    maxt_m1 = multiprocessing.cpu_count() - 1
+    if n_threads is None:
+        if _MMU_MT_SUPPORT:
+            n_threads = 4
+        else:
+            n_threads = 1
+    elif not isinstance(n_threads, int):
+        raise TypeError("`n_threads` must be an int")
+    if n_threads == -1:
+        n_threads = maxt_m1
+    if (n_threads == 0) or (n_threads < -1):
+        raise ValueError("`n_threads` must be strictly positive or -1")
+    return n_threads
 
 
 def _check_array(
