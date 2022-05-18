@@ -15,8 +15,7 @@ _ORDER_SH = {
 }
 
 
-
-def _check_n_threads(n_threads):
+def _check_n_threads(n_threads=None):
     maxt_m1 = multiprocessing.cpu_count() - 1
     if n_threads is None:
         if _MMU_MT_SUPPORT:

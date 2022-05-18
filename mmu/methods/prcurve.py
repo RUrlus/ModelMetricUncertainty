@@ -16,8 +16,11 @@ from mmu.lib import MMU_MT_SUPPORT as _MMU_MT_SUPPORT
 import mmu.lib._mmu_core as _core
 from mmu.lib._mmu_core import (
     multinomial_uncertainty_over_grid_thresholds as mult_error_grid_thresh,
-    multinomial_uncertainty_over_grid_thresholds_mt as mult_error_grid_thresh_mt
 )
+if _MMU_MT_SUPPORT:
+    from mmu.lib._mmu_core import (
+        multinomial_uncertainty_over_grid_thresholds_mt as mult_error_grid_thresh_mt
+    )
 
 class _PrecisionRecallCurveBase:
     def __init__(self):
@@ -133,7 +136,9 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
             raise ValueError("`epsilon` must be  in [1e-15, 0.1]")
         self.epsilon = epsilon
         # compute precision and recall
-        self.precision, self.recall = _core.precision_recall_2d(self.conf_mats)
+        mtr = _core.precision_recall_2d(self.conf_mats)
+        self.precision = mtr[:, 0].copy()
+        self.recall = mtr[:, 1].copy()
         # compute scores
         if _MMU_MT_SUPPORT and n_threads > 1:
             self.chi2_scores = mult_error_grid_thresh_mt(
@@ -170,6 +175,7 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
         epsilon : float = 1e-12,
         auto_max_steps : Optional[int] = None,
         auto_seed : Optional[int] = None,
+        n_threads : Optional[int] = None,
     ):
         """Compute Multinomial uncertainty on precision and recall.
 
@@ -210,15 +216,21 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
         auto_seed : int, default=None
             the seed/random_state used by `auto_thresholds` when `max_steps` is
             not None. Ignored when `thresholds` is not None.
+        n_threads : int, default=None
+            the number of threads to use when computing the scores. By default
+            we use 4 threads if OpenMP was found, otherwise the computation
+            is single threaded. As is common, -1 indicates that all threads but
+            one should be used.
 
         """
         self = cls()
+        self._parse_nbins(n_bins)
         self._parse_thresholds(thresholds, score, auto_max_steps, auto_seed)
         self.conf_mats = confusion_matrices_thresholds(
-            y=y, score=score, thresholds=thresholds
+            y=y, score=score, thresholds=self.thresholds
         )
         self.n_conf_mats = self.conf_mats.shape[0]
-        self._compute_loglike_scores(n_bins, n_sigmas, epsilon)
+        self._compute_loglike_scores(n_sigmas, epsilon, n_threads)
         return self
 
     @classmethod
@@ -228,6 +240,7 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
         n_sigmas : Union[int, float] = 6.0,
         epsilon : float = 1e-12,
         obs_axis : int = 0,
+        n_threads : Optional[int] = None,
     ):
         """Compute Multinomial uncertainty on precision and recall.
 
@@ -253,6 +266,11 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
         epsilon : float, default=1e-12
             the value used to prevent the bounds from reaching precision/recall
             1.0/0.0 which would result in NaNs.
+        n_threads : int, default=None
+            the number of threads to use when computing the scores. By default
+            we use 4 threads if OpenMP was found, otherwise the computation
+            is single threaded. As is common, -1 indicates that all threads but
+            one should be used.
 
         """
         self = cls()
@@ -266,7 +284,8 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
             dtype_check=_convert_to_int
         )
         self.n_conf_mats = self.conf_mats.shape[obs_axis]
-        self._compute_loglike_scores(n_bins, n_sigmas, epsilon)
+        self._parse_nbins(n_bins)
+        self._compute_loglike_scores(n_sigmas, epsilon, n_threads)
         return self
 
     @classmethod
@@ -280,6 +299,7 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
         epsilon : float = 1e-12,
         auto_max_steps : Optional[int] = None,
         auto_seed : Optional[int] = None,
+        n_threads : Optional[int] = None,
     ):
         """Compute Multinomial uncertainty on precision and recall.
 
@@ -318,21 +338,27 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
         auto_seed : int, default=None
             the seed/random_state used by `auto_thresholds` when `max_steps` is
             not None. Ignored when `thresholds` is not None.
+        n_threads : int, default=None
+            the number of threads to use when computing the scores. By default
+            we use 4 threads if OpenMP was found, otherwise the computation
+            is single threaded. As is common, -1 indicates that all threads but
+            one should be used.
 
         """
         self = cls()
         if not hasattr(clf, 'predict_proba'):
             raise TypeError("`clf` must have a method `predict_proba`")
         score = clf.predict_proba(X)[:, 1]
+        self._parse_nbins(n_bins)
         self._parse_thresholds(thresholds, score, auto_max_steps, auto_seed)
         self.conf_mats = confusion_matrices_thresholds(
-            y=y, score=score, thresholds=thresholds
+            y=y, score=score, thresholds=self.thresholds
         )
         self.n_conf_mats = self.conf_mats.shape[0]
-        self._compute_loglike_scores(n_bins, n_sigmas, epsilon)
+        self._compute_loglike_scores(n_sigmas, epsilon, n_threads)
         return self
 
-    def get_conf_mat(self) -> pd.DataFrame:
+    def get_conf_mats(self) -> pd.DataFrame:
         """Obtain confusion matrix as a DataFrame.
 
         Returns
