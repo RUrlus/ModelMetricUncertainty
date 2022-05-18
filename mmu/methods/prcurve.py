@@ -46,18 +46,24 @@ class _PrecisionRecallCurveBase:
         self.thresholds = thresholds
 
     def _parse_nbins(self, n_bins):
+        if self.thresholds is not None:
+            lb = min(self.thresholds[0], 1e-12)
+            ub = max(self.thresholds[-1], 1-1e-12)
+        else:
+            lb = 1e-12
+            ub = 1 - lb
         # -- validate n_bins arg
         if n_bins is None:
-            self.prec_grid = self.rec_grid = np.linspace(1-12, 1-1e-12, 1000)
+            self.prec_grid = self.rec_grid = np.linspace(lb, ub, 1000)
         elif isinstance(n_bins, int):
             if n_bins < 1:
                 raise ValueError("`n_bins` must be bigger than 0")
-            self.prec_grid = self.rec_grid = np.linspace(1-12, 1-1e-12, n_bins)
+            self.prec_grid = self.rec_grid = np.linspace(lb, ub, n_bins)
         elif isinstance(n_bins, np.ndarray):
             if not np.issubdtype(n_bins.dtype, np.integer):
                 raise TypeError("`n_bins` must be an int or list-like ints")
-            self.prec_grid = np.linspace(1-12, 1-1e-12, n_bins[0])
-            self.rec_grid = np.linspace(1-12, 1-1e-12, n_bins[1])
+            self.prec_grid = np.linspace(lb, ub, n_bins[0])
+            self.rec_grid = np.linspace(lb, ub, n_bins[1])
 
         elif isinstance(n_bins, (list, tuple)) and len(n_bins) == 2:
             if (
@@ -65,8 +71,8 @@ class _PrecisionRecallCurveBase:
                 or (not isinstance(n_bins[1], int))
             ):
                 raise TypeError("`n_bins` must be an int or list-like ints")
-            self.prec_grid = np.linspace(1-12, 1-1e-12, n_bins[0])
-            self.rec_grid = np.linspace(1-12, 1-1e-12, n_bins[1])
+            self.prec_grid = np.linspace(lb, ub, n_bins[0])
+            self.rec_grid = np.linspace(lb, ub, n_bins[1])
         else:
             raise TypeError("`n_bins` must be an int or list-like ints")
 
@@ -228,8 +234,8 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
 
         """
         self = cls()
-        self._parse_nbins(n_bins)
         self._parse_thresholds(thresholds, score, auto_max_steps, auto_seed)
+        self._parse_nbins(n_bins)
         self.conf_mats = confusion_matrices_thresholds(
             y=y, score=score, thresholds=self.thresholds
         )
@@ -353,8 +359,8 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
         if not hasattr(clf, 'predict_proba'):
             raise TypeError("`clf` must have a method `predict_proba`")
         score = clf.predict_proba(X)[:, 1]
-        self._parse_nbins(n_bins)
         self._parse_thresholds(thresholds, score, auto_max_steps, auto_seed)
+        self._parse_nbins(n_bins)
         self.conf_mats = confusion_matrices_thresholds(
             y=y, score=score, thresholds=self.thresholds
         )
