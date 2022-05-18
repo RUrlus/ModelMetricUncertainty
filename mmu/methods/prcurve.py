@@ -447,7 +447,7 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
             isinstance(levels, np.ndarray)
             and np.issubdtype(levels.dtype, np.integer)
         ):
-            levels = np.sort(levels)
+            levels = np.sort(np.unique(levels))
             labels = [f'{l}' + r'$\sigma$ CI' for l in levels]
             levels = self._get_critical_values_std(levels)
         elif isinstance(levels, float):
@@ -457,7 +457,7 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
             isinstance(levels, np.ndarray)
             and np.issubdtype(levels.dtype, np.floating)
         ):
-            levels = np.sort(levels)
+            levels = np.sort(np.unique(levels))
             labels = [f'{round(l * 100, 3)}% CI' for l in levels]
             levels = self._get_critical_values_alpha(levels)
         else:
