@@ -708,10 +708,10 @@ def precision_recall_curve(y, score, thresholds=None, fill=0.0, return_df=False)
     if score.size != y.size:
         raise ValueError('`score` and `y` must have equal length.')
     conf_mat = _core.confusion_matrix_thresholds(y, score, thresholds)
-    metrics = _core.binary_metrics_2d(conf_mat, fill)
+    metrics = _core.precision_recall_2d(conf_mat, fill)
 
     if return_df:
-        df = pd.DataFrame(metrics[:, [1, 3]], columns=['precision', 'recall'])
+        df = pd.DataFrame(metrics, columns=['precision', 'recall'])
         df['thresholds'] = thresholds
         return df
-    return metrics[:, 1].copy(), metrics[:, 3].copy()
+    return metrics[:, 0].copy(), metrics[:, 1].copy()
