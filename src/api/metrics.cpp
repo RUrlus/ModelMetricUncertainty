@@ -44,23 +44,19 @@ f64arr precision_recall_2d(const i64arr& conf_mat, const double fill) {
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
     }
-    if (
-        (conf_mat.ndim() != 2)
-        || ((conf_mat.shape(0) != 4) && (conf_mat.shape(1) != 4))
-    ) {
+    if (conf_mat.ndim() != 2 || conf_mat.shape(1) != 4) {
         throw std::runtime_error("`conf_mat` should have shape (N, 4)");
     }
 
-    // guard against buffer overruns
-    const size_t n_obs = conf_mat.shape(1) == 4 ? conf_mat.shape(0) : conf_mat.shape(1);
-    int64_t* const cm_ptr = npy::get_data(conf_mat);
+    const size_t n_obs = conf_mat.shape(0);
     auto metrics = py::array_t<double>({n_obs, static_cast<size_t>(2)});
-    double* const metrics_ptr = npy::get_data(metrics);
 
+    int64_t* const cm_ptr = npy::get_data(conf_mat);
+    double* const metrics_ptr = npy::get_data(metrics);
     // compute metrics
     #pragma omp parallel for shared(cm_ptr, metrics_ptr)
     for (size_t i = 0; i < n_obs; i++) {
-        core::binary_metrics(cm_ptr + (i * 4), metrics_ptr + (i * 2), fill);
+        core::precision_recall(cm_ptr + (i * 4), metrics_ptr + (i * 2), fill);
     }
     return metrics;
 }
@@ -93,7 +89,7 @@ f64arr precision_recall_flattened(const i64arr& conf_mat, const double fill) {
     #pragma omp parallel for shared(cm_ptr, metrics_ptr)
     for (size_t i = 0; i < n_conf_mats; i++) {
         // compute metrics
-        core::binary_metrics(cm_ptr + (i * 4), metrics_ptr + (i * 2), fill);
+        core::precision_recall(cm_ptr + (i * 4), metrics_ptr + (i * 2), fill);
     }
     return metrics;
 }
@@ -134,15 +130,11 @@ f64arr binary_metrics_2d(const i64arr& conf_mat, const double fill) {
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
     }
-    if (
-        (conf_mat.ndim() != 2)
-        || ((conf_mat.shape(0) != 4) && (conf_mat.shape(1) != 4))
-    ) {
+    if (conf_mat.ndim() != 2 || conf_mat.shape(1) != 4) {
         throw std::runtime_error("`conf_mat` should have shape (N, 4)");
     }
 
-    // guard against buffer overruns
-    const size_t n_obs = conf_mat.shape(1) == 4 ? conf_mat.shape(0) : conf_mat.shape(1);
+    const size_t n_obs = conf_mat.shape(0);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
     auto metrics = py::array_t<double>({n_obs, static_cast<size_t>(10)});
     double* const metrics_ptr = npy::get_data(metrics);
