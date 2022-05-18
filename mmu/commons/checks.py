@@ -2,8 +2,10 @@ import multiprocessing
 import numpy as np
 from sklearn.utils import check_array as sk_check_array
 
+from mmu.commons.types import _convert_to_ext_types
+from mmu.commons.types import _is_ext_compat
 from mmu.lib import _core
-from mmu import _MMU_MT_SUPPORT
+from mmu.lib import MMU_MT_SUPPORT as _MMU_MT_SUPPORT
 
 _ORDER_SH = {
     'C_CONTIGUOUS': 'C',
@@ -12,8 +14,6 @@ _ORDER_SH = {
     1: 'F',
 }
 
-from mmu.commons.types import _convert_to_ext_types
-from mmu.commons.types import _is_ext_compat
 
 
 def _check_n_threads(n_threads):
