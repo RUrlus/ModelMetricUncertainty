@@ -111,4 +111,4 @@ def _plot_pr_ellipse(
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
     fig.tight_layout()
 
-    return ax
+    return ax, handles

@@ -59,7 +59,7 @@ def _plot_pr_curve_contours(
     handles = _create_pr_legend(colors, labels)
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
     fig.tight_layout()
-    return ax
+    return ax, handles
 
 
 def _plot_pr_contours(
@@ -128,4 +128,4 @@ def _plot_pr_contours(
     handles = _create_pr_legend_scatter(colors, labels, (precision, recall))
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
     fig.tight_layout()
-    return ax
+    return ax, handles
