@@ -451,7 +451,7 @@ class PrecisionRecallEllipticalUncertainty:
                 "`levels` must be a int, float, array-like or None"
             )
 
-        return _plot_pr_ellipse(
+        self._ax, self._handles = _plot_pr_ellipse(
             self.precision,
             self.recall,
             cov_mat,
@@ -462,6 +462,7 @@ class PrecisionRecallEllipticalUncertainty:
             equal_aspect=equal_aspect,
             limit_axis=limit_axis,
         )
+        return ax
 
 
 class PrecisionRecallMultinomialUncertainty:
@@ -828,7 +829,7 @@ class PrecisionRecallMultinomialUncertainty:
                 "`levels` must be a int, float, array-like or None"
             )
 
-        return _plot_pr_contours(
+        self._ax, self._handles = _plot_pr_contours(
             self.n_bins,
             self.precision,
             self.recall,
@@ -841,3 +842,4 @@ class PrecisionRecallMultinomialUncertainty:
             equal_aspect=equal_aspect,
             limit_axis=limit_axis,
         )
+        return self._ax

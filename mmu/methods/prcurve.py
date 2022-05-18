@@ -1,6 +1,6 @@
 """Module containing the API for the precision-recall with Multinomial uncertainty."""
 import warnings
-from typing import Union, List, Tuple, Optional
+from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 import scipy.stats as sts
@@ -12,6 +12,10 @@ from mmu.metrics.confmat import confusion_matrices_thresholds
 from mmu.metrics.confmat import confusion_matrices_to_dataframe
 from mmu.viz.contours import _plot_pr_curve_contours
 from mmu.lib import MMU_MT_SUPPORT as _MMU_MT_SUPPORT
+from mmu.methods.prpoint import (
+    PrecisionRecallMultinomialUncertainty,
+    PrecisionRecallEllipticalUncertainty,
+)
 
 import mmu.lib._mmu_core as _core
 from mmu.lib._mmu_core import (
@@ -387,6 +391,12 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
         cmap_name : str = 'Blues',
         equal_aspect : bool = False,
         limit_axis : bool = True,
+        point_uncertainty : Union[
+            PrecisionRecallMultinomialUncertainty,
+            PrecisionRecallEllipticalUncertainty,
+            None
+        ] = None,
+        point_kwargs : Optional[Dict] = None
     ):
         """Plot confidence interval(s) for precision and recall
 
@@ -406,6 +416,12 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
             enforce square axis
         limit_axis : bool, default=True
             allow ax to be limited for optimal CI plot
+        point_uncertainty : PrecisionRecallMultinomialUncertainty, PrecisionRecallEllipticalUncertainty, default=None
+            Add a point uncertainty plot to the curve plot, by default the
+            `Reds` cmap is used for the point plot.
+        point_kwargs : dict, default=None
+            Keyword arguments passed to `point_uncertainty.plot()`, ignored if
+            point_uncertainty is None
 
         Returns
         -------
@@ -449,7 +465,7 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
                 "`levels` must be a int, float, array-like or None"
             )
 
-        return _plot_pr_curve_contours(
+        self._ax, self._handles = _plot_pr_curve_contours(
             self.precision,
             self.recall,
             self.chi2_scores,
@@ -462,3 +478,25 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
             equal_aspect=equal_aspect,
             limit_axis=limit_axis,
         )
+        if isinstance(
+            point_uncertainty,
+            (
+                PrecisionRecallMultinomialUncertainty,
+                PrecisionRecallEllipticalUncertainty,
+            )
+        ):
+            if isinstance(point_kwargs, dict):
+                if 'cmap_name' not in point_kwargs:
+                    point_kwargs['cmap_name'] = 'Reds'
+                if 'ax' in point_kwargs:
+                    point_kwargs.pop('ax')
+            elif point_kwargs is None:
+                point_kwargs = {'cmap_name': 'Reds'}
+            self._ax = point_uncertainty.plot(
+                ax=self._ax,
+                **point_kwargs
+            )
+            self._handles = self._handles + point_uncertainty._handles
+            self._ax.legend(handles=self._handles, loc='lower center', fontsize=12)  # type: ignore
+
+        return self._ax
