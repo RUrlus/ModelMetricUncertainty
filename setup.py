@@ -68,14 +68,22 @@ release = {is_release!s}
 
 if __name__ == '__main__':
     write_version_py()
+    cmake_args=[
+        f"-DMMU_VERSION_INFO:STRING={VERSION}",
+        f"-DPython3_EXECUTABLE:STRING={sys.executable}",
+        f"-Dpybind11_DIR:STRING={pybind11.get_cmake_dir()}",
+        "-DMMU_ENABLE_ARCH_FLAGS:BOOL=ON",
+    ]
+    if DEV is True:
+        cmake_args += [
+            "-DMMU_DEV_MODE=ON",
+            "-DMMU_ENABLE_INTERNAL_TESTS=ON",
+            "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON",
+        ]
+
     setup(
         name="mmu",
         packages=find_packages(),
         version=FULL_VERSION,
-        cmake_args=[
-            f"-DMMU_VERSION_INFO:STRING={VERSION}",
-            f"-DPython3_EXECUTABLE:STRING={sys.executable}",
-            f"-Dpybind11_DIR:STRING={pybind11.get_cmake_dir()}",
-            "-DMMU_ENABLE_ARCH_FLAGS:BOOL=ON",
-        ]
+        cmake_args=cmake_args
     )
