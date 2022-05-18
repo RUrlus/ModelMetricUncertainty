@@ -35,6 +35,7 @@ def _plot_pr_curve_contours(
     RX, PY = np.meshgrid(rec_grid, prec_grid)
     colors = _get_color_hexes(cmap_name, n_colors=len(labels))
 
+    levels = [0.0] + levels.tolist()
     # create contours
     ax.contourf(RX, PY, scores, levels=levels, colors=colors, alpha=0.8)  # type: ignore
     # plot precision recall
