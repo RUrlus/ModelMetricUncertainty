@@ -45,7 +45,9 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
 
     bind_mvn_uncertainty_over_grid(m);
     bind_mvn_uncertainty_over_grid_thresholds(m);
+#ifdef MMU_HAS_OPENMP_SUPPORT
     bind_mvn_uncertainty_over_grid_thresholds_mt(m);
+#endif  // MMU_HAS_OPENMP_SUPPORT
     // multn_loglike
     bind_multinomial_uncertainty(m);
     bind_multinomial_uncertainty_over_grid(m);
