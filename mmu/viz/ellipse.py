@@ -39,6 +39,7 @@ def _plot_pr_ellipse(
     scales,
     labels,
     ax=None,
+    alpha=0.5,
     cmap_name=None,
     legend_loc=None,
     equal_aspect=True,
@@ -55,7 +56,9 @@ def _plot_pr_ellipse(
     else:
         fig = ax.get_figure()
 
-    colors = _get_color_hexes(cmap_name, n_colors=len(labels))
+    colors, c_marker = _get_color_hexes(
+        cmap_name, n_colors=len(labels), return_marker=True
+    )
 
     # we multiply the radius by 2 because width and height are diameters
     scales *= 2
@@ -68,7 +71,7 @@ def _plot_pr_ellipse(
             width=scales[i] * rec_rad,
             height=scales[i] * prec_rad,
             angle=angle,
-            alpha=0.5,
+            alpha=alpha,
             color=colors[i],
             zorder=n_levels - i
         )
@@ -77,7 +80,7 @@ def _plot_pr_ellipse(
     ax.scatter(  # type: ignore
         recall,
         precision,
-        color='black',
+        color=c_marker,
         marker='x',
         s=50,
         lw=2,
@@ -107,7 +110,7 @@ def _plot_pr_ellipse(
     if equal_aspect:
         ax.set_aspect('equal')  # type: ignore
     # create custom legend with the correct colours and labels
-    handles = _create_pr_legend_scatter(colors, labels, (precision, recall))
+    handles = _create_pr_legend_scatter(colors, c_marker, labels, (precision, recall))
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
     fig.tight_layout()
 

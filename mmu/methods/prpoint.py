@@ -1,6 +1,7 @@
 """Module containing the API for the precision-recall uncertainty modelled through profile log likelihoods."""
 import warnings
-from typing import Optional, Union, Tuple
+from itertools import zip_longest
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -18,7 +19,57 @@ from mmu.viz.contours import _plot_pr_contours
 import mmu.lib._mmu_core as _core
 
 
-class PrecisionRecallEllipticalUncertainty:
+class PointUncertainty:
+    def __init__(self):
+        self.threshold = None
+        self.conf_mat = None
+
+    def _parse_threshold(self, threshold):
+        if not isinstance(threshold, float) or not (0.0 < threshold < 1.0):
+            raise TypeError("`threshold` must be a float in [0, 1]")
+        self.threshold = threshold
+
+    def get_conf_mat(self) -> pd.DataFrame:
+        """Obtain confusion matrix as a DataFrame.
+
+        Returns
+        -------
+        pd.DataFrame
+            the confusion matrix of the test set
+        """
+        return confusion_matrix_to_dataframe(self.conf_mat)
+
+    def _add_point_to_plot(self, point, point_kwargs):
+        if isinstance(point_kwargs, dict):
+            if 'cmap_name' not in point_kwargs:
+                point_kwargs['cmap_name'] = 'Reds'
+            if 'ax' in point_kwargs:
+                point_kwargs.pop('ax')
+        elif point_kwargs is None:
+            point_kwargs = {'cmap_name': 'Reds'}
+        else:
+            raise TypeError("`point_kwargs` must be a Dict or None")
+        self._ax = point.plot(ax=self._ax, **point_kwargs)
+        self._handles = self._handles + point._handles
+        self._ax.legend(handles=self._handles, loc='lower left', fontsize=12)  # type: ignore
+    def _add_other_to_plot(self, other, other_kwargs):
+        if issubclass(type(other), PointUncertainty):
+            self._add_point_to_plot(other, other_kwargs)
+        elif isinstance(other, (list, tuple)):
+            if other_kwargs is None:
+                other_kwargs = {}
+            elif isinstance(other_kwargs, dict):
+                other_kwargs = [other_kwargs, ] * len(other)
+            for point, kwargs in zip_longest(other, other_kwargs):
+                self._add_point_to_plot(point, kwargs)
+        else:
+            raise TypeError(
+                "`point_uncertainty` must be a subclass of PointUncertainty"
+                " or a list of PointUncertainty's"
+            )
+
+
+class PrecisionRecallEllipticalUncertainty(PointUncertainty):
     """Precision-Recall uncertainty modelled as a Bivariate Normal.
 
     Model's the linearly propogated errors of the confusion matrix as a
@@ -90,11 +141,6 @@ class PrecisionRecallEllipticalUncertainty:
         self.train_conf_mats = None
         self.train_cov_mat = None
         self.total_cov_mat = None
-
-    def _parse_threshold(self, threshold):
-        if not isinstance(threshold, float) or not (0.0 < threshold < 1.0):
-            raise TypeError("`threshold` must be a float in [0, 1]")
-        self.threshold = threshold
 
     def _compute_mvn_cov(self):
         out = _core.pr_mvn_cov(self.conf_mat)
@@ -286,16 +332,6 @@ class PrecisionRecallEllipticalUncertainty:
             )
         self.total_cov_mat = self.cov_mat + self.train_cov_mat
 
-    def get_conf_mat(self) -> pd.DataFrame:
-        """Obtain confusion matrix as a DataFrame.
-
-        Returns
-        -------
-        pd.DataFrame
-            the confusion matrix of the test set
-        """
-        return confusion_matrix_to_dataframe(self.conf_mat)
-
     def get_train_conf_mats(self) -> pd.DataFrame:
         """Obtain confusion matrices as a DataFrame.
 
@@ -359,6 +395,9 @@ class PrecisionRecallEllipticalUncertainty:
         cmap_name : str = 'Blues',
         equal_aspect : bool = False,
         limit_axis : bool = True,
+        alpha : float = 0.6,
+        other : Union[PointUncertainty, List[PointUncertainty], None] = None,
+        other_kwargs : Union[Dict, List[Dict], None] = None
     ):
         """Plot elliptical confidence interval(s) for precision and recall
 
@@ -385,6 +424,17 @@ class PrecisionRecallEllipticalUncertainty:
             enforce square axis
         limit_axis : bool, default=True
             allow ax to be limited for optimal CI plot
+        alpha : float, defualt=0.8
+            opacity value of the ellipses
+        other : PrecisionRecallMultinomialUncertainty,
+        PrecisionRecallEllipticalUncertainty, List, default=None
+            Add other point uncertainty(ies) plot to the plot, by default the
+            `Reds` cmap is used for the `other` plot(s).
+        other_kwargs : dict, list[dict], default=None
+            Keyword arguments passed to `other.plot()`, ignored if
+            `other` is None. If `other` is a list and
+            `other_kwargs` is a dict, the kwargs are used for all point
+            others.
 
         Returns
         -------
@@ -459,13 +509,16 @@ class PrecisionRecallEllipticalUncertainty:
             labels,
             cmap_name=cmap_name,
             ax=ax,
+            alpha=alpha,
             equal_aspect=equal_aspect,
             limit_axis=limit_axis,
         )
-        return ax
+        if other is not None:
+            self._add_other_to_plot(other, other_kwargs)
+        return self._ax
 
 
-class PrecisionRecallMultinomialUncertainty:
+class PrecisionRecallMultinomialUncertainty(PointUncertainty):
     """Precision-Recall uncertainty modelled as a Multinomial.
 
     Model's the uncertainty using profile log-likelihoods between
@@ -525,11 +578,6 @@ class PrecisionRecallMultinomialUncertainty:
         self.n_bins = None
         self.n_sigmas = None
         self.epsilon = None
-
-    def _parse_threshold(self, threshold):
-        if not isinstance(threshold, float) or not (0.0 < threshold < 1.0):
-            raise TypeError("`threshold` must be a float in [0, 1]")
-        self.threshold = threshold
 
     def _compute_loglike_scores(self, n_bins, n_sigmas, epsilon):
         # -- validate n_bins arg
@@ -739,16 +787,6 @@ class PrecisionRecallMultinomialUncertainty:
         self._compute_loglike_scores(n_bins, n_sigmas, epsilon)
         return self
 
-    def get_conf_mat(self) -> pd.DataFrame:
-        """Obtain confusion matrix as a DataFrame.
-
-        Returns
-        -------
-        pd.DataFrame
-            the confusion matrix of the test set
-        """
-        return confusion_matrix_to_dataframe(self.conf_mat)
-
     def _get_critical_values_std(self, n_std):
         """Compute the critical values for a chi2 with 2df using the continuity correction"""
         alphas = 2. * (sts.norm.cdf(n_std) - 0.5)
@@ -767,6 +805,9 @@ class PrecisionRecallMultinomialUncertainty:
         cmap_name : str = 'Blues',
         equal_aspect : bool = False,
         limit_axis : bool = True,
+        alpha : float = 0.8,
+        other : Union[PointUncertainty, List[PointUncertainty], None] = None,
+        other_kwargs : Union[Dict, List[Dict], None] = None
     ):
         """Plot confidence interval(s) for precision and recall
 
@@ -786,6 +827,17 @@ class PrecisionRecallMultinomialUncertainty:
             enforce square axis
         limit_axis : bool, default=True
             allow ax to be limited for optimal CI plot
+        alpha : float, defualt=0.8
+            opacity value of the contours
+        other : PrecisionRecallMultinomialUncertainty,
+        PrecisionRecallEllipticalUncertainty, List, default=None
+            Add other point uncertainty(ies) plot to the plot, by default the
+            `Reds` cmap is used for the `other` plot(s).
+        other_kwargs : dict, list[dict], default=None
+            Keyword arguments passed to `other.plot()`, ignored if
+            `other` is None. If `other` is a list and
+            `other_kwargs` is a dict, the kwargs are used for all point
+            others.
 
         Returns
         -------
@@ -839,7 +891,11 @@ class PrecisionRecallMultinomialUncertainty:
             labels,
             cmap_name=cmap_name,
             ax=ax,
+            alpha=alpha,
             equal_aspect=equal_aspect,
             limit_axis=limit_axis,
         )
+
+        if other is not None:
+            self._add_other_to_plot(other, other_kwargs)
         return self._ax

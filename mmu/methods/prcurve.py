@@ -1,5 +1,6 @@
 """Module containing the API for the precision-recall with Multinomial uncertainty."""
 import warnings
+from itertools import zip_longest
 from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
@@ -15,6 +16,7 @@ from mmu.lib import MMU_MT_SUPPORT as _MMU_MT_SUPPORT
 from mmu.methods.prpoint import (
     PrecisionRecallMultinomialUncertainty,
     PrecisionRecallEllipticalUncertainty,
+    PointUncertainty
 )
 
 import mmu.lib._mmu_core as _core
@@ -390,6 +392,35 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
         # confidence limits in two dimensions
         return sts.chi2.ppf(alphas, 2)
 
+    def _add_point_to_plot(self, point, point_kwargs):
+        if isinstance(point_kwargs, dict):
+            if 'cmap_name' not in point_kwargs:
+                point_kwargs['cmap_name'] = 'Reds'
+            if 'ax' in point_kwargs:
+                point_kwargs.pop('ax')
+        elif point_kwargs is None:
+            point_kwargs = {'cmap_name': 'Reds'}
+        else:
+            raise TypeError("`point_kwargs` must be a Dict or None")
+        self._ax = point.plot(ax=self._ax, **point_kwargs)
+        self._handles = self._handles + point._handles
+        self._ax.legend(handles=self._handles, loc='lower center', fontsize=12)  # type: ignore
+    def _add_points_to_plot(self, point, point_kwargs):
+        if issubclass(type(point), PointUncertainty):
+            self._add_point_to_plot(point, point_kwargs)
+        elif isinstance(point, (list, tuple)):
+            if point_kwargs is None:
+                point_kwargs = {}
+            elif isinstance(point_kwargs, dict):
+                point_kwargs = [point_kwargs, ] * len(point)
+            for p, k in zip_longest(point, point_kwargs):
+                self._add_point_to_plot(p, k)
+        else:
+            raise TypeError(
+                "`point_uncertainty` must be a subclass of PointUncertainty"
+                " or a list of PointUncertainty's"
+            )
+
     def plot(
         self,
         levels : Union[int, float, np.ndarray, None] = None,
@@ -397,12 +428,9 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
         cmap_name : str = 'Blues',
         equal_aspect : bool = False,
         limit_axis : bool = True,
-        point_uncertainty : Union[
-            PrecisionRecallMultinomialUncertainty,
-            PrecisionRecallEllipticalUncertainty,
-            None
-        ] = None,
-        point_kwargs : Optional[Dict] = None
+        alpha : float = 0.8,
+        point_uncertainty : Union[PointUncertainty, List[PointUncertainty], None] = None,
+        point_kwargs : Union[Dict, List[Dict], None] = None
     ):
         """Plot confidence interval(s) for precision and recall
 
@@ -422,12 +450,17 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
             enforce square axis
         limit_axis : bool, default=True
             allow ax to be limited for optimal CI plot
-        point_uncertainty : PrecisionRecallMultinomialUncertainty, PrecisionRecallEllipticalUncertainty, default=None
-            Add a point uncertainty plot to the curve plot, by default the
-            `Reds` cmap is used for the point plot.
-        point_kwargs : dict, default=None
+        alpha : float, defualt=0.8
+            opacity value of the contours
+        point_uncertainty : PrecisionRecallMultinomialUncertainty,
+        PrecisionRecallEllipticalUncertainty, List, default=None
+            Add a point uncertainty(ies) plot to the curve plot, by default the
+            `Reds` cmap is used for the point plot(s).
+        point_kwargs : dict, list[dict], default=None
             Keyword arguments passed to `point_uncertainty.plot()`, ignored if
-            point_uncertainty is None
+            point_uncertainty is None. If `point_uncertainty` is a list and
+            `point_kwargs` is a dict the kwargs are used for all point
+            uncertainties.
 
         Returns
         -------
@@ -481,28 +514,12 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
             labels,
             cmap_name=cmap_name,
             ax=ax,
+            alpha=alpha,
             equal_aspect=equal_aspect,
             limit_axis=limit_axis,
         )
-        if isinstance(
-            point_uncertainty,
-            (
-                PrecisionRecallMultinomialUncertainty,
-                PrecisionRecallEllipticalUncertainty,
-            )
-        ):
-            if isinstance(point_kwargs, dict):
-                if 'cmap_name' not in point_kwargs:
-                    point_kwargs['cmap_name'] = 'Reds'
-                if 'ax' in point_kwargs:
-                    point_kwargs.pop('ax')
-            elif point_kwargs is None:
-                point_kwargs = {'cmap_name': 'Reds'}
-            self._ax = point_uncertainty.plot(
-                ax=self._ax,
-                **point_kwargs
-            )
-            self._handles = self._handles + point_uncertainty._handles
-            self._ax.legend(handles=self._handles, loc='lower center', fontsize=12)  # type: ignore
+
+        if point_uncertainty is not None:
+            self._add_points_to_plot(point_uncertainty, point_kwargs)
 
         return self._ax

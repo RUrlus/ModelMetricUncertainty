@@ -16,6 +16,7 @@ def _plot_pr_curve_contours(
     labels,
     cmap_name=None,
     ax=None,
+    alpha=0.8,
     legend_loc=None,
     equal_aspect=False,
     limit_axis=True
@@ -37,7 +38,7 @@ def _plot_pr_curve_contours(
 
     levels = [0.0] + levels.tolist()
     # create contours
-    ax.contourf(RX, PY, scores, levels=levels, colors=colors, alpha=0.8)  # type: ignore
+    ax.contourf(RX, PY, scores, levels=levels, colors=colors, alpha=alpha)  # type: ignore
     # plot precision recall
     ax.plot(recall, precision, c='black', alpha=0.6, zorder=10)  # type: ignore
     ax.set_xlabel('Recall', fontsize=14)  # type: ignore
@@ -72,6 +73,7 @@ def _plot_pr_contours(
     labels,
     cmap_name=None,
     ax=None,
+    alpha=0.8,
     legend_loc=None,
     equal_aspect=True,
     limit_axis=True,
@@ -91,17 +93,19 @@ def _plot_pr_contours(
     prec_grid = np.linspace(bounds[0], bounds[1], num=n_bins)
     rec_grid = np.linspace(bounds[2], bounds[3], num=n_bins)
     RX, PY = np.meshgrid(rec_grid, prec_grid)
-    colors = _get_color_hexes(cmap_name, n_colors=len(labels))
+    colors, c_marker = _get_color_hexes(
+        cmap_name, n_colors=len(labels), return_marker=True
+    )
 
     # add zero level to contours
     levels = [0.0] + levels.tolist()
     # create contours
-    ax.contourf(RX, PY, scores, levels=levels, colors=colors, alpha=0.8)  # type: ignore
+    ax.contourf(RX, PY, scores, levels=levels, colors=colors, alpha=alpha)  # type: ignore
     # plot precision recall
     ax.scatter(  # type: ignore
         recall,
         precision,
-        color='black',
+        color=c_marker,
         marker='x',
         s=50,
         lw=2,
@@ -125,7 +129,7 @@ def _plot_pr_contours(
     if equal_aspect:
         ax.set_aspect('equal')  # type: ignore
     # create custom legend with the correct colours and labels
-    handles = _create_pr_legend_scatter(colors, labels, (precision, recall))
+    handles = _create_pr_legend_scatter(colors, c_marker, labels, (precision, recall))
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
     fig.tight_layout()
     return ax, handles
