@@ -8,6 +8,7 @@
 #include <mmu/bindings/metrics.hpp>
 #include <mmu/bindings/utils.hpp>
 #include <mmu/bindings/mvn_error.hpp>
+#include <mmu/bindings/mvn_grid.hpp>
 #include <mmu/bindings/multn_loglike.hpp>
 
 namespace py = pybind11;
@@ -41,6 +42,10 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_pr_mvn_cov(m);
     bind_pr_mvn_cov_runs(m);
     bind_pr_curve_mvn_cov(m);
+
+    bind_mvn_uncertainty_over_grid(m);
+    bind_mvn_uncertainty_over_grid_thresholds(m);
+    bind_mvn_uncertainty_over_grid_thresholds_mt(m);
     // multn_loglike
     bind_multinomial_uncertainty(m);
     bind_multinomial_uncertainty_over_grid(m);

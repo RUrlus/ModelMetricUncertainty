@@ -18,6 +18,8 @@ pybind11_add_module(${MODNAME}
         ${MMU_BINDINGS_PATH}/metrics.cpp
         ${MMU_API_PATH}/mvn_error.cpp
         ${MMU_BINDINGS_PATH}/mvn_error.cpp
+        ${MMU_API_PATH}/mvn_grid.cpp
+        ${MMU_BINDINGS_PATH}/mvn_grid.cpp
         ${MMU_API_PATH}/multn_loglike.cpp
         ${MMU_BINDINGS_PATH}/multn_loglike.cpp
 )

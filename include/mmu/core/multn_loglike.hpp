@@ -20,6 +20,7 @@
 #include <mmu/core/mvn_error.hpp>
 #include <mmu/core/random.hpp>
 #include <mmu/core/metrics.hpp>
+#include <mmu/core/pr_grid.hpp>
 
 /* conf_mat layout:
  *  0 TN
@@ -47,199 +48,6 @@ inline double xlogy(T x, T y) {
     }
     return static_cast<double>(x) * std::log(static_cast<double>(y));
 }
-
-inline void linspace(const double start, double const end, const size_t steps, double* values) {
-    if (steps == 0) {
-        throw std::runtime_error("`steps` must be greater than zero.");
-    } else if (steps == 1) {
-        auto v = new double[steps];
-        v[0] = static_cast<double>(start);
-        return;
-    }
-    const double delta = (end - start) / static_cast<double>(steps - 1);
-    const size_t N = steps - 1;
-    values[0] = start;
-    values[N] = end;
-    for (size_t i = 1; i < N; ++i) {
-        values[i] = start + (delta * i);
-    }
-    return;
-}
-
-/* Determine grid for precision and recall based on their marginal std
- * deviations assuming a Multivariate Normal
- */
-inline void get_pr_grid_bounds(
-    const int64_t* __restrict conf_mat,
-    double* bounds,
-    const double n_sigmas = 6.0,
-    const double epsilon = 1e-4
-) {
-    const double max_prec_clip = conf_mat[1] == 0 ? 0.0 : epsilon;
-    const double max_rec_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
-    // computes prec, prec_sigma, rec, rec_sigma accounting for edge cases
-    std::array<double, 4> prec_rec;
-    pr_mvn_sigma(conf_mat, prec_rec.data());
-
-    const double ns_prec_sigma = n_sigmas * prec_rec[1];
-    const double ns_rec_sigma = n_sigmas * prec_rec[3];
-
-    bounds[0] = std::max(prec_rec[0] - ns_prec_sigma, epsilon);
-    bounds[1] = std::min(prec_rec[0] + ns_prec_sigma, 1 - max_prec_clip);
-    bounds[2] = std::max(prec_rec[2] - ns_rec_sigma, epsilon);
-    bounds[3] = std::min(prec_rec[2] + ns_rec_sigma, 1. - max_rec_clip);
-}  // get_pr_grid_bounds
-
-
-class PrGridBounds {
-    const int64_t n_prec_bins;
-    const int64_t n_rec_bins;
-    const double n_sigmas;
-    const double epsilon;
-    double max_prec_clip;
-    double max_rec_clip;
-    double prec_max;
-    double prec_min;
-    double rec_max;
-    double rec_min;
-    double ns_prec_sigma;
-    double ns_rec_sigma;
-    const double* __restrict precs;
-    const double* __restrict recs;
-    std::array<double, 4> prec_rec;
-
- public:
-    int64_t prec_idx_min = 0;
-    int64_t prec_idx_max = 0;
-    int64_t rec_idx_min = 0;
-    int64_t rec_idx_max = 0;
-
-    PrGridBounds(
-        const int64_t n_prec_bins,
-        const int64_t n_rec_bins,
-        const double n_sigmas,
-        const double epsilon,
-        const double* __restrict precs,
-        const double* __restrict recs
-    ) : n_prec_bins{n_prec_bins},
-        n_rec_bins{n_rec_bins},
-        n_sigmas{n_sigmas},
-        epsilon{epsilon},
-        precs{precs},
-        recs{recs}
-    {}
-
-    void compute_bounds(const int64_t* __restrict conf_mat) {
-        max_prec_clip = conf_mat[1] == 0 ? 0.0 : epsilon;
-        max_rec_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
-        // computes prec, prec_sigma, rec, rec_sigma accounting for edge cases
-        pr_mvn_sigma(conf_mat, prec_rec.data());
-
-        ns_prec_sigma = n_sigmas * prec_rec[1];
-        prec_max = std::min(prec_rec[0] + ns_prec_sigma, 1 - max_prec_clip);
-        prec_min = std::max(prec_rec[0] - ns_prec_sigma, epsilon);
-        prec_idx_min = 0;
-        prec_idx_max = n_prec_bins;
-
-        int64_t i;
-        for (i = 0; i < n_prec_bins; i++) {
-            if (prec_min < precs[i]) {
-                prec_idx_min = i - 1;
-                break;
-            }
-        }
-        prec_idx_min = prec_idx_min > 0 ? prec_idx_min : 0;
-
-        for (i = prec_idx_min; i < n_rec_bins; i++) {
-            if (prec_max < precs[i]) {
-                prec_idx_max = i + 1;
-                break;
-            }
-        }
-        prec_idx_max = prec_idx_max <= n_prec_bins ? prec_idx_max : n_prec_bins;
-
-        ns_rec_sigma = n_sigmas * prec_rec[3];
-        rec_max = std::min(prec_rec[2] + ns_rec_sigma, 1. - max_rec_clip);
-        rec_min = std::max(prec_rec[2] - ns_rec_sigma, epsilon);
-        rec_idx_min = 0;
-        rec_idx_max = n_rec_bins;
-        for (i = 0; i < n_rec_bins; i++) {
-            if (rec_min < recs[i]) {
-                rec_idx_min = i - 1;
-                break;
-            }
-        }
-        rec_idx_min = rec_idx_min > 0 ? rec_idx_min : 0;
-
-        for (i = rec_idx_min; i < n_rec_bins; i++) {
-            if (rec_max < recs[i]) {
-                rec_idx_max = i + 1;
-                break;
-            }
-        }
-        rec_idx_max = rec_idx_max <= n_rec_bins ? rec_idx_max : n_rec_bins;
-    }
-};
-
-inline void get_pr_grid_bounds(
-    const int64_t prec_bins,
-    const int64_t rec_bins,
-    const int64_t* __restrict conf_mat,
-    const double* __restrict precs,
-    const double* __restrict recs,
-    int64_t* result,
-    const double n_sigmas = 6.0,
-    const double epsilon = 1e-4
-) {
-    const double max_prec_clip = conf_mat[1] == 0 ? 0.0 : epsilon;
-    const double max_rec_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
-    // computes prec, prec_sigma, rec, rec_sigma accounting for edge cases
-    std::array<double, 4> prec_rec;
-    pr_mvn_sigma(conf_mat, prec_rec.data());
-
-    const double ns_prec_sigma = n_sigmas * prec_rec[1];
-    const double prec_max = std::min(prec_rec[0] + ns_prec_sigma, 1 - max_prec_clip);
-    const double prec_min = std::max(prec_rec[0] - ns_prec_sigma, epsilon);
-    int64_t prec_idx_min = 0;
-    int64_t prec_idx_max = prec_bins;
-    for (int64_t i = 0; i < prec_bins; i++) {
-        if (prec_min < precs[i]) {
-            prec_idx_min = i - 1;
-            break;
-        }
-    }
-    result[0] = prec_idx_min > 0 ? prec_idx_min : 0;
-
-    for (int64_t i = prec_idx_min; i < rec_bins; i++) {
-        if (prec_max < precs[i]) {
-            prec_idx_max = i + 1;
-            break;
-        }
-    }
-    result[1] = prec_idx_max <= prec_bins ? prec_idx_max : prec_bins;
-
-    const double ns_rec_sigma = n_sigmas * prec_rec[3];
-    const double rec_max = std::min(prec_rec[2] + ns_rec_sigma, 1. - max_rec_clip);
-    const double rec_min = std::max(prec_rec[2] - ns_rec_sigma, epsilon);
-    int64_t rec_idx_min = 0;
-    int64_t rec_idx_max = rec_bins;
-    for (int64_t i = 0; i < rec_bins; i++) {
-        if (rec_min < recs[i]) {
-            rec_idx_min = i - 1;
-            break;
-        }
-    }
-    result[2] = rec_idx_min > 0 ? rec_idx_min : 0;
-
-    for (int64_t i = rec_idx_min; i < rec_bins; i++) {
-        if (rec_max < recs[i]) {
-            rec_idx_max = i + 1;
-            break;
-        }
-    }
-    result[3] = rec_idx_max <= rec_bins ? rec_idx_max : rec_bins;
-}  // get_pr_grid_bounds
-
 }  // namespace details
 
 /* Compute the most conservative probabilities for a given confusion matrix constrained by precision and recall.
@@ -454,7 +262,7 @@ inline void multn_uncertainty_over_grid(
     std::array<double, 4> probas;
     double* p = probas.data();
 
-    std::array<int64_t, 6> bounds;
+    std::array<int64_t, 3> bounds;
     int64_t* idx_bounds = bounds.data();
 
     auto nll_store = prof_loglike_t();
@@ -591,6 +399,7 @@ inline void multn_uncertainty_over_grid_thresholds_mt(
         double prec;
         double score;
         int64_t idx;
+        int64_t odx;
         // -- memory allocation --
         const int64_t* lcm;
 
@@ -603,9 +412,10 @@ inline void multn_uncertainty_over_grid_thresholds_mt(
 
             for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max; i++) {
                 prec = prec_grid[i];
+                odx = i * n_rec_bins;
                 for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max; j++) {
                     score = prof_loglike(prec, rec_grid[j], nll_ptr, p);
-                    idx = (i * n_rec_bins) + j;
+                    idx = odx + j;
                     if (score < thread_block[idx]) {
                         thread_block[idx] = score;
                     }
