@@ -116,7 +116,7 @@ jobs:
       - name: Build and install
         run: |
           CXX=${{ matrix.config.cxx }} \
-          CMAKE_ARGS="-DMMU_ENABLE_INTERNAL_TESTS=ON" \
+          CMAKE_ARGS="-DMMU_ENABLE_INTERNAL_TESTS=ON -DMMU_CICD_MODE=ON" \
           pip install --verbose .
 
       - name: Unit test

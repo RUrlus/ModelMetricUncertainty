@@ -13,13 +13,10 @@ modification, are permitted according to the terms listed in the file
 LICENSE.
 """
 
-import re
+import os
 import sys
-import shutil
 import pybind11
-from pathlib import Path
 from setuptools import find_packages
-import skbuild
 from skbuild import setup
 
 NAME = 'mmu'

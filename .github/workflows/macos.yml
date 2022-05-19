@@ -61,7 +61,7 @@ jobs:
       run: python -m pip install --upgrade pip wheel setuptools pytest
 
     - name: Build and install
-      run: CXX=${{ matrix.config.cxx }} CMAKE_ARGS="-DMMU_ENABLE_INTERNAL_TESTS=ON" pip install --verbose .
+      run: CXX=${{ matrix.config.cxx }} CMAKE_ARGS="-DMMU_ENABLE_INTERNAL_TESTS=ON -DMMU_CICD_MODE=ON" pip install --verbose .
 
     - name: Unit test
       run: pytest tests
