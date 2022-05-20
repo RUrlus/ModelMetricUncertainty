@@ -129,9 +129,9 @@ inline i64arr confusion_matrix_runs(
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
     }
 
-    ssize_t n_obs_tmp;
-    ssize_t n_runs_tmp;
-    const ssize_t n_dim = y.ndim();
+    int64_t n_obs_tmp;
+    int64_t n_runs_tmp;
+    const int64_t n_dim = y.ndim();
 
     if (n_dim == 2) {
         n_obs_tmp = y.shape(obs_axis);
@@ -142,8 +142,8 @@ inline i64arr confusion_matrix_runs(
     }
 
     // copy to const help compiler optimisations below
-    const size_t n_obs = n_obs_tmp;
-    const ssize_t n_runs = n_runs_tmp;
+    const int64_t n_obs = n_obs_tmp;
+    const int64_t n_runs = n_runs_tmp;
 
     // get ptr
     T1* y_ptr = npy::get_data(y);
@@ -156,7 +156,7 @@ inline i64arr confusion_matrix_runs(
     #pragma omp parallel shared(n_obs, n_runs, y_ptr, score_ptr, threshold, cm_ptr)
     {
     #pragma omp for
-    for (ssize_t i = 0; i < n_runs; i++) {
+    for (int64_t i = 0; i < n_runs; i++) {
         // fill confusion matrix
         core::confusion_matrix<T1, T2>(
             n_obs,
@@ -192,9 +192,9 @@ inline i64arr confusion_matrix_runs(
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
     }
 
-    ssize_t n_obs_tmp;
-    ssize_t n_runs_tmp;
-    const ssize_t n_dim = y.ndim();
+    int64_t n_obs_tmp;
+    int64_t n_runs_tmp;
+    const int64_t n_dim = y.ndim();
 
     if (n_dim == 2) {
         n_obs_tmp = y.shape(obs_axis);
@@ -205,8 +205,8 @@ inline i64arr confusion_matrix_runs(
     }
 
     // copy to const help compiler optimisations below
-    const size_t n_obs = n_obs_tmp;
-    const size_t n_runs = n_runs_tmp;
+    const int64_t n_obs = n_obs_tmp;
+    const int64_t n_runs = n_runs_tmp;
 
     // get ptr
     T1* y_ptr = npy::get_data(y);
@@ -219,7 +219,7 @@ inline i64arr confusion_matrix_runs(
     #pragma omp parallel shared(n_obs, n_runs, y_ptr, yhat_ptr, cm_ptr)
     {
     #pragma omp for
-    for (size_t i = 0; i < n_runs; i++) {
+    for (int64_t i = 0; i < n_runs; i++) {
         core::confusion_matrix<T1, T2>(
             n_obs,
             y_ptr + (i * n_obs),
@@ -259,8 +259,8 @@ inline i64arr confusion_matrix_thresholds(
     }
 
     // guard against buffer overruns
-    const size_t n_obs = std::min(y.size(), score.size());
-    const size_t n_thresholds = thresholds.size();
+    const int64_t n_obs = std::min(y.size(), score.size());
+    const int64_t n_thresholds = thresholds.size();
 
     // allocate confusion_matrix
     auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_thresholds);
@@ -273,7 +273,7 @@ inline i64arr confusion_matrix_thresholds(
     {
 
     #pragma omp for
-    for (size_t i = 0; i < n_thresholds; i++) {
+    for (int64_t i = 0; i < n_thresholds; i++) {
         // fill confusion matrix
         core::confusion_matrix<T1, T2>(
             n_obs, y_ptr, score_ptr, threshold_ptr[i], cm_ptr + (i * 4)
@@ -321,10 +321,10 @@ inline i64arr confusion_matrix_runs_thresholds(
     T2* thresholds_ptr = npy::get_data<T2>(thresholds);
     int64_t* n_obs_ptr = npy::get_data(n_obs);
 
-    const size_t n_runs = n_obs.size();
-    const size_t n_thresholds = thresholds.size();
-    const size_t max_obs = *std::max_element(n_obs_ptr, n_obs_ptr + n_runs);
-    const size_t cm_offset = n_thresholds * 4;
+    const int64_t n_runs = n_obs.size();
+    const int64_t n_thresholds = thresholds.size();
+    const int64_t max_obs = *std::max_element(n_obs_ptr, n_obs_ptr + n_runs);
+    const int64_t cm_offset = n_thresholds * 4;
 
     // allocate confusion_matrix
     auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_thresholds * n_runs);
@@ -343,12 +343,12 @@ inline i64arr confusion_matrix_runs_thresholds(
     int64_t* o_cm_ptr;
 
     #pragma omp for
-    for (size_t r = 0; r < n_runs; r++) {
+    for (int64_t r = 0; r < n_runs; r++) {
         o_n_obs = n_obs_ptr[r];
         o_y_ptr = y_ptr + (r * max_obs);
         o_score_ptr = score_ptr + (r * max_obs);
         o_cm_ptr = cm_ptr + (r * cm_offset);
-        for (size_t i = 0; i < n_thresholds; i++) {
+        for (int64_t i = 0; i < n_thresholds; i++) {
             // fill confusion matrix
             core::confusion_matrix<T1, T2>(
                 o_n_obs,

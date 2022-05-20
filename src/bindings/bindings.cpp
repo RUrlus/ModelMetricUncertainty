@@ -57,7 +57,7 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
 #endif  // MMU_HAS_OPENMP_SUPPORT
     bind_simulated_multinomial_uncertainty(m);
 
-#if not defined OS_WIN
+#ifndef OS_WIN
   #ifdef VERSION_INFO
       m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
   #else

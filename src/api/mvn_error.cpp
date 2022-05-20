@@ -85,14 +85,14 @@ f64arr pr_mvn_error_runs(
     // allocate memory confusion_matrix
     int64_t* const cm_ptr = npy::get_data(conf_mat);;
 
-    const size_t n_runs = conf_mat.shape(0);
+    const int64_t n_runs = conf_mat.shape(0);
 
-    auto metrics = f64arr({n_runs, static_cast<size_t>(10)});
+    auto metrics = f64arr({n_runs, static_cast<int64_t>(10)});
     double* const metrics_ptr = npy::get_data(metrics);
 
     // compute metrics
     #pragma omp parallel for shared(cm_ptr, metrics_ptr)
-    for (size_t i = 0; i < n_runs; i++) {
+    for (int64_t i = 0; i < n_runs; i++) {
         core::pr_mvn_error(cm_ptr + (i * 4), metrics_ptr + (i * 10), alpha);
     }
     return metrics;
@@ -129,15 +129,15 @@ f64arr pr_curve_mvn_error(
     if (ndim > 2 || conf_mat.shape(1) != 4) {
         throw std::runtime_error("`conf_mat` should have shape (N, 4).");
     }
-    size_t n_mats = conf_mat.shape(0);
+    int64_t n_mats = conf_mat.shape(0);
     // allocate memory confusion_matrix
     int64_t* const cm_ptr = npy::get_data(conf_mat);;
 
-    auto metrics = f64arr({n_mats, static_cast<size_t>(10)});
+    auto metrics = f64arr({n_mats, static_cast<int64_t>(10)});
     double* const metrics_ptr = npy::get_data(metrics);
 
     #pragma omp parallel for shared(cm_ptr, metrics_ptr)
-    for (size_t i = 0; i < n_mats; i++) {
+    for (int64_t i = 0; i < n_mats; i++) {
         core::pr_mvn_error(cm_ptr + (i * 4), metrics_ptr + (i * 10), alpha);
     }
     return metrics;
@@ -206,14 +206,14 @@ f64arr pr_mvn_cov_runs(const i64arr& conf_mat) {
     // allocate memory confusion_matrix
     int64_t* const cm_ptr = npy::get_data(conf_mat);;
 
-    const size_t n_runs = conf_mat.shape(0);
+    const int64_t n_runs = conf_mat.shape(0);
 
-    auto metrics = f64arr({n_runs, static_cast<size_t>(6)});
+    auto metrics = f64arr({n_runs, static_cast<int64_t>(6)});
     double* const metrics_ptr = npy::get_data(metrics);
 
     // compute metrics
     #pragma omp parallel for shared(cm_ptr, metrics_ptr)
-    for (size_t i = 0; i < n_runs; i++) {
+    for (int64_t i = 0; i < n_runs; i++) {
         core::pr_mvn_cov(cm_ptr + (i * 4), metrics_ptr + (i * 6));
     }
     return metrics;
@@ -244,21 +244,19 @@ f64arr pr_curve_mvn_cov(const i64arr& conf_mat) {
     if (ndim > 2 || conf_mat.shape(1) != 4) {
         throw std::runtime_error("`conf_mat` should have shape (N, 4).");
     }
-    size_t n_mats = conf_mat.shape(0);
+    int64_t n_mats = conf_mat.shape(0);
     // allocate memory confusion_matrix
     int64_t* const cm_ptr = npy::get_data(conf_mat);;
 
-    auto metrics = f64arr({n_mats, static_cast<size_t>(6)});
+    auto metrics = f64arr({n_mats, static_cast<int64_t>(6)});
     double* const metrics_ptr = npy::get_data(metrics);
 
     #pragma omp parallel for shared(cm_ptr, metrics_ptr)
-    for (size_t i = 0; i < n_mats; i++) {
+    for (int64_t i = 0; i < n_mats; i++) {
         core::pr_mvn_cov(cm_ptr + (i * 4), metrics_ptr + (i * 6));
     }
     return metrics;
 }
-
-
 
 }  // namespace api
 }  // namespace mmu

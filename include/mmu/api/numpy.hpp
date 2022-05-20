@@ -246,7 +246,7 @@ inline bool all_finite(const py::array_t<T>& arr) {
         // slow path but one that handles non-contiguous and unaligned data
         return all_finite_strided(arr);
     }
-    const size_t N = arr.size();
+    const int64_t N = arr.size();
     T* data = get_data(arr);
     if (N < 100000) {
         size_t acc1 = 0;
@@ -262,7 +262,7 @@ inline bool all_finite(const py::array_t<T>& arr) {
     }
     size_t acc = 0;
     #pragma omp parallel for reduction(+: acc)
-    for (size_t i = 0; i < N; i++) {
+    for (int64_t i = 0; i < N; i++) {
         acc += isfinite(data[i]);
     }
     return acc == N;

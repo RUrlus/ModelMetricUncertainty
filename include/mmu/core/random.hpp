@@ -106,14 +106,14 @@ inline int64_t* generate_confusion_matrices(
 
 #if defined(MMU_HAS_OPENMP_SUPPORT)
 inline int64_t* generate_confusion_matrices_mt(
-    const size_t n_matrices,
-    const size_t N,
+    const int64_t n_matrices,
+    const int64_t N,
     const double* probas,
     const uint64_t seed = 0,
     int64_t* result = nullptr
 ) {
     if (!result) {
-        const size_t n_elem = n_matrices * 4;
+        const int64_t n_elem = n_matrices * 4;
         result = new int64_t[n_elem];
         zero_array(result, n_elem);
     }
@@ -127,13 +127,13 @@ inline int64_t* generate_confusion_matrices_mt(
 #pragma omp parallel shared(N, probas, result)
     {
         random::pcg64_dxsm rng = global_rng;
-        rng.set_stream(omp_get_thread_num() + 1);
+        rng.set_stream(static_cast<int>(omp_get_thread_num() + 1));
 
         auto binom_store = details::s_binomial_t();
         details::s_binomial_t* sptr = &binom_store;
 
 #pragma omp for
-        for (size_t i = 0; i < n_matrices; i++) {
+        for (int64_t i = 0; i < n_matrices; i++) {
         random::details::random_multinomial(rng, N, result + (i * 4), probas, 4, sptr);
         }
     }  // omp parallel
