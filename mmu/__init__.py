@@ -24,9 +24,11 @@ from mmu.metrics import pr_curve, precision_recall_curve
 from mmu.methods import PREU
 from mmu.methods import PRMU
 from mmu.methods import PRCMU
+from mmu.methods import PRCEU
 from mmu.methods import PrecisionRecallEllipticalUncertainty
 from mmu.methods import PrecisionRecallMultinomialUncertainty
 from mmu.methods import PrecisionRecallCurveMultinomialUncertainty
+from mmu.methods import PrecisionRecallCurveEllipticalUncertainty
 
 from mmu.commons.utils import generate_data
 
@@ -55,9 +57,11 @@ __all__ = [
     'PREU',
     'PRMU',
     'PRCMU',
+    'PRCEU',
     'PrecisionRecallEllipticalUncertainty',
     'PrecisionRecallMultinomialUncertainty',
     'PrecisionRecallCurveMultinomialUncertainty',
+    'PrecisionRecallCurveEllipticalUncertainty',
     # modules
     'metrics',
     'methods',

@@ -11,8 +11,6 @@ import mmu
 from mmu.commons._testing import generate_test_labels
 from mmu.commons._testing import greater_equal_tol
 
-from mmu import PRMU
-
 Y_DTYPES = [
     bool,
     np.bool_,
