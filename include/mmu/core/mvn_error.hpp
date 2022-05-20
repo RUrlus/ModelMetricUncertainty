@@ -5,11 +5,11 @@
 #ifndef INCLUDE_MMU_CORE_MVN_ERROR_HPP_
 #define INCLUDE_MMU_CORE_MVN_ERROR_HPP_
 
-#include <cmath>      // for sqrt
-#include <limits>     // for numeric_limits
-#include <cinttypes>  // for int64_t
-#include <algorithm>  // for max/min
-#include <stdexcept>  // for runtime_error
+#include <algorithm>    // for max/min
+#include <cinttypes>    // for int64_t
+#include <cmath>        // for sqrt
+#include <limits>       // for numeric_limits
+#include <stdexcept>    // for runtime_error
 #include <type_traits>  // for enable_if_t
 
 #include <mmu/core/common.hpp>
@@ -44,11 +44,8 @@ inline double norm_ppf(const T mu, const T sigma, const T p) {
  *    6 - variance of recall
  *    7 - covariance precision, recall
  */
-template<typename T, isInt<T> = true>
-inline void pr_mvn_cov(
-    T* __restrict const conf_mat,
-    double* __restrict const metrics
-) {
+template <typename T, isInt<T> = true>
+inline void pr_mvn_cov(T* __restrict const conf_mat, double* __restrict const metrics) {
     /*
      *                  pred
      *                0     1
@@ -62,7 +59,7 @@ inline void pr_mvn_cov(
      *  3 TP
      *
      */
-    const int64_t itp  = conf_mat[3];
+    const int64_t itp = conf_mat[3];
     const auto tp = static_cast<double>(itp);
 
     const int64_t itp_fn = conf_mat[2] + conf_mat[3];
@@ -80,10 +77,7 @@ inline void pr_mvn_cov(
         metrics[2] = 0.0;
     } else if (tp_fp_nonzero) {
         metrics[0] = tp / (tp_fp);
-        metrics[2] = (
-            static_cast<double>(conf_mat[3] * conf_mat[1]) /
-            static_cast<double>(std::pow(tp_fp, 3.0))
-        );
+        metrics[2] = (static_cast<double>(conf_mat[3] * conf_mat[1]) / static_cast<double>(std::pow(tp_fp, 3.0)));
     } else {
         // precision == 0
         metrics[0] = 0.0;
@@ -98,10 +92,7 @@ inline void pr_mvn_cov(
     } else if (tp_fn_nonzero) {
         metrics[1] = tp / (tp_fn);
         // rec_var
-        metrics[5] = (
-            static_cast<double>(conf_mat[3] * conf_mat[2]) /
-            static_cast<double>(std::pow(tp_fn, 3.0))
-        );
+        metrics[5] = (static_cast<double>(conf_mat[3] * conf_mat[2]) / static_cast<double>(std::pow(tp_fn, 3.0)));
     } else {
         // recall == 0.0
         metrics[1] = 0.0;
@@ -109,10 +100,8 @@ inline void pr_mvn_cov(
     }
 
     // covariance
-    metrics[3] = metrics[4] = (
-        static_cast<double>(itp * conf_mat[1] * conf_mat[2])
-        / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2))
-    );
+    metrics[3] = metrics[4]
+        = (static_cast<double>(itp * conf_mat[1] * conf_mat[2]) / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2)));
 }  // pr_mvn_error
 
 /* This function computes the uncertainty on the precision-recall curve
@@ -131,12 +120,8 @@ inline void pr_mvn_cov(
  *    8 - variance of recall
  *    9 - covariance precision, recall
  */
-template<typename T, isInt<T> = true>
-inline void pr_mvn_error(
-    T* __restrict const conf_mat,
-    double* __restrict const metrics,
-    double alpha
-) {
+template <typename T, isInt<T> = true>
+inline void pr_mvn_error(T* __restrict const conf_mat, double* __restrict const metrics, double alpha) {
     /*
      *                  pred
      *                0     1
@@ -152,7 +137,7 @@ inline void pr_mvn_error(
      */
     const double alpha_lb = alpha / 2;
     const double alpha_ub = 1.0 - alpha_lb;
-    const int64_t itp  = conf_mat[3];
+    const int64_t itp = conf_mat[3];
     const auto tp = static_cast<double>(itp);
 
     const int64_t itp_fn = conf_mat[2] + conf_mat[3];
@@ -173,10 +158,7 @@ inline void pr_mvn_error(
         metrics[6] = 0.;
     } else if (tp_fp_nonzero) {
         val = tp / (tp_fp);
-        val_var = (
-            static_cast<double>(conf_mat[3] * conf_mat[1]) /
-            static_cast<double>(std::pow(tp_fp, 3.0))
-        );
+        val_var = (static_cast<double>(conf_mat[3] * conf_mat[1]) / static_cast<double>(std::pow(tp_fp, 3.0)));
         val_sigma = std::sqrt(val_var);
         metrics[0] = val;
         metrics[1] = norm_ppf(val, val_sigma, alpha_lb);
@@ -197,10 +179,7 @@ inline void pr_mvn_error(
     } else if (tp_fn_nonzero) {
         val = tp / (tp_fn);
         // rec_var
-        val_var = (
-            static_cast<double>(conf_mat[3] * conf_mat[2]) /
-            static_cast<double>(std::pow(tp_fn, 3.0))
-        );
+        val_var = (static_cast<double>(conf_mat[3] * conf_mat[2]) / static_cast<double>(std::pow(tp_fn, 3.0)));
         val_sigma = std::sqrt(val_var);
         metrics[3] = val;
         metrics[4] = norm_ppf(val, val_sigma, alpha_lb);
@@ -213,17 +192,12 @@ inline void pr_mvn_error(
     }
 
     // covariance
-    metrics[7] = metrics[8] = (
-        static_cast<double>(itp * conf_mat[1] * conf_mat[2])
-        / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2))
-    );
+    metrics[7] = metrics[8]
+        = (static_cast<double>(itp * conf_mat[1] * conf_mat[2]) / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2)));
 }  // pr_mvn_error
 
-template<typename T, isInt<T> = true>
-inline void pr_mvn_sigma(
-    T* __restrict const conf_mat,
-    double* __restrict const metrics
-) {
+template <typename T, isInt<T> = true>
+inline void pr_mvn_sigma(T* __restrict const conf_mat, double* __restrict const metrics) {
     /*
      *                  pred
      *                0     1
@@ -237,7 +211,7 @@ inline void pr_mvn_sigma(
      *  3 TP
      *
      */
-    const int64_t itp  = conf_mat[3];
+    const int64_t itp = conf_mat[3];
     const auto tp = static_cast<double>(itp);
 
     const int64_t itp_fn = conf_mat[2] + conf_mat[3];
@@ -259,10 +233,8 @@ inline void pr_mvn_sigma(
         prec_sigma = std::sqrt((prec_for_sigma * (1 - prec_for_sigma)) / tp_fp);
     } else if (tp_fp_nonzero) {
         prec = tp / (tp_fp);
-        prec_sigma = std::sqrt(
-            static_cast<double>(conf_mat[3] * conf_mat[1]) /
-            static_cast<double>(std::pow(tp_fp, 3.0))
-        );
+        prec_sigma
+            = std::sqrt(static_cast<double>(conf_mat[3] * conf_mat[1]) / static_cast<double>(std::pow(tp_fp, 3.0)));
     } else {
         // precision == 0
         prec = 0.0;
@@ -282,10 +254,8 @@ inline void pr_mvn_sigma(
         rec_sigma = std::sqrt((rec_for_sigma * (1 - rec_for_sigma)) / tp_fn);
     } else if (tp_fn_nonzero) {
         rec = tp / (tp_fn);
-        rec_sigma = std::sqrt(
-            static_cast<double>(conf_mat[3] * conf_mat[2]) /
-            static_cast<double>(std::pow(tp_fn, 3.0))
-        );
+        rec_sigma
+            = std::sqrt(static_cast<double>(conf_mat[3] * conf_mat[2]) / static_cast<double>(std::pow(tp_fn, 3.0)));
     } else {
         // recall == 0.0
         rec = 0.0;

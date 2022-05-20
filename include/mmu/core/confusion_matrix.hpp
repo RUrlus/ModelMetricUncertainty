@@ -4,11 +4,11 @@
 #ifndef INCLUDE_MMU_CORE_CONFUSION_MATRIX_HPP_
 #define INCLUDE_MMU_CORE_CONFUSION_MATRIX_HPP_
 
-#include <cmath>
-#include <string>
-#include <limits>
-#include <cinttypes>
 #include <algorithm>
+#include <cinttypes>
+#include <cmath>
+#include <limits>
+#include <string>
 #include <type_traits>
 
 #include <mmu/core/common.hpp>
@@ -62,10 +62,11 @@ inline void confusion_matrix(
     const size_t n_obs,
     const bool* __restrict y,
     const bool* __restrict yhat,
-    int64_t* __restrict const conf_mat
-) {
+    int64_t* __restrict const conf_mat) {
     for (size_t i = 0; i < n_obs; i++) {
-        conf_mat[*y * 2 + *yhat]++; yhat++; y++;
+        conf_mat[*y * 2 + *yhat]++;
+        yhat++;
+        y++;
     }
 }
 
@@ -84,15 +85,16 @@ inline void confusion_matrix(
  * - yhat : estimated labels
  * - conf_mat : allocated and zero'd memory for the confusion matrix
  */
-template<typename T1, typename T2, isInt<T1> = true, isInt<T2> = true>
+template <typename T1, typename T2, isInt<T1> = true, isInt<T2> = true>
 inline void confusion_matrix(
     const size_t n_obs,
     const T1* __restrict y,
     const T2* __restrict yhat,
-    int64_t* __restrict const conf_mat
-) {
+    int64_t* __restrict const conf_mat) {
     for (size_t i = 0; i < n_obs; i++) {
-        conf_mat[static_cast<bool>(*y) * 2 + static_cast<bool>(*yhat)]++; yhat++; y++;
+        conf_mat[static_cast<bool>(*y) * 2 + static_cast<bool>(*yhat)]++;
+        yhat++;
+        y++;
     }
 }
 
@@ -111,17 +113,18 @@ inline void confusion_matrix(
  * - yhat : estimated labels
  * - conf_mat : allocated and zero'd memory for the confusion matrix
  */
-template<typename T1, typename T2, isFloat<T1> = true, isFloat<T2> = true>
+template <typename T1, typename T2, isFloat<T1> = true, isFloat<T2> = true>
 inline void confusion_matrix(
     const size_t n_obs,
     const T1* __restrict y,
     const T2* __restrict yhat,
-    int64_t* __restrict const conf_mat
-) {
+    int64_t* __restrict const conf_mat) {
     constexpr T1 epsilon_T1 = std::numeric_limits<T1>::epsilon();
     constexpr T2 epsilon_T2 = std::numeric_limits<T2>::epsilon();
     for (size_t i = 0; i < n_obs; i++) {
-        conf_mat[(*y > epsilon_T1) * 2 + (*yhat > epsilon_T2)]++; yhat++; y++;
+        conf_mat[(*y > epsilon_T1) * 2 + (*yhat > epsilon_T2)]++;
+        yhat++;
+        y++;
     }
 }
 
@@ -141,14 +144,13 @@ inline void confusion_matrix(
  * - threshold : inclusive classification threshold
  * - conf_mat : allocated and zero'd memory for the confusion matrix
  */
-template<typename T1, typename T2, isInt<T1> = true, isFloat<T2> = true>
+template <typename T1, typename T2, isInt<T1> = true, isFloat<T2> = true>
 inline void confusion_matrix(
     const size_t n_obs,
     const T1* __restrict y,
     const T2* __restrict score,
     const T2 threshold,
-    int64_t* __restrict const conf_mat
-) {
+    int64_t* __restrict const conf_mat) {
     for (size_t i = 0; i < n_obs; i++) {
         conf_mat[static_cast<bool>(*y) * 2 + greater_equal_tol(*score, threshold)]++;
         y++;
@@ -172,17 +174,18 @@ inline void confusion_matrix(
  * - threshold : inclusive classification threshold
  * - conf_mat : allocated and zero'd memory for the confusion matrix
  */
-template<typename T1, typename T2, isFloat<T1> = true, isFloat<T2> = true>
+template <typename T1, typename T2, isFloat<T1> = true, isFloat<T2> = true>
 inline void confusion_matrix(
     const size_t n_obs,
     const T1* __restrict y,
     const T2* __restrict score,
     const T2 threshold,
-    int64_t* __restrict const conf_mat
-) {
+    int64_t* __restrict const conf_mat) {
     constexpr T1 epsilon = std::numeric_limits<T1>::epsilon();
     for (size_t i = 0; i < n_obs; i++) {
-        conf_mat[(*y > epsilon) * 2 + greater_equal_tol(*score, threshold)]++; score++; y++;
+        conf_mat[(*y > epsilon) * 2 + greater_equal_tol(*score, threshold)]++;
+        score++;
+        y++;
     }
 }
 

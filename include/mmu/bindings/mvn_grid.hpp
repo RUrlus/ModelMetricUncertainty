@@ -4,8 +4,8 @@
 #ifndef INCLUDE_MMU_BINDINGS_MVN_GRID_HPP_
 #define INCLUDE_MMU_BINDINGS_MVN_GRID_HPP_
 
-#include <pybind11/pybind11.h> // for py::array
-#include <pybind11/numpy.h>  // for py::array
+#include <pybind11/numpy.h>     // for py::array
+#include <pybind11/pybind11.h>  // for py::array
 
 #include <mmu/api/mvn_grid.hpp>
 
@@ -14,9 +14,9 @@ namespace py = pybind11;
 namespace mmu {
 namespace bindings {
 
-void bind_mvn_uncertainty_over_grid(py::module &m);
-void bind_mvn_uncertainty_over_grid_thresholds(py::module &m);
-void bind_mvn_uncertainty_over_grid_thresholds_mt(py::module &m);
+void bind_mvn_uncertainty_over_grid(py::module& m);
+void bind_mvn_uncertainty_over_grid_thresholds(py::module& m);
+void bind_mvn_uncertainty_over_grid_thresholds_mt(py::module& m);
 
 }  // namespace bindings
 }  // namespace mmu

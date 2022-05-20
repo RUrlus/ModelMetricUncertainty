@@ -21,7 +21,7 @@ namespace py = pybind11;
 namespace mmu {
 namespace bindings {
 
-void bind_confusion_matrix(py::module &m) {
+void bind_confusion_matrix(py::module& m) {
     m.def(
         "confusion_matrix",
         [](const py::array_t<int64_t>& y, const py::array_t<int64_t>& yhat) {
@@ -42,50 +42,41 @@ void bind_confusion_matrix(py::module &m) {
             confusion matrix
         )pbdoc",
         py::arg("y"),
-        py::arg("yhat")
-    );
+        py::arg("yhat"));
     m.def(
         "confusion_matrix",
         [](const py::array_t<bool>& y, const py::array_t<bool>& yhat) {
             return api::confusion_matrix<bool, bool>(y, yhat);
         },
         py::arg("y"),
-        py::arg("yhat")
-    );
+        py::arg("yhat"));
     m.def(
         "confusion_matrix",
         [](const py::array_t<int64_t>& y, const py::array_t<bool>& yhat) {
             return api::confusion_matrix<int64_t, bool>(y, yhat);
         },
         py::arg("y"),
-        py::arg("yhat")
-    );
+        py::arg("yhat"));
     m.def(
         "confusion_matrix",
         [](const py::array_t<bool>& y, const py::array_t<int64_t>& yhat) {
             return api::confusion_matrix<bool, int64_t>(y, yhat);
         },
         py::arg("y"),
-        py::arg("yhat")
-    );
+        py::arg("yhat"));
     m.def(
         "confusion_matrix",
         [](const py::array_t<double>& y, const py::array_t<double>& yhat) {
             return api::confusion_matrix<double, double>(y, yhat);
         },
         py::arg("y"),
-        py::arg("yhat")
-    );
+        py::arg("yhat"));
 }
 
-void bind_confusion_matrix_runs(py::module &m) {
+void bind_confusion_matrix_runs(py::module& m) {
     m.def(
         "confusion_matrix_runs",
-        [](
-            const py::array_t<int64_t>& y,
-            const py::array_t<int64_t>& yhat,
-            const int obs_axis
-        ) {
+        [](const py::array_t<int64_t>& y, const py::array_t<int64_t>& yhat, const int obs_axis) {
             return api::confusion_matrix_runs<int64_t, int64_t>(y, yhat, obs_axis);
         },
         R"pbdoc(Compute binary Confusion Matrix given probabilities over multiple runs.
@@ -106,63 +97,42 @@ void bind_confusion_matrix_runs(py::module &m) {
         )pbdoc",
         py::arg("y"),
         py::arg("yhat"),
-        py::arg("obs_axis")
-    );
+        py::arg("obs_axis"));
     m.def(
         "confusion_matrix_runs",
-        [](
-            const py::array_t<bool>& y,
-            const py::array_t<bool>& yhat,
-            const int obs_axis
-        ) {
+        [](const py::array_t<bool>& y, const py::array_t<bool>& yhat, const int obs_axis) {
             return api::confusion_matrix_runs<bool, bool>(y, yhat, obs_axis);
         },
         py::arg("y"),
         py::arg("yhat"),
-        py::arg("obs_axis")
-    );
+        py::arg("obs_axis"));
     m.def(
         "confusion_matrix_runs",
-        [](
-            const py::array_t<int64_t>& y,
-            const py::array_t<bool>& yhat,
-            const int obs_axis
-        ) {
+        [](const py::array_t<int64_t>& y, const py::array_t<bool>& yhat, const int obs_axis) {
             return api::confusion_matrix_runs<int64_t, bool>(y, yhat, obs_axis);
         },
         py::arg("y"),
         py::arg("yhat"),
-        py::arg("obs_axis")
-    );
+        py::arg("obs_axis"));
     m.def(
         "confusion_matrix_runs",
-        [](
-            const py::array_t<bool>& y,
-            const py::array_t<int64_t>& yhat,
-            const int obs_axis
-        ) {
+        [](const py::array_t<bool>& y, const py::array_t<int64_t>& yhat, const int obs_axis) {
             return api::confusion_matrix_runs<bool, int64_t>(y, yhat, obs_axis);
         },
         py::arg("y"),
         py::arg("yhat"),
-        py::arg("obs_axis")
-    );
+        py::arg("obs_axis"));
     m.def(
         "confusion_matrix_runs",
-        [](
-            const py::array_t<double>& y,
-            const py::array_t<double>& yhat,
-            const int obs_axis
-        ) {
+        [](const py::array_t<double>& y, const py::array_t<double>& yhat, const int obs_axis) {
             return api::confusion_matrix_runs<double, double>(y, yhat, obs_axis);
         },
         py::arg("y"),
         py::arg("yhat"),
-        py::arg("obs_axis")
-    );
+        py::arg("obs_axis"));
 }
 
-void bind_confusion_matrix_score(py::module &m) {
+void bind_confusion_matrix_score(py::module& m) {
     m.def(
         "confusion_matrix_score",
         [](const py::array_t<int64_t>& y, const py::array_t<double>& score, const double threshold) {
@@ -186,8 +156,7 @@ void bind_confusion_matrix_score(py::module &m) {
         )pbdoc",
         py::arg("y"),
         py::arg("score").noconvert(),
-        py::arg("threshold")
-    );
+        py::arg("threshold"));
     m.def(
         "confusion_matrix_score",
         [](const py::array_t<bool>& y, const py::array_t<double>& score, const double threshold) {
@@ -195,8 +164,7 @@ void bind_confusion_matrix_score(py::module &m) {
         },
         py::arg("y"),
         py::arg("score").noconvert(),
-        py::arg("threshold")
-    );
+        py::arg("threshold"));
     m.def(
         "confusion_matrix_score",
         [](const py::array_t<double>& y, const py::array_t<double>& score, const double threshold) {
@@ -204,8 +172,7 @@ void bind_confusion_matrix_score(py::module &m) {
         },
         py::arg("y"),
         py::arg("score").noconvert(),
-        py::arg("threshold")
-    );
+        py::arg("threshold"));
     m.def(
         "confusion_matrix_score",
         [](const py::array_t<int64_t>& y, const py::array_t<float>& score, const double threshold) {
@@ -213,8 +180,7 @@ void bind_confusion_matrix_score(py::module &m) {
         },
         py::arg("y"),
         py::arg("score").noconvert(),
-        py::arg("threshold")
-    );
+        py::arg("threshold"));
     m.def(
         "confusion_matrix_score",
         [](const py::array_t<bool>& y, const py::array_t<float>& score, const double threshold) {
@@ -222,8 +188,7 @@ void bind_confusion_matrix_score(py::module &m) {
         },
         py::arg("y"),
         py::arg("score").noconvert(),
-        py::arg("threshold")
-    );
+        py::arg("threshold"));
     m.def(
         "confusion_matrix_score",
         [](const py::array_t<float>& y, const py::array_t<float>& score, const double threshold) {
@@ -231,21 +196,16 @@ void bind_confusion_matrix_score(py::module &m) {
         },
         py::arg("y"),
         py::arg("score").noconvert(),
-        py::arg("threshold")
-    );
+        py::arg("threshold"));
 }
 
-void bind_confusion_matrix_score_runs(py::module &m) {
+void bind_confusion_matrix_score_runs(py::module& m) {
     m.def(
         "confusion_matrix_score_runs",
-        [](
-            const py::array_t<int64_t>& y,
-            const py::array_t<double>& score,
-            const double threshold,
-            const int obs_axis
-        ) {
-            return api::confusion_matrix_runs<int64_t, double>(y, score, threshold, obs_axis);
-        },
+        [](const py::array_t<int64_t>& y,
+           const py::array_t<double>& score,
+           const double threshold,
+           const int obs_axis) { return api::confusion_matrix_runs<int64_t, double>(y, score, threshold, obs_axis); },
         R"pbdoc(Compute binary Confusion Matrix given probabilities over multiple runs.
 
         Parameters
@@ -267,93 +227,58 @@ void bind_confusion_matrix_score_runs(py::module &m) {
         py::arg("y"),
         py::arg("score").noconvert(),
         py::arg("threshold"),
-        py::arg("obs_axis")
-    );
+        py::arg("obs_axis"));
     m.def(
         "confusion_matrix_score_runs",
-        [](
-            const py::array_t<bool>& y,
-            const py::array_t<double>& score,
-            const double threshold,
-            const int obs_axis
-        ) {
+        [](const py::array_t<bool>& y, const py::array_t<double>& score, const double threshold, const int obs_axis) {
             return api::confusion_matrix_runs<bool, double>(y, score, threshold, obs_axis);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
         py::arg("threshold"),
-        py::arg("obs_axis")
-    );
+        py::arg("obs_axis"));
     m.def(
         "confusion_matrix_score_runs",
-        [](
-            const py::array_t<double>& y,
-            const py::array_t<double>& score,
-            const double threshold,
-            const int obs_axis
-        ) {
+        [](const py::array_t<double>& y, const py::array_t<double>& score, const double threshold, const int obs_axis) {
             return api::confusion_matrix_runs<double, double>(y, score, threshold, obs_axis);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
         py::arg("threshold"),
-        py::arg("obs_axis")
-    );
+        py::arg("obs_axis"));
     m.def(
         "confusion_matrix_score_runs",
-        [](
-            const py::array_t<int64_t>& y,
-            const py::array_t<float>& score,
-            const double threshold,
-            const int obs_axis
-        ) {
+        [](const py::array_t<int64_t>& y, const py::array_t<float>& score, const double threshold, const int obs_axis) {
             return api::confusion_matrix_runs<int64_t, float>(y, score, threshold, obs_axis);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
         py::arg("threshold"),
-        py::arg("obs_axis")
-    );
+        py::arg("obs_axis"));
     m.def(
         "confusion_matrix_score_runs",
-        [](
-            const py::array_t<bool>& y,
-            const py::array_t<float>& score,
-            const double threshold,
-            const int obs_axis
-        ) {
+        [](const py::array_t<bool>& y, const py::array_t<float>& score, const double threshold, const int obs_axis) {
             return api::confusion_matrix_runs<float, float>(y, score, threshold, obs_axis);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
         py::arg("threshold"),
-        py::arg("obs_axis")
-    );
+        py::arg("obs_axis"));
     m.def(
         "confusion_matrix_score_runs",
-        [](
-            const py::array_t<float>& y,
-            const py::array_t<float>& score,
-            const double threshold,
-            const int obs_axis
-        ) {
+        [](const py::array_t<float>& y, const py::array_t<float>& score, const double threshold, const int obs_axis) {
             return api::confusion_matrix_runs<float, float>(y, score, threshold, obs_axis);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
         py::arg("threshold"),
-        py::arg("obs_axis")
-    );
+        py::arg("obs_axis"));
 }
 
-void bind_confusion_matrix_thresholds(py::module &m) {
+void bind_confusion_matrix_thresholds(py::module& m) {
     m.def(
         "confusion_matrix_thresholds",
-        [](
-            const py::array_t<int64_t>& y,
-            const py::array_t<double>& score,
-            const py::array_t<double>& thresholds
-        ) {
+        [](const py::array_t<int64_t>& y, const py::array_t<double>& score, const py::array_t<double>& thresholds) {
             return api::confusion_matrix_thresholds<int64_t, double>(y, score, thresholds);
         },
         R"pbdoc(Compute binary Confusion Matrix given probabilities over multiple thresholds.
@@ -374,87 +299,57 @@ void bind_confusion_matrix_thresholds(py::module &m) {
         )pbdoc",
         py::arg("y"),
         py::arg("score").noconvert(),
-        py::arg("thresholds")
-    );
+        py::arg("thresholds"));
     m.def(
         "confusion_matrix_thresholds",
-        [](
-            const py::array_t<bool>& y,
-            const py::array_t<double>& score,
-            const py::array_t<double>& thresholds
-        ) {
+        [](const py::array_t<bool>& y, const py::array_t<double>& score, const py::array_t<double>& thresholds) {
             return api::confusion_matrix_thresholds<bool, double>(y, score, thresholds);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
-        py::arg("thresholds")
-    );
+        py::arg("thresholds"));
     m.def(
         "confusion_matrix_thresholds",
-        [](
-            const py::array_t<double>& y,
-            const py::array_t<double>& score,
-            const py::array_t<double>& thresholds
-        ) {
+        [](const py::array_t<double>& y, const py::array_t<double>& score, const py::array_t<double>& thresholds) {
             return api::confusion_matrix_thresholds<double, double>(y, score, thresholds);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
-        py::arg("thresholds")
-    );
+        py::arg("thresholds"));
     m.def(
         "confusion_matrix_thresholds",
-        [](
-            const py::array_t<int64_t>& y,
-            const py::array_t<float>& score,
-            const py::array_t<float>& thresholds
-        ) {
+        [](const py::array_t<int64_t>& y, const py::array_t<float>& score, const py::array_t<float>& thresholds) {
             return api::confusion_matrix_thresholds<int64_t, float>(y, score, thresholds);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
-        py::arg("thresholds")
-    );
+        py::arg("thresholds"));
     m.def(
         "confusion_matrix_thresholds",
-        [](
-            const py::array_t<bool>& y,
-            const py::array_t<float>& score,
-            const py::array_t<float>& thresholds
-        ) {
+        [](const py::array_t<bool>& y, const py::array_t<float>& score, const py::array_t<float>& thresholds) {
             return api::confusion_matrix_thresholds<bool, float>(y, score, thresholds);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
-        py::arg("thresholds")
-    );
+        py::arg("thresholds"));
     m.def(
         "confusion_matrix_thresholds",
-        [](
-            const py::array_t<float>& y,
-            const py::array_t<float>& score,
-            const py::array_t<float> thresholds
-        ) {
+        [](const py::array_t<float>& y, const py::array_t<float>& score, const py::array_t<float> thresholds) {
             return api::confusion_matrix_thresholds<float, float>(y, score, thresholds);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
-        py::arg("thresholds")
-    );
+        py::arg("thresholds"));
 }
 
-void bind_confusion_matrix_runs_thresholds(py::module &m) {
+void bind_confusion_matrix_runs_thresholds(py::module& m) {
     m.def(
         "confusion_matrix_runs_thresholds",
-        [](
-            const py::array_t<int64_t>& y,
-            const py::array_t<double>& score,
-            const py::array_t<double>& thresholds,
-            const py::array_t<int64_t>& n_obs
-        ) {
-            return api::confusion_matrix_runs_thresholds<int64_t, double>(
-                y, score, thresholds, n_obs
-            );
+        [](const py::array_t<int64_t>& y,
+           const py::array_t<double>& score,
+           const py::array_t<double>& thresholds,
+           const py::array_t<int64_t>& n_obs) {
+            return api::confusion_matrix_runs_thresholds<int64_t, double>(y, score, thresholds, n_obs);
         },
         R"pbdoc(Compute binary Confusion Matrix given probabilities over multiple thresholds and runs.
 
@@ -478,93 +373,67 @@ void bind_confusion_matrix_runs_thresholds(py::module &m) {
         py::arg("y"),
         py::arg("score").noconvert(),
         py::arg("thresholds"),
-        py::arg("n_obs")
-    );
+        py::arg("n_obs"));
     m.def(
         "confusion_matrix_runs_thresholds",
-        [](
-            const py::array_t<bool>& y,
-            const py::array_t<double>& score,
-            const py::array_t<double>& thresholds,
-            const py::array_t<int64_t>& n_obs
-        ) {
-            return api::confusion_matrix_runs_thresholds<bool, double>(
-                y, score, thresholds, n_obs
-            );
+        [](const py::array_t<bool>& y,
+           const py::array_t<double>& score,
+           const py::array_t<double>& thresholds,
+           const py::array_t<int64_t>& n_obs) {
+            return api::confusion_matrix_runs_thresholds<bool, double>(y, score, thresholds, n_obs);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
         py::arg("thresholds"),
-        py::arg("n_obs")
-    );
+        py::arg("n_obs"));
     m.def(
         "confusion_matrix_runs_thresholds",
-        [](
-            const py::array_t<double>& y,
-            const py::array_t<double>& score,
-            const py::array_t<double>& thresholds,
-            const py::array_t<int64_t>& n_obs
-        ) {
-            return api::confusion_matrix_runs_thresholds<double, double>(
-                y, score, thresholds, n_obs
-            );
+        [](const py::array_t<double>& y,
+           const py::array_t<double>& score,
+           const py::array_t<double>& thresholds,
+           const py::array_t<int64_t>& n_obs) {
+            return api::confusion_matrix_runs_thresholds<double, double>(y, score, thresholds, n_obs);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
         py::arg("thresholds"),
-        py::arg("n_obs")
-    );
+        py::arg("n_obs"));
     m.def(
         "confusion_matrix_runs_thresholds",
-        [](
-            const py::array_t<int64_t>& y,
-            const py::array_t<float>& score,
-            const py::array_t<float>& thresholds,
-            const py::array_t<int64_t>& n_obs
-        ) {
-            return api::confusion_matrix_runs_thresholds<int64_t, float>(
-                y, score, thresholds, n_obs
-            );
+        [](const py::array_t<int64_t>& y,
+           const py::array_t<float>& score,
+           const py::array_t<float>& thresholds,
+           const py::array_t<int64_t>& n_obs) {
+            return api::confusion_matrix_runs_thresholds<int64_t, float>(y, score, thresholds, n_obs);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
         py::arg("thresholds"),
-        py::arg("n_obs")
-    );
+        py::arg("n_obs"));
     m.def(
         "confusion_matrix_runs_thresholds",
-        [](
-            const py::array_t<bool>& y,
-            const py::array_t<float>& score,
-            const py::array_t<float>& thresholds,
-            const py::array_t<int64_t>& n_obs
-        ) {
-            return api::confusion_matrix_runs_thresholds<bool, float>(
-                y, score, thresholds, n_obs
-            );
+        [](const py::array_t<bool>& y,
+           const py::array_t<float>& score,
+           const py::array_t<float>& thresholds,
+           const py::array_t<int64_t>& n_obs) {
+            return api::confusion_matrix_runs_thresholds<bool, float>(y, score, thresholds, n_obs);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
         py::arg("thresholds"),
-        py::arg("n_obs")
-    );
+        py::arg("n_obs"));
     m.def(
         "confusion_matrix_runs_thresholds",
-        [](
-            const py::array_t<float>& y,
-            const py::array_t<float>& score,
-            const py::array_t<float>& thresholds,
-            const py::array_t<int64_t>& n_obs
-        ) {
-            return api::confusion_matrix_runs_thresholds<float, float>(
-                y, score, thresholds, n_obs
-            );
+        [](const py::array_t<float>& y,
+           const py::array_t<float>& score,
+           const py::array_t<float>& thresholds,
+           const py::array_t<int64_t>& n_obs) {
+            return api::confusion_matrix_runs_thresholds<float, float>(y, score, thresholds, n_obs);
         },
         py::arg("y"),
         py::arg("score").noconvert(),
         py::arg("thresholds"),
-        py::arg("n_obs")
-    );
+        py::arg("n_obs"));
 }
 
 }  // namespace bindings

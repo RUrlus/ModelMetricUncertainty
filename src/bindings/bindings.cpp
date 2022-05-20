@@ -3,13 +3,13 @@
  */
 #include <pybind11/pybind11.h>
 
-#include <mmu/core/common.hpp>
 #include <mmu/bindings/confusion_matrix.hpp>
 #include <mmu/bindings/metrics.hpp>
-#include <mmu/bindings/utils.hpp>
+#include <mmu/bindings/multn_loglike.hpp>
 #include <mmu/bindings/mvn_error.hpp>
 #include <mmu/bindings/mvn_grid.hpp>
-#include <mmu/bindings/multn_loglike.hpp>
+#include <mmu/bindings/utils.hpp>
+#include <mmu/core/common.hpp>
 
 namespace py = pybind11;
 
@@ -58,11 +58,11 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_simulated_multinomial_uncertainty(m);
 
 #ifndef OS_WIN
-  #ifdef VERSION_INFO
-      m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
-  #else
-      m.attr("__version__") = "dev";
-  #endif
+#ifdef VERSION_INFO
+    m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
+#else
+    m.attr("__version__") = "dev";
+#endif
 #endif
 }
 

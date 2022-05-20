@@ -53,8 +53,8 @@ f64arr precision_recall_2d(const i64arr& conf_mat, const double fill) {
 
     int64_t* const cm_ptr = npy::get_data(conf_mat);
     double* const metrics_ptr = npy::get_data(metrics);
-    // compute metrics
-    #pragma omp parallel for shared(cm_ptr, metrics_ptr)
+// compute metrics
+#pragma omp parallel for shared(cm_ptr, metrics_ptr)
     for (int64_t i = 0; i < n_obs; i++) {
         core::precision_recall(cm_ptr + (i * 4), metrics_ptr + (i * 2), fill);
     }
@@ -86,7 +86,7 @@ f64arr precision_recall_flattened(const i64arr& conf_mat, const double fill) {
     auto metrics = py::array_t<double>(n_conf_mats * static_cast<int64_t>(2));
     double* const metrics_ptr = npy::get_data(metrics);
 
-    #pragma omp parallel for shared(cm_ptr, metrics_ptr)
+#pragma omp parallel for shared(cm_ptr, metrics_ptr)
     for (int64_t i = 0; i < n_conf_mats; i++) {
         // compute metrics
         core::precision_recall(cm_ptr + (i * 4), metrics_ptr + (i * 2), fill);
@@ -139,14 +139,13 @@ f64arr binary_metrics_2d(const i64arr& conf_mat, const double fill) {
     auto metrics = py::array_t<double>({n_obs, static_cast<int64_t>(10)});
     double* const metrics_ptr = npy::get_data(metrics);
 
-    // compute metrics
-    #pragma omp parallel for shared(cm_ptr, metrics_ptr)
+// compute metrics
+#pragma omp parallel for shared(cm_ptr, metrics_ptr)
     for (int64_t i = 0; i < n_obs; i++) {
         core::binary_metrics(cm_ptr + (i * 4), metrics_ptr + (i * 10), fill);
     }
     return metrics;
 }
-
 
 /* Compute the binary metrics given N confusion matrices in a flattened shape.
  *
@@ -173,7 +172,7 @@ f64arr binary_metrics_flattened(const i64arr& conf_mat, const double fill) {
     auto metrics = py::array_t<double>(n_conf_mats * static_cast<int64_t>(10));
     double* const metrics_ptr = npy::get_data(metrics);
 
-    #pragma omp parallel for shared(cm_ptr, metrics_ptr)
+#pragma omp parallel for shared(cm_ptr, metrics_ptr)
     for (int64_t i = 0; i < n_conf_mats; i++) {
         // compute metrics
         core::binary_metrics(cm_ptr + (i * 4), metrics_ptr + (i * 10), fill);

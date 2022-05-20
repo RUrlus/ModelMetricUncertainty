@@ -54,7 +54,7 @@ IF (MMU_ENABLE_OPENMP)
 ELSEIF (MMU_DISABLE_OPENMP)
     message(STATUS "mmu: OpenMP is disabled")
 ELSE ()
-    FIND_PACKAGE(OpenMP QUIET)
+    FIND_PACKAGE(OpenMP)
 ENDIF ()
 
 ################################################################################

@@ -8,19 +8,18 @@
  * to prevent link with pythonXX_d.lib on Win32
  * (cf Py_DEBUG defined in numpy headers and https://github.com/pybind/pybind11/issues/1295)
  */
-#include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>  // for py::array_t
+#include <pybind11/pybind11.h>
 #define NPY_NO_DEPRECATED_API NPY_1_18_API_VERSION
-#include <Python.h>  // for PyObject
-#include <numpy/npy_math.h> // for isfinite
-#include <numpy/arrayobject.h>  // for PyArrayObject
-#include <numpy/ndarraytypes.h> // for PyArray_*
+#include <Python.h>              // for PyObject
+#include <numpy/arrayobject.h>   // for PyArrayObject
+#include <numpy/ndarraytypes.h>  // for PyArray_*
+#include <numpy/npy_math.h>      // for isfinite
 
-#include <algorithm> // for min_element, max_element, sort
-#include <cstring> // for memset
+#include <algorithm>  // for min_element, max_element, sort
+#include <cstring>    // for memset
+#include <utility>    // for swap
 #include <vector>
-#include <utility> // for swap
-
 
 #include <mmu/core/common.hpp>
 
@@ -30,10 +29,7 @@ namespace mmu {
 namespace npc {
 
 inline bool is_f_contiguous(PyObject* src) {
-    return PyArray_CHKFLAGS(
-        reinterpret_cast<PyArrayObject*>(src),
-        NPY_ARRAY_F_CONTIGUOUS
-    );
+    return PyArray_CHKFLAGS(reinterpret_cast<PyArrayObject*>(src), NPY_ARRAY_F_CONTIGUOUS);
 }
 
 inline bool is_f_contiguous(PyArrayObject* src) {
@@ -41,10 +37,7 @@ inline bool is_f_contiguous(PyArrayObject* src) {
 }
 
 inline bool is_c_contiguous(PyObject* src) {
-    return PyArray_CHKFLAGS(
-        reinterpret_cast<PyArrayObject*>(src),
-        NPY_ARRAY_C_CONTIGUOUS
-    );
+    return PyArray_CHKFLAGS(reinterpret_cast<PyArrayObject*>(src), NPY_ARRAY_C_CONTIGUOUS);
 }
 
 inline bool is_c_contiguous(PyArrayObject* src) {
@@ -53,17 +46,11 @@ inline bool is_c_contiguous(PyArrayObject* src) {
 
 inline bool is_contiguous(PyObject* src) {
     auto arr = reinterpret_cast<PyArrayObject*>(src);
-    return (
-        PyArray_CHKFLAGS(arr, NPY_ARRAY_C_CONTIGUOUS)
-        || PyArray_CHKFLAGS(arr, NPY_ARRAY_F_CONTIGUOUS)
-    );
+    return (PyArray_CHKFLAGS(arr, NPY_ARRAY_C_CONTIGUOUS) || PyArray_CHKFLAGS(arr, NPY_ARRAY_F_CONTIGUOUS));
 }
 
 inline bool is_contiguous(PyArrayObject* arr) {
-    return (
-        PyArray_CHKFLAGS(arr, NPY_ARRAY_C_CONTIGUOUS)
-        || PyArray_CHKFLAGS(arr, NPY_ARRAY_F_CONTIGUOUS)
-    );
+    return (PyArray_CHKFLAGS(arr, NPY_ARRAY_C_CONTIGUOUS) || PyArray_CHKFLAGS(arr, NPY_ARRAY_F_CONTIGUOUS));
 }
 
 inline bool is_aligned(PyObject* src) {
@@ -79,15 +66,13 @@ inline bool is_well_behaved(PyObject* src) {
     auto arr = reinterpret_cast<PyArrayObject*>(src);
     return (
         PyArray_CHKFLAGS(arr, NPY_ARRAY_ALIGNED | NPY_ARRAY_C_CONTIGUOUS)
-        || PyArray_CHKFLAGS(arr, NPY_ARRAY_ALIGNED | NPY_ARRAY_F_CONTIGUOUS)
-    );
+        || PyArray_CHKFLAGS(arr, NPY_ARRAY_ALIGNED | NPY_ARRAY_F_CONTIGUOUS));
 }
 
 inline bool is_well_behaved(PyArrayObject* arr) {
     return (
         PyArray_CHKFLAGS(arr, NPY_ARRAY_ALIGNED & NPY_ARRAY_C_CONTIGUOUS)
-        || PyArray_CHKFLAGS(arr, NPY_ARRAY_ALIGNED & NPY_ARRAY_F_CONTIGUOUS)
-    );
+        || PyArray_CHKFLAGS(arr, NPY_ARRAY_ALIGNED & NPY_ARRAY_F_CONTIGUOUS));
 }
 
 inline void* get_data(PyObject* src) {
@@ -155,9 +140,7 @@ inline py::array_t<T> allocate_confusion_matrix() {
 
 /* allocate n_matrices x 4 shaped array and zero it*/
 template <typename T>
-inline py::array_t<T> allocate_n_confusion_matrices(
-    const ssize_t n_matrices
-) {
+inline py::array_t<T> allocate_n_confusion_matrices(const ssize_t n_matrices) {
     // allocate memory confusion_matrix
     auto conf_mat = py::array_t<T>({n_matrices, static_cast<ssize_t>(4)});
     // zero the memory of the confusion_matrix
@@ -193,11 +176,7 @@ inline bool all_finite_strided(const py::array_t<T>& arr) {
     // argsort the strides
     std::vector<size_t> idx(3);
     std::iota(idx.begin(), idx.end(), 0);
-    std::sort(
-        idx.begin(),
-        idx.begin() + ndim,
-        [&](size_t i1, size_t i2) {return strides[i1] < strides[i2];}
-    );
+    std::sort(idx.begin(), idx.begin() + ndim, [&](size_t i1, size_t i2) { return strides[i1] < strides[i2]; });
 
     int s0 = strides[idx[0]];
     size_t acc = 0;
@@ -216,9 +195,9 @@ inline bool all_finite_strided(const py::array_t<T>& arr) {
             for (size_t j = 0; j < n0; j++) {
                 acc += isfinite(*reinterpret_cast<T*>(ptr));
                 ptr += s0;
-            } // row loop
+            }  // row loop
             ptr += s1;
-        } // column loop
+        }  // column loop
     } else if (ndim == 3) {
         const size_t n0 = dims[idx[0]];
         const size_t n1 = dims[idx[1]];
@@ -231,11 +210,11 @@ inline bool all_finite_strided(const py::array_t<T>& arr) {
                 for (size_t k = 0; k < n0; k++) {
                     acc += isfinite(*reinterpret_cast<T*>(ptr));
                     ptr += s0;
-                } // row loop
+                }  // row loop
                 ptr += s1;
-            } // column loop
+            }  // column loop
             ptr += s2;
-        } // slice loop
+        }  // slice loop
     }
     return acc == N;
 }
@@ -249,19 +228,21 @@ inline bool all_finite(const py::array_t<T>& arr) {
     const int64_t N = arr.size();
     T* data = get_data(arr);
     if (N < 100000) {
-        size_t acc1 = 0;
-        size_t acc2 = 0;
-        for (size_t i = 1; i < N; i+=2) {
-            acc1 += isfinite(*data); data++;
-            acc2 += isfinite(*data); data++;
+        int64_t acc1 = 0;
+        int64_t acc2 = 0;
+        for (int64_t i = 1; i < N; i += 2) {
+            acc1 += isfinite(*data);
+            data++;
+            acc2 += isfinite(*data);
+            data++;
         }
         if (N & 1) {
             acc1 += isfinite(*data);
         }
         return (acc1 + acc2) == N;
     }
-    size_t acc = 0;
-    #pragma omp parallel for reduction(+: acc)
+    int64_t acc = 0;
+#pragma omp parallel for reduction(+ : acc)
     for (int64_t i = 0; i < N; i++) {
         acc += isfinite(data[i]);
     }
