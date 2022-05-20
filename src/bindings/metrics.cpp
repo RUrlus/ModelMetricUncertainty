@@ -10,7 +10,7 @@ namespace py = pybind11;
 namespace mmu {
 namespace bindings {
 
-void bind_precision_recall(py::module &m) {
+void bind_precision_recall(py::module& m) {
     m.def(
         "precision_recall",
         &api::precision_recall,
@@ -32,11 +32,10 @@ void bind_precision_recall(py::module &m) {
         metrics : np.array[np.float64]
         )pbdoc",
         py::arg("conf_mat"),
-        py::arg("fill") = 0.
-    );
+        py::arg("fill") = 0.);
 }
 
-void bind_precision_recall_2d(py::module &m) {
+void bind_precision_recall_2d(py::module& m) {
     m.def(
         "precision_recall_2d",
         &api::precision_recall_2d,
@@ -60,11 +59,10 @@ void bind_precision_recall_2d(py::module &m) {
         metrics : np.array[np.float64]
         )pbdoc",
         py::arg("conf_mat"),
-        py::arg("fill") = 0.
-    );
+        py::arg("fill") = 0.);
 }
 
-void bind_precision_recall_flattened(py::module &m) {
+void bind_precision_recall_flattened(py::module& m) {
     m.def(
         "precision_recall_flattened",
         &api::binary_metrics_flattened,
@@ -88,11 +86,10 @@ void bind_precision_recall_flattened(py::module &m) {
         metrics : np.array[np.float64]
         )pbdoc",
         py::arg("conf_mat"),
-        py::arg("fill") = 0.
-    );
+        py::arg("fill") = 0.);
 }
 
-void bind_binary_metrics(py::module &m) {
+void bind_binary_metrics(py::module& m) {
     m.def(
         "binary_metrics",
         &api::binary_metrics,
@@ -123,11 +120,10 @@ void bind_binary_metrics(py::module &m) {
         metrics : np.array[np.float64]
         )pbdoc",
         py::arg("conf_mat"),
-        py::arg("fill") = 0.
-    );
+        py::arg("fill") = 0.);
 }
 
-void bind_binary_metrics_2d(py::module &m) {
+void bind_binary_metrics_2d(py::module& m) {
     m.def(
         "binary_metrics_2d",
         &api::binary_metrics_2d,
@@ -159,11 +155,10 @@ void bind_binary_metrics_2d(py::module &m) {
         metrics : np.array[np.float64]
         )pbdoc",
         py::arg("conf_mat"),
-        py::arg("fill") = 0.
-    );
+        py::arg("fill") = 0.);
 }
 
-void bind_binary_metrics_flattened(py::module &m) {
+void bind_binary_metrics_flattened(py::module& m) {
     m.def(
         "binary_metrics_flattened",
         &api::binary_metrics_flattened,
@@ -195,8 +190,7 @@ void bind_binary_metrics_flattened(py::module &m) {
         metrics : np.array[np.float64]
         )pbdoc",
         py::arg("conf_mat"),
-        py::arg("fill") = 0.
-    );
+        py::arg("fill") = 0.);
 }
 
 }  // namespace bindings

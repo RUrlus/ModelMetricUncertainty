@@ -9,7 +9,7 @@ namespace py = pybind11;
 namespace mmu {
 namespace bindings {
 
-void bind_pr_mvn_error(py::module &m) {
+void bind_pr_mvn_error(py::module& m) {
     m.def(
         "pr_mvn_error",
         &api::pr_mvn_error,
@@ -36,11 +36,10 @@ void bind_pr_mvn_error(py::module &m) {
                 9. V[recall]
         )pbdoc",
         py::arg("conf_mat"),
-        py::arg("alpha")
-    );
+        py::arg("alpha"));
 }
 
-void bind_pr_mvn_error_runs(py::module &m) {
+void bind_pr_mvn_error_runs(py::module& m) {
     m.def(
         "pr_mvn_error_runs",
         &api::pr_mvn_error_runs,
@@ -67,11 +66,10 @@ void bind_pr_mvn_error_runs(py::module &m) {
                 9. V[recall]
         )pbdoc",
         py::arg("conf_mat"),
-        py::arg("alpha")
-    );
+        py::arg("alpha"));
 }
 
-void bind_pr_curve_mvn_error(py::module &m) {
+void bind_pr_curve_mvn_error(py::module& m) {
     m.def(
         "pr_curve_mvn_error",
         &api::pr_curve_mvn_error,
@@ -98,11 +96,10 @@ void bind_pr_curve_mvn_error(py::module &m) {
                 9. V[recall]
         )pbdoc",
         py::arg("conf_mat"),
-        py::arg("alpha")
-    );
+        py::arg("alpha"));
 }
 
-void bind_pr_mvn_cov(py::module &m) {
+void bind_pr_mvn_cov(py::module& m) {
     m.def(
         "pr_mvn_cov",
         &api::pr_mvn_cov,
@@ -122,11 +119,10 @@ void bind_pr_mvn_cov(py::module &m) {
                 4. COV[precision, recall]
                 5. V[recall]
         )pbdoc",
-        py::arg("conf_mat")
-    );
+        py::arg("conf_mat"));
 }
 
-void bind_pr_mvn_cov_runs(py::module &m) {
+void bind_pr_mvn_cov_runs(py::module& m) {
     m.def(
         "pr_mvn_cov_runs",
         &api::pr_mvn_cov_runs,
@@ -146,11 +142,10 @@ void bind_pr_mvn_cov_runs(py::module &m) {
                 4. COV[precision, recall]
                 5. V[recall]
         )pbdoc",
-        py::arg("conf_mat")
-    );
+        py::arg("conf_mat"));
 }
 
-void bind_pr_curve_mvn_cov(py::module &m) {
+void bind_pr_curve_mvn_cov(py::module& m) {
     m.def(
         "pr_curve_mvn_cov",
         &api::pr_curve_mvn_cov,
@@ -170,8 +165,7 @@ void bind_pr_curve_mvn_cov(py::module &m) {
                 4. COV[precision, recall]
                 5. V[recall]
         )pbdoc",
-        py::arg("conf_mat")
-    );
+        py::arg("conf_mat"));
 }
 
 }  // namespace bindings

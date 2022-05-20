@@ -8,7 +8,7 @@ namespace py = pybind11;
 namespace mmu {
 namespace bindings {
 
-void bind_mvn_uncertainty_over_grid(py::module &m) {
+void bind_mvn_uncertainty_over_grid(py::module& m) {
     m.def(
         "mvn_uncertainty_over_grid",
         &api::mvn_uncertainty_over_grid,
@@ -39,11 +39,10 @@ void bind_mvn_uncertainty_over_grid(py::module &m) {
         py::arg("recs_grid"),
         py::arg("conf_mat"),
         py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4
-    );
+        py::arg("epsilon") = 1e-4);
 }
 
-void bind_mvn_uncertainty_over_grid_thresholds(py::module &m) {
+void bind_mvn_uncertainty_over_grid_thresholds(py::module& m) {
     m.def(
         "mvn_uncertainty_over_grid_thresholds",
         &api::mvn_uncertainty_over_grid_thresholds,
@@ -78,12 +77,11 @@ void bind_mvn_uncertainty_over_grid_thresholds(py::module &m) {
         py::arg("recs_grid"),
         py::arg("conf_mat"),
         py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4
-    );
+        py::arg("epsilon") = 1e-4);
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-void bind_mvn_uncertainty_over_grid_thresholds_mt(py::module &m) {
+void bind_mvn_uncertainty_over_grid_thresholds_mt(py::module& m) {
     m.def(
         "mvn_uncertainty_over_grid_thresholds_mt",
         &api::mvn_uncertainty_over_grid_thresholds_mt,
@@ -123,8 +121,7 @@ void bind_mvn_uncertainty_over_grid_thresholds_mt(py::module &m) {
         py::arg("conf_mat"),
         py::arg("n_sigmas") = 6.0,
         py::arg("epsilon") = 1e-4,
-        py::arg("n_threads") = 4
-    );
+        py::arg("n_threads") = 4);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
 }  // namespace bindings

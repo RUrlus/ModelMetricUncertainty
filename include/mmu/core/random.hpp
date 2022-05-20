@@ -13,7 +13,6 @@
 
 #include <array>
 
-
 namespace mmu {
 namespace core {
 namespace random {
@@ -24,8 +23,7 @@ inline void binomial_rvs(
     const double p,
     int64_t* result,
     const uint64_t seed = 0,
-    const uint64_t stream = 0
-) {
+    const uint64_t stream = 0) {
     pcg64_dxsm rng;
     if (seed == 0) {
         pcg_seed_seq seed_source;
@@ -51,8 +49,7 @@ inline void multinomial_rvs(
     double* p,
     int64_t* result,
     const uint64_t seed = 0,
-    const uint64_t stream = 0
-) {
+    const uint64_t stream = 0) {
     pcg64_dxsm rng;
     if (seed == 0) {
         pcg_seed_seq seed_source;
@@ -78,8 +75,7 @@ inline int64_t* generate_confusion_matrices(
     const double* probas,
     const uint64_t seed = 0,
     const uint64_t stream = 0,
-    int64_t* result = nullptr
-) {
+    int64_t* result = nullptr) {
     if (!result) {
         const size_t n_elem = n_matrices * 4;
         result = new int64_t[n_elem];
@@ -112,8 +108,7 @@ inline int64_t* generate_confusion_matrices_mt(
     const int64_t N,
     const double* probas,
     const uint64_t seed = 0,
-    int64_t* result = nullptr
-) {
+    int64_t* result = nullptr) {
     if (!result) {
         const int64_t n_elem = n_matrices * 4;
         result = new int64_t[n_elem];
@@ -136,13 +131,12 @@ inline int64_t* generate_confusion_matrices_mt(
 
 #pragma omp for
         for (int64_t i = 0; i < n_matrices; i++) {
-        random::details::random_multinomial(rng, N, result + (i * 4), probas, 4, sptr);
+            random::details::random_multinomial(rng, N, result + (i * 4), probas, 4, sptr);
         }
     }  // omp parallel
     return result;
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
-
 
 }  // namespace random
 }  // namespace core

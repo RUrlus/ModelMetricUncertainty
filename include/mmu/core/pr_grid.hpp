@@ -45,8 +45,7 @@ inline void get_pr_grid_bounds(
     const int64_t* __restrict conf_mat,
     double* bounds,
     const double n_sigmas = 6.0,
-    const double epsilon = 1e-4
-) {
+    const double epsilon = 1e-4) {
     const double max_prec_clip = conf_mat[1] == 0 ? 0.0 : epsilon;
     const double max_rec_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
     // computes prec, prec_sigma, rec, rec_sigma accounting for edge cases
@@ -61,7 +60,6 @@ inline void get_pr_grid_bounds(
     bounds[2] = std::max(prec_rec[2] - ns_rec_sigma, epsilon);
     bounds[3] = std::min(prec_rec[2] + ns_rec_sigma, 1. - max_rec_clip);
 }  // get_pr_grid_bounds
-
 
 class PrGridBounds {
     const int64_t n_prec_bins;
@@ -80,7 +78,7 @@ class PrGridBounds {
     const double* __restrict recs;
     std::array<double, 4> prec_rec;
 
- public:
+   public:
     int64_t prec_idx_min = 0;
     int64_t prec_idx_max = 0;
     int64_t rec_idx_min = 0;
@@ -92,14 +90,13 @@ class PrGridBounds {
         const double n_sigmas,
         const double epsilon,
         const double* __restrict precs,
-        const double* __restrict recs
-    ) : n_prec_bins{n_prec_bins},
-        n_rec_bins{n_rec_bins},
-        n_sigmas{n_sigmas},
-        epsilon{epsilon},
-        precs{precs},
-        recs{recs}
-    {}
+        const double* __restrict recs)
+        : n_prec_bins{n_prec_bins},
+          n_rec_bins{n_rec_bins},
+          n_sigmas{n_sigmas},
+          epsilon{epsilon},
+          precs{precs},
+          recs{recs} {}
 
     void compute_bounds(const int64_t* __restrict conf_mat) {
         max_prec_clip = conf_mat[1] == 0 ? 0.0 : epsilon;
@@ -161,8 +158,7 @@ inline void get_pr_grid_bounds(
     const double* __restrict recs,
     int64_t* result,
     const double n_sigmas = 6.0,
-    const double epsilon = 1e-4
-) {
+    const double epsilon = 1e-4) {
     const double max_prec_clip = conf_mat[1] == 0 ? 0.0 : epsilon;
     const double max_rec_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
     // computes prec, prec_sigma, rec, rec_sigma accounting for edge cases

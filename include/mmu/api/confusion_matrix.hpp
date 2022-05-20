@@ -4,21 +4,21 @@
 #ifndef INCLUDE_MMU_API_CONFUSION_MATRIX_HPP_
 #define INCLUDE_MMU_API_CONFUSION_MATRIX_HPP_
 
-#include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <cmath>
-#include <string>
-#include <limits>
-#include <cinttypes>
 #include <algorithm>
+#include <cinttypes>
+#include <cmath>
+#include <limits>
+#include <string>
 #include <type_traits>
 
+#include <mmu/api/common.hpp>
+#include <mmu/api/numpy.hpp>
 #include <mmu/core/common.hpp>
 #include <mmu/core/confusion_matrix.hpp>
-#include <mmu/api/numpy.hpp>
-#include <mmu/api/common.hpp>
 
 namespace py = pybind11;
 
@@ -47,10 +47,7 @@ namespace api {
  * - confusion matrix
  */
 template <typename T1, typename T2>
-i64arr confusion_matrix(
-    const py::array_t<T1>& y,
-    const py::array_t<T2>& yhat
-) {
+i64arr confusion_matrix(const py::array_t<T1>& y, const py::array_t<T2>& yhat) {
     // condition checks
     if (!(npy::is_well_behaved(y) && npy::is_well_behaved(yhat))) {
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
@@ -80,11 +77,7 @@ i64arr confusion_matrix(
  * - confusion matrix
  */
 template <typename T1, typename T2, isFloat<T2> = true>
-i64arr confusion_matrix(
-    const py::array_t<T1>& y,
-    const py::array_t<T2>& score,
-    const T2 threshold
-) {
+i64arr confusion_matrix(const py::array_t<T1>& y, const py::array_t<T2>& score, const T2 threshold) {
     // condition checks
     if (!(npy::is_well_behaved(y) && npy::is_well_behaved(score))) {
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
@@ -98,9 +91,7 @@ i64arr confusion_matrix(
 
     T1* y_ptr = npy::get_data(y);
     T2* score_ptr = npy::get_data<T2>(score);
-    core::confusion_matrix<T1, T2>(
-        n_obs, y_ptr, score_ptr, threshold, cm_ptr
-    );
+    core::confusion_matrix<T1, T2>(n_obs, y_ptr, score_ptr, threshold, cm_ptr);
 
     return conf_mat;
 }
@@ -118,12 +109,8 @@ i64arr confusion_matrix(
  * - confusion matrix
  */
 template <typename T1, typename T2, isFloat<T2> = true>
-inline i64arr confusion_matrix_runs(
-    const py::array_t<T1>& y,
-    const py::array_t<T2>& score,
-    const T2 threshold,
-    const int obs_axis
-) {
+inline i64arr
+confusion_matrix_runs(const py::array_t<T1>& y, const py::array_t<T2>& score, const T2 threshold, const int obs_axis) {
     // condition checks
     if (!(npy::is_well_behaved(y) && npy::is_well_behaved(score))) {
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
@@ -135,7 +122,7 @@ inline i64arr confusion_matrix_runs(
 
     if (n_dim == 2) {
         n_obs_tmp = y.shape(obs_axis);
-        n_runs_tmp = y.shape(1-obs_axis);
+        n_runs_tmp = y.shape(1 - obs_axis);
     } else {
         n_obs_tmp = y.shape(0);
         n_runs_tmp = 1;
@@ -153,19 +140,14 @@ inline i64arr confusion_matrix_runs(
     auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_runs);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
 
-    #pragma omp parallel shared(n_obs, n_runs, y_ptr, score_ptr, threshold, cm_ptr)
+#pragma omp parallel shared(n_obs, n_runs, y_ptr, score_ptr, threshold, cm_ptr)
     {
-    #pragma omp for
-    for (int64_t i = 0; i < n_runs; i++) {
-        // fill confusion matrix
-        core::confusion_matrix<T1, T2>(
-            n_obs,
-            y_ptr + (i * n_obs),
-            score_ptr + (i * n_obs),
-            threshold,
-            cm_ptr + (i * 4)
-        );
-    }
+#pragma omp for
+        for (int64_t i = 0; i < n_runs; i++) {
+            // fill confusion matrix
+            core::confusion_matrix<T1, T2>(
+                n_obs, y_ptr + (i * n_obs), score_ptr + (i * n_obs), threshold, cm_ptr + (i * 4));
+        }
     }  // pragma omp parallel
     return conf_mat;
 }
@@ -182,11 +164,7 @@ inline i64arr confusion_matrix_runs(
  * - confusion matrix
  */
 template <typename T1, typename T2>
-inline i64arr confusion_matrix_runs(
-    const py::array_t<T1>& y,
-    const py::array_t<T2>& yhat,
-    const int obs_axis
-) {
+inline i64arr confusion_matrix_runs(const py::array_t<T1>& y, const py::array_t<T2>& yhat, const int obs_axis) {
     // condition checks
     if (!(npy::is_well_behaved(y) && npy::is_well_behaved(yhat))) {
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
@@ -198,7 +176,7 @@ inline i64arr confusion_matrix_runs(
 
     if (n_dim == 2) {
         n_obs_tmp = y.shape(obs_axis);
-        n_runs_tmp = y.shape(1-obs_axis);
+        n_runs_tmp = y.shape(1 - obs_axis);
     } else {
         n_obs_tmp = y.shape(0);
         n_runs_tmp = 1;
@@ -216,17 +194,12 @@ inline i64arr confusion_matrix_runs(
     auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_runs);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
 
-    #pragma omp parallel shared(n_obs, n_runs, y_ptr, yhat_ptr, cm_ptr)
+#pragma omp parallel shared(n_obs, n_runs, y_ptr, yhat_ptr, cm_ptr)
     {
-    #pragma omp for
-    for (int64_t i = 0; i < n_runs; i++) {
-        core::confusion_matrix<T1, T2>(
-            n_obs,
-            y_ptr + (i * n_obs),
-            yhat_ptr + (i * n_obs),
-            cm_ptr + (i * 4)
-        );
-    }
+#pragma omp for
+        for (int64_t i = 0; i < n_runs; i++) {
+            core::confusion_matrix<T1, T2>(n_obs, y_ptr + (i * n_obs), yhat_ptr + (i * n_obs), cm_ptr + (i * 4));
+        }
     }  // pragma omp parallel
     return conf_mat;
 }
@@ -244,17 +217,10 @@ inline i64arr confusion_matrix_runs(
  * - confusion matrix
  */
 template <typename T1, typename T2, isFloat<T2> = true>
-inline i64arr confusion_matrix_thresholds(
-    const py::array_t<T1>& y,
-    const py::array_t<T2>& score,
-    const py::array_t<T2>& thresholds
-) {
+inline i64arr
+confusion_matrix_thresholds(const py::array_t<T1>& y, const py::array_t<T2>& score, const py::array_t<T2>& thresholds) {
     // condition checks
-    if (!(
-        npy::is_well_behaved(y)
-        && npy::is_well_behaved(score)
-        && npy::is_well_behaved(thresholds)
-    )) {
+    if (!(npy::is_well_behaved(y) && npy::is_well_behaved(score) && npy::is_well_behaved(thresholds))) {
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
     }
 
@@ -269,16 +235,13 @@ inline i64arr confusion_matrix_thresholds(
     T2* score_ptr = npy::get_data(score);
     T2* threshold_ptr = npy::get_data(thresholds);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
-    #pragma omp parallel shared(n_obs, n_thresholds, y_ptr, score_ptr, threshold_ptr, cm_ptr)
+#pragma omp parallel shared(n_obs, n_thresholds, y_ptr, score_ptr, threshold_ptr, cm_ptr)
     {
-
-    #pragma omp for
-    for (int64_t i = 0; i < n_thresholds; i++) {
-        // fill confusion matrix
-        core::confusion_matrix<T1, T2>(
-            n_obs, y_ptr, score_ptr, threshold_ptr[i], cm_ptr + (i * 4)
-        );
-    }
+#pragma omp for
+        for (int64_t i = 0; i < n_thresholds; i++) {
+            // fill confusion matrix
+            core::confusion_matrix<T1, T2>(n_obs, y_ptr, score_ptr, threshold_ptr[i], cm_ptr + (i * 4));
+        }
     }  // pragma omp parallel
     return conf_mat;
 }
@@ -303,15 +266,10 @@ inline i64arr confusion_matrix_runs_thresholds(
     const py::array_t<T1>& y,
     const py::array_t<T2>& score,
     const py::array_t<T2>& thresholds,
-    const i64arr& n_obs
-) {
+    const i64arr& n_obs) {
     // condition checks
-    if (!(
-        npy::is_well_behaved(y)
-        && npy::is_well_behaved(score)
-        && npy::is_well_behaved(thresholds)
-        && npy::is_well_behaved(n_obs)
-    )) {
+    if (!(npy::is_well_behaved(y) && npy::is_well_behaved(score) && npy::is_well_behaved(thresholds)
+          && npy::is_well_behaved(n_obs))) {
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
     }
 
@@ -333,32 +291,25 @@ inline i64arr confusion_matrix_runs_thresholds(
     npy::zero_array(conf_mat);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
 
-    // Bookkeeping variables
-    #pragma omp parallel shared(n_runs, n_thresholds, y_ptr, score_ptr, thresholds_ptr, n_obs_ptr, cm_ptr)
+// Bookkeeping variables
+#pragma omp parallel shared(n_runs, n_thresholds, y_ptr, score_ptr, thresholds_ptr, n_obs_ptr, cm_ptr)
     {
+        T1* o_y_ptr;
+        T2* o_score_ptr;
+        size_t o_n_obs;
+        int64_t* o_cm_ptr;
 
-    T1* o_y_ptr;
-    T2* o_score_ptr;
-    size_t o_n_obs;
-    int64_t* o_cm_ptr;
-
-    #pragma omp for
-    for (int64_t r = 0; r < n_runs; r++) {
-        o_n_obs = n_obs_ptr[r];
-        o_y_ptr = y_ptr + (r * max_obs);
-        o_score_ptr = score_ptr + (r * max_obs);
-        o_cm_ptr = cm_ptr + (r * cm_offset);
-        for (int64_t i = 0; i < n_thresholds; i++) {
-            // fill confusion matrix
-            core::confusion_matrix<T1, T2>(
-                o_n_obs,
-                o_y_ptr,
-                o_score_ptr,
-                thresholds_ptr[i],
-                o_cm_ptr + (i * 4)
-            );
+#pragma omp for
+        for (int64_t r = 0; r < n_runs; r++) {
+            o_n_obs = n_obs_ptr[r];
+            o_y_ptr = y_ptr + (r * max_obs);
+            o_score_ptr = score_ptr + (r * max_obs);
+            o_cm_ptr = cm_ptr + (r * cm_offset);
+            for (int64_t i = 0; i < n_thresholds; i++) {
+                // fill confusion matrix
+                core::confusion_matrix<T1, T2>(o_n_obs, o_y_ptr, o_score_ptr, thresholds_ptr[i], o_cm_ptr + (i * 4));
+            }
         }
-    }
     }  // pragma omp parallel
     return conf_mat;
 }

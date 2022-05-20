@@ -8,7 +8,7 @@ namespace py = pybind11;
 namespace mmu {
 namespace bindings {
 
-void bind_multinomial_uncertainty(py::module &m) {
+void bind_multinomial_uncertainty(py::module& m) {
     m.def(
         "multinomial_uncertainty",
         &api::multinomial_uncertainty,
@@ -36,11 +36,10 @@ void bind_multinomial_uncertainty(py::module &m) {
         py::arg("n_bins"),
         py::arg("conf_mat"),
         py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4
-    );
+        py::arg("epsilon") = 1e-4);
 }
 
-void bind_multinomial_uncertainty_over_grid(py::module &m) {
+void bind_multinomial_uncertainty_over_grid(py::module& m) {
     m.def(
         "multinomial_uncertainty_over_grid",
         &api::multinomial_uncertainty_over_grid,
@@ -71,11 +70,10 @@ void bind_multinomial_uncertainty_over_grid(py::module &m) {
         py::arg("recs_grid"),
         py::arg("conf_mat"),
         py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4
-    );
+        py::arg("epsilon") = 1e-4);
 }
 
-void bind_multinomial_uncertainty_over_grid_thresholds(py::module &m) {
+void bind_multinomial_uncertainty_over_grid_thresholds(py::module& m) {
     m.def(
         "multinomial_uncertainty_over_grid_thresholds",
         &api::multinomial_uncertainty_over_grid_thresholds,
@@ -110,12 +108,11 @@ void bind_multinomial_uncertainty_over_grid_thresholds(py::module &m) {
         py::arg("recs_grid"),
         py::arg("conf_mat"),
         py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4
-    );
+        py::arg("epsilon") = 1e-4);
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-void bind_multinomial_uncertainty_over_grid_thresholds_mt(py::module &m) {
+void bind_multinomial_uncertainty_over_grid_thresholds_mt(py::module& m) {
     m.def(
         "multinomial_uncertainty_over_grid_thresholds_mt",
         &api::multn_uncertainty_over_grid_thresholds_mt,
@@ -155,12 +152,11 @@ void bind_multinomial_uncertainty_over_grid_thresholds_mt(py::module &m) {
         py::arg("conf_mat"),
         py::arg("n_sigmas") = 6.0,
         py::arg("epsilon") = 1e-4,
-        py::arg("n_threads") = 4
-    );
+        py::arg("n_threads") = 4);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-void bind_simulated_multinomial_uncertainty(py::module &m) {
+void bind_simulated_multinomial_uncertainty(py::module& m) {
     m.def(
         "simulated_multinomial_uncertainty",
         &api::simulated_multinomial_uncertainty,
@@ -199,8 +195,7 @@ void bind_simulated_multinomial_uncertainty(py::module &m) {
         py::arg("n_sigmas") = 6.0,
         py::arg("epsilon") = 1e-4,
         py::arg("seed") = 0,
-        py::arg("stream") = 0
-    );
+        py::arg("stream") = 0);
 }
 }  // namespace bindings
 }  // namespace mmu

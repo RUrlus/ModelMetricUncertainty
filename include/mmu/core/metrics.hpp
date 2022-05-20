@@ -4,11 +4,11 @@
 #ifndef INCLUDE_MMU_CORE_METRICS_HPP_
 #define INCLUDE_MMU_CORE_METRICS_HPP_
 
-#include <cmath>      // for sqrt
-#include <limits>     // for numeric_limits
-#include <cinttypes>  // for int64_t
-#include <algorithm>  // for max/min
-#include <stdexcept>  // for runtime_error
+#include <algorithm>    // for max/min
+#include <cinttypes>    // for int64_t
+#include <cmath>        // for sqrt
+#include <limits>       // for numeric_limits
+#include <stdexcept>    // for runtime_error
 #include <type_traits>  // for enable_if_t
 
 #include <mmu/core/common.hpp>
@@ -16,11 +16,8 @@
 namespace mmu {
 namespace core {
 
-inline void precision_recall(
-    const int64_t* __restrict const conf_mat,
-    double* __restrict const metrics,
-    const double fill = 0.
-) {
+inline void
+precision_recall(const int64_t* __restrict const conf_mat, double* __restrict const metrics, const double fill = 0.) {
     // real true/positive observations [FN + TP]
     const int64_t iP = conf_mat[2] + conf_mat[3];
     const bool P_nonzero = iP > 0;
@@ -37,10 +34,7 @@ inline void precision_recall(
     metrics[1] = P_nonzero ? tp / P : fill;
 }  // binary_metrics
 
-inline void precision_recall_ecc(
-    const int64_t* __restrict const conf_mat,
-    double* __restrict const metrics
-) {
+inline void precision_recall_ecc(const int64_t* __restrict const conf_mat, double* __restrict const metrics) {
     // real true/positive observations [FN + TP]
     const auto itp = conf_mat[3];
     const auto tp = static_cast<double>(conf_mat[3]);
@@ -82,19 +76,10 @@ inline void precision_recall_ecc(
  *    8 - Accuracy
  *    9 - MCC
  */
-template<class T, std::enable_if_t<std::is_integral<T>::value, int> = 0>
-inline void binary_metrics(
-    T* __restrict const conf_mat,
-    double* __restrict const metrics,
-    const double fill = 0.
-) {
+template <class T, std::enable_if_t<std::is_integral<T>::value, int> = 0>
+inline void binary_metrics(T* __restrict const conf_mat, double* __restrict const metrics, const double fill = 0.) {
     // total observations
-    const auto K = static_cast<double>(
-        conf_mat[0]
-        + conf_mat[1]
-        + conf_mat[2]
-        + conf_mat[3]
-    );
+    const auto K = static_cast<double>(conf_mat[0] + conf_mat[1] + conf_mat[2] + conf_mat[3]);
 
     /*
      *                  pred
@@ -173,7 +158,6 @@ inline void binary_metrics(
     itm = tp_fp * P * N * tn_fn;
     metrics[9] = (itm > limit) ? (tp * tn - fp * fn) / std::sqrt(itm) : 0.0;
 }  // binary_metrics
-
 
 }  // namespace core
 }  // namespace mmu

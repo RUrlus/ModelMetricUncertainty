@@ -33,17 +33,17 @@
 
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include <cinttypes>
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <utility>
 
 #include <mmu/core/common.hpp>
-#include <mmu/core/mvn_error.hpp>
-#include <mmu/core/random.hpp>
 #include <mmu/core/metrics.hpp>
+#include <mmu/core/mvn_error.hpp>
 #include <mmu/core/pr_grid.hpp>
+#include <mmu/core/random.hpp>
 
 /* conf_mat layout:
  *  0 TN
@@ -54,41 +54,6 @@
 
 namespace mmu {
 namespace core {
-namespace details {
-
-#define MMU_PI 3.141592653589793238462643383279502884  /* pi */
-#define MMU_2PI 6.283185307179586231995926937088  /* 2pi */
-
-inline double bivariate_normal_pdf(
-    const double x,
-    const double y,
-    const double x_mu,
-    const double y_mu,
-    const double x_sigma,
-    const double y_sigma,
-    const double x_sigma2,
-    const double y_sigma2,
-    const double rho
-) {
-    // https://www2.stat.duke.edu/courses/Spring12/sta104.1/Lectures/Lec22.pdf
-    const double rho2 = std::pow(rho, 2);
-
-    const double x_m_x_mu = x - x_mu;
-    const double x_block = std::pow(x_m_x_mu, 2) / x_sigma2;
-    const double cov_x_block = x_m_x_mu / x_sigma;
-
-    const double y_m_y_mu = y - y_mu;
-    const double y_block = std::pow(y_m_y_mu, 2) / y_sigma2;
-    const double cov_y_block = y_m_y_mu / y_sigma;
-
-    const double cov_block = 2. * rho * cov_x_block * cov_y_block;
-
-    const double exp_frac = -1. / (2. * (1. - rho2));
-    const double rhs = std::exp(exp_frac * (x_block + y_block - cov_block));
-    const double lhs = 1.0 / (MMU_2PI * x_sigma * y_sigma * std::sqrt(1.0 - rho2));
-    return lhs * rhs;
-}
-}  // namespace details
 
 inline void mvn_uncertainty_over_grid(
     const int64_t n_prec_bins,
@@ -98,8 +63,7 @@ inline void mvn_uncertainty_over_grid(
     const int64_t* __restrict conf_mat,
     double* scores,
     const double n_sigmas = 6.0,
-    const double epsilon = 1e-4
-) {
+    const double epsilon = 1e-4) {
     // give scores a high enough initial value that the chi2 p-values will be close to zero
     std::fill(scores, scores + n_prec_bins * n_rec_bins, 1e4);
     // -- memory allocation --
@@ -113,11 +77,7 @@ inline void mvn_uncertainty_over_grid(
 
     // obtain the indexes over which to loop
     // sets prec_idx_min, prec_idx_max, rec_idx_min, rec_idx_max
-    details::get_pr_grid_bounds(
-        n_prec_bins, n_rec_bins, conf_mat,
-        prec_grid, rec_grid, idx_bounds,
-        n_sigmas, epsilon
-    );
+    details::get_pr_grid_bounds(n_prec_bins, n_rec_bins, conf_mat, prec_grid, rec_grid, idx_bounds, n_sigmas, epsilon);
     const int64_t prec_idx_min = idx_bounds[0];
     const int64_t prec_idx_max = idx_bounds[1];
     const int64_t rec_idx_min = idx_bounds[2];
@@ -172,8 +132,7 @@ inline void mvn_uncertainty_over_grid_thresholds(
     const int64_t* __restrict conf_mat,
     double* scores,
     const double n_sigmas = 6.0,
-    const double epsilon = 1e-4
-) {
+    const double epsilon = 1e-4) {
     // give scores a high enough initial value that the chi2 p-values will be close to zero
     std::fill(scores, scores + n_prec_bins * n_rec_bins, 1e4);
 
@@ -186,14 +145,7 @@ inline void mvn_uncertainty_over_grid_thresholds(
     auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
     double z_tmp;
 
-    auto bounds = details::PrGridBounds(
-        n_prec_bins,
-        n_rec_bins,
-        n_sigmas,
-        epsilon,
-        prec_grid,
-        rec_grid
-    );
+    auto bounds = details::PrGridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
 
     int64_t idx;
     int64_t odx;
@@ -259,89 +211,82 @@ inline void mvn_uncertainty_over_grid_thresholds_mt(
     double* scores,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4,
-    const int n_threads = 4
-) {
+    const int n_threads = 4) {
     const int64_t n_elem = n_prec_bins * n_rec_bins;
     const int64_t t_elem = n_elem * n_threads;
     auto thread_scores = std::unique_ptr<double[]>(new double[t_elem]);
 
     // give scores a high enough initial value that the chi2 p-values will be close to zero
     std::fill(thread_scores.get(), thread_scores.get() + t_elem, 1e4);
-#pragma omp parallel num_threads(n_threads) shared(n_prec_bins, n_rec_bins, n_conf_mats, prec_grid, rec_grid, conf_mat, n_sigmas, epsilon, thread_scores)
+#pragma omp parallel num_threads(n_threads) \
+    shared(n_prec_bins, n_rec_bins, n_conf_mats, prec_grid, rec_grid, conf_mat, n_sigmas, epsilon, thread_scores)
     {
-    double* thread_block = thread_scores.get() + (omp_get_thread_num() * n_elem);
+        double* thread_block = thread_scores.get() + (omp_get_thread_num() * n_elem);
 
-    // -- memory allocation --
-    std::array<double, 6> prec_rec_cov;
-    double* prc_ptr = prec_rec_cov.data();
+        // -- memory allocation --
+        std::array<double, 6> prec_rec_cov;
+        double* prc_ptr = prec_rec_cov.data();
 
-    auto z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
-    auto z1_sq = std::unique_ptr<double[]>(new double[n_rec_bins]);
-    auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
-    double z_tmp;
+        auto z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
+        auto z1_sq = std::unique_ptr<double[]>(new double[n_rec_bins]);
+        auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
+        double z_tmp;
 
-    auto bounds = details::PrGridBounds(
-        n_prec_bins,
-        n_rec_bins,
-        n_sigmas,
-        epsilon,
-        prec_grid,
-        rec_grid
-    );
+        auto bounds = details::PrGridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
 
-    int64_t idx;
-    int64_t odx;
-    double z2;
-    double score;
-    double prec_score;
-    double prec_mu;
-    double rec_mu;
-    double prec_simga;
-    double rec_simga;
-    double rho;
-    double rho_rhs;
-    const int64_t* lcm;
-    // -- memory allocation --
+        int64_t idx;
+        int64_t odx;
+        double z2;
+        double score;
+        double prec_score;
+        double prec_mu;
+        double rec_mu;
+        double prec_simga;
+        double rec_simga;
+        double rho;
+        double rho_rhs;
+        const int64_t* lcm;
+        // -- memory allocation --
 
 #pragma omp for
-    for (int64_t k = 0; k < n_conf_mats; k++) {
-        lcm = conf_mat + (k * 4);
-        // update to new conf_mat
-        bounds.compute_bounds(lcm);
+        for (int64_t k = 0; k < n_conf_mats; k++) {
+            lcm = conf_mat + (k * 4);
+            // update to new conf_mat
+            bounds.compute_bounds(lcm);
 
-        // compute covariance matrix and mean
-        pr_mvn_cov(lcm, prc_ptr);
-        prec_mu = prec_rec_cov[0];
-        rec_mu = prec_rec_cov[1];
-        prec_simga = std::sqrt(prec_rec_cov[2]);
-        rec_simga = std::sqrt(prec_rec_cov[5]);
-        rho = prec_rec_cov[3] / (prec_simga * rec_simga);
-        rho_rhs = std::sqrt(1 - std::pow(rho, 2));
+            // compute covariance matrix and mean
+            pr_mvn_cov(lcm, prc_ptr);
+            prec_mu = prec_rec_cov[0];
+            rec_mu = prec_rec_cov[1];
+            prec_simga = std::sqrt(prec_rec_cov[2]);
+            rec_simga = std::sqrt(prec_rec_cov[5]);
+            rho = prec_rec_cov[3] / (prec_simga * rec_simga);
+            rho_rhs = std::sqrt(1 - std::pow(rho, 2));
 
-        // compute Z1 and variants of it
-        for (int64_t i = bounds.rec_idx_min; i < bounds.rec_idx_max; i++) {
-            // compute Z1
-            z_tmp = (rec_grid[i] - rec_mu) / rec_simga;
-            z1[i] = z_tmp;
-            rho_z1[i] = rho * z_tmp;
-            z1_sq[i] = std::pow(z_tmp, 2);
-        }
+            // compute Z1 and variants of it
+            for (int64_t i = bounds.rec_idx_min; i < bounds.rec_idx_max; i++) {
+                // compute Z1
+                z_tmp = (rec_grid[i] - rec_mu) / rec_simga;
+                z1[i] = z_tmp;
+                rho_z1[i] = rho * z_tmp;
+                z1_sq[i] = std::pow(z_tmp, 2);
+            }
 
-        for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max; i++) {
-            odx = i * n_rec_bins;
-            prec_score = (prec_grid[i] - prec_mu) / prec_simga;
-            for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max; j++) {
-                z2 = (prec_score - rho_z1[j]) / rho_rhs;
-                score = z1_sq[j] + std::pow(z2, 2);
-                idx = odx + j;
-                // log likelihoods and thus always positive
-                if (score < thread_block[idx]) {
-                    thread_block[idx] = score;
+            for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max; i++) {
+                odx = i * n_rec_bins;
+                prec_score = (prec_grid[i] - prec_mu) / prec_simga;
+                for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max; j++) {
+                    z2 = (prec_score - rho_z1[j]) / rho_rhs;
+                    score = z1_sq[j] + std::pow(z2, 2);
+                    idx = odx + j;
+                    // log likelihoods and thus always positive
+                    if (score < thread_block[idx]) {
+                        thread_block[idx] = score;
+                    }
                 }
             }
         }
-    }
-    } // omp parallel
+    }  // omp parallel
 
     // collect the scores
     auto offsets = std::unique_ptr<int64_t[]>(new int64_t[n_threads]);
