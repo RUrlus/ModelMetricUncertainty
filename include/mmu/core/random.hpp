@@ -11,6 +11,8 @@
 #include <omp.h>
 #endif
 
+#include <array>
+
 
 namespace mmu {
 namespace core {
@@ -117,17 +119,17 @@ inline int64_t* generate_confusion_matrices_mt(
         result = new int64_t[n_elem];
         zero_array(result, n_elem);
     }
-    random::pcg64_dxsm global_rng;
-    if (seed == 0) {
-        random::pcg_seed_seq seed_source;
-        global_rng.seed(seed_source);
-    } else {
-        global_rng.seed(seed);
-    }
-#pragma omp parallel shared(N, probas, result)
+    random::pcg_seed_seq seed_source;
+    std::array<uint64_t, 2> gen_seeds;
+    seed_source.generate(gen_seeds.begin(), gen_seeds.end());
+#pragma omp parallel shared(N, probas, result, gen_seeds)
     {
-        random::pcg64_dxsm rng = global_rng;
-        rng.set_stream(static_cast<int>(omp_get_thread_num() + 1));
+        random::pcg64_dxsm rng;
+        if (seed == 0) {
+            rng.seed(gen_seeds[0], omp_get_thread_num());
+        } else {
+            rng.seed(seed, omp_get_thread_num());
+        }
 
         auto binom_store = details::s_binomial_t();
         details::s_binomial_t* sptr = &binom_store;
