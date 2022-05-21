@@ -14,15 +14,15 @@ def _plot_pr_curve_contours(
     rec_grid,
     levels,
     labels,
-    cmap_name=None,
+    cmap=None,
     ax=None,
     alpha=0.8,
     legend_loc=None,
     equal_aspect=False,
     limit_axis=True
 ):
-    if cmap_name is None:
-        cmap_name = 'Blues'
+    if cmap is None:
+        cmap = 'Blues'
     if legend_loc is None:
         # likely to be the best place for pr curve
         legend_loc = 'lower center'
@@ -34,7 +34,7 @@ def _plot_pr_curve_contours(
 
     # create meshgrid for plotting
     RX, PY = np.meshgrid(rec_grid, prec_grid)
-    colors = _get_color_hexes(cmap_name, n_colors=len(labels))
+    colors = _get_color_hexes(cmap, n_colors=len(labels))
 
     levels = [0.0] + levels.tolist()
     # create contours
@@ -71,15 +71,15 @@ def _plot_pr_contours(
     bounds,
     levels,
     labels,
-    cmap_name=None,
+    cmap=None,
     ax=None,
     alpha=0.8,
     legend_loc=None,
     equal_aspect=True,
     limit_axis=True,
 ):
-    if cmap_name is None:
-        cmap_name = 'Blues'
+    if cmap is None:
+        cmap = 'Blues'
     if legend_loc is None:
         # likely to be the best place for pr curve
         legend_loc = 'lower left'
@@ -94,7 +94,7 @@ def _plot_pr_contours(
     rec_grid = np.linspace(bounds[2], bounds[3], num=n_bins)
     RX, PY = np.meshgrid(rec_grid, prec_grid)
     colors, c_marker = _get_color_hexes(
-        cmap_name, n_colors=len(labels), return_marker=True
+        cmap, n_colors=len(labels), return_marker=True
     )
 
     # add zero level to contours
