@@ -40,13 +40,13 @@ def _plot_pr_ellipse(
     labels,
     ax=None,
     alpha=0.5,
-    cmap_name=None,
+    cmap=None,
     legend_loc=None,
     equal_aspect=True,
     limit_axis=True
 ):
-    if cmap_name is None:
-        cmap_name = 'Blues'
+    if cmap is None:
+        cmap = 'Blues'
     if legend_loc is None:
         # likely to be the best place for a single ellipse
         legend_loc = 'lower left'
@@ -57,7 +57,7 @@ def _plot_pr_ellipse(
         fig = ax.get_figure()
 
     colors, c_marker = _get_color_hexes(
-        cmap_name, n_colors=len(labels), return_marker=True
+        cmap, n_colors=len(labels), return_marker=True
     )
 
     # we multiply the radius by 2 because width and height are diameters

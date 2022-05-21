@@ -305,12 +305,12 @@ class _PrecisionRecallCurveBase:
 
     def _add_point_to_plot(self, point, point_kwargs):
         if isinstance(point_kwargs, dict):
-            if 'cmap_name' not in point_kwargs:
-                point_kwargs['cmap_name'] = 'Reds'
+            if 'cmap' not in point_kwargs:
+                point_kwargs['cmap'] = 'Reds'
             if 'ax' in point_kwargs:
                 point_kwargs.pop('ax')
         elif point_kwargs is None:
-            point_kwargs = {'cmap_name': 'Reds'}
+            point_kwargs = {'cmap': 'Reds'}
         else:
             raise TypeError("`point_kwargs` must be a Dict or None")
         self._ax = point.plot(ax=self._ax, **point_kwargs)
@@ -337,7 +337,7 @@ class _PrecisionRecallCurveBase:
         self,
         levels : Union[int, float, np.ndarray, None] = None,
         ax=None,
-        cmap_name : str = 'Blues',
+        cmap : str = 'Blues',
         equal_aspect : bool = False,
         limit_axis : bool = True,
         alpha : float = 0.8,
@@ -356,7 +356,7 @@ class _PrecisionRecallCurveBase:
             By default we plot 1, 2 and 3 std deviations
         ax : matplotlib.axes.Axes, default=None
             Pre-existing axes for the plot
-        cmap_name : str, default='Blues'
+        cmap : str, default='Blues'
             matplotlib cmap name to use for CIs
         equal_aspect : bool, default=False
             enforce square axis
@@ -424,7 +424,7 @@ class _PrecisionRecallCurveBase:
             self.rec_grid,
             levels,
             labels,
-            cmap_name=cmap_name,
+            cmap=cmap,
             ax=ax,
             alpha=alpha,
             equal_aspect=equal_aspect,
