@@ -39,9 +39,9 @@ def generate_data(
     yhat = np.rint(score).astype(yhat_dtype)
     y = rng.binomial(1, score, t_samples).astype(y_dtype)  # type: ignore
     return (
-        score.reshape(n_samples, n_sets),
-        yhat.reshape(n_samples, n_sets),
-        y.reshape(n_samples, n_sets),
+        score.reshape(n_samples, n_sets, order='F'),
+        yhat.reshape(n_samples, n_sets, order='F'),
+        y.reshape(n_samples, n_sets, order='F'),
     )
 
 
