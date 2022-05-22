@@ -55,7 +55,7 @@ def test_PRMU_from_scores():
         yhat = greater_equal_tol(proba, threshold)
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
-        pr_err = mmu.PRMU.from_scores(y=y, score=proba, threshold=threshold)
+        pr_err = mmu.PRMU.from_scores(y=y, scores=proba, threshold=threshold)
         assert pr_err.conf_mat is not None
         assert pr_err.conf_mat.dtype == np.dtype(np.int64)
 
@@ -142,12 +142,12 @@ def test_PRMU_from_classifier():
     model.fit(X_train, y_train)
 
     # predict probabilities, for the positive outcome only
-    y_score = model.predict_proba(X_test)[:, 1]
+    y_scores = model.predict_proba(X_test)[:, 1]
 
     np.random.seed(2345)
     thresholds = np.random.uniform(1e-6, 1-1e-6, 10)
     for threshold in thresholds:
-        yhat = greater_equal_tol(y_score, threshold)
+        yhat = greater_equal_tol(y_scores, threshold)
         sk_conf_mat = skm.confusion_matrix(y_test, yhat)
 
         pr_err = mmu.PRMU.from_classifier(
@@ -171,7 +171,7 @@ def test_PRMU_exceptions():
     yhat = greater_equal_tol(proba, 0.5)
 
     pr_err = mmu.PRMU.from_scores(
-        y=y, score=proba, threshold=0.5, n_bins=40
+        y=y, scores=proba, threshold=0.5, n_bins=40
     )
     assert pr_err.n_bins == 40
     assert pr_err.chi2_scores.shape == (40, 40)
@@ -179,28 +179,28 @@ def test_PRMU_exceptions():
     # n_bins >= 1
     with pytest.raises(ValueError):
         pr_err = mmu.PRMU.from_scores(
-            y=y, score=proba, threshold=0.5, n_bins=-20
+            y=y, scores=proba, threshold=0.5, n_bins=-20
         )
 
     # n_bins >= 1
     with pytest.raises(ValueError):
         pr_err = mmu.PRMU.from_scores(
-            y=y, score=proba, threshold=0.5, n_bins=0
+            y=y, scores=proba, threshold=0.5, n_bins=0
         )
 
     # n_bins must be an int
     with pytest.raises(TypeError):
         pr_err = mmu.PRMU.from_scores(
-            y=y, score=proba, threshold=0.5, n_bins=20.
+            y=y, scores=proba, threshold=0.5, n_bins=20.
         )
 
     pr_err = mmu.PRMU.from_scores(
-        y=y, score=proba, threshold=0.5, n_sigmas=1.
+        y=y, scores=proba, threshold=0.5, n_sigmas=1.
     )
 
     with pytest.raises(TypeError):
         pr_err = mmu.PRMU.from_scores(
-            y=y, score=proba, threshold=0.5, n_sigmas=[1., ]
+            y=y, scores=proba, threshold=0.5, n_sigmas=[1., ]
         )
 
 def test_PREU_from_scores():
@@ -218,7 +218,7 @@ def test_PREU_from_scores():
         yhat = greater_equal_tol(proba, threshold)
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
-        pr_err = mmu.PREU.from_scores(y=y, score=proba, threshold=threshold)
+        pr_err = mmu.PREU.from_scores(y=y, scores=proba, threshold=threshold)
         assert pr_err.conf_mat is not None
         assert pr_err.conf_mat.dtype == np.dtype(np.int64)
         assert pr_err.cov_mat.shape == (2, 2)
@@ -303,11 +303,11 @@ def test_PREU_from_classifier():
     model.fit(X_train, y_train)
 
     # predict probabilities, for the positive outcome only
-    y_score = model.predict_proba(X_test)[:, 1]
+    y_scores = model.predict_proba(X_test)[:, 1]
 
     thresholds = np.random.uniform(0, 1, 10)
     for threshold in thresholds:
-        yhat = greater_equal_tol(y_score, threshold)
+        yhat = greater_equal_tol(y_scores, threshold)
         sk_conf_mat = skm.confusion_matrix(y_test, yhat)
 
         pr_err = mmu.PREU.from_classifier(

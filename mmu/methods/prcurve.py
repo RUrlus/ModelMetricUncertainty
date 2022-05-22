@@ -34,6 +34,7 @@ class _PrecisionRecallCurveBase:
         self.precision = None
         self.recall = None
         self._doc_pref = " "
+        self.thresholds = None
 
     def _parse_thresholds(self, thresholds, scores, max_steps, seed):
         if thresholds is None:
@@ -103,7 +104,7 @@ class _PrecisionRecallCurveBase:
     @classmethod
     def from_scores(cls,
         y : np.ndarray,
-        score : np.ndarray,
+        scores : np.ndarray,
         thresholds : Optional[np.ndarray] = None,
         n_bins : Union[int, Tuple[int], List[int], np.ndarray, None] = 1000,
         n_sigmas : Union[int, float] = 6.0,
@@ -116,14 +117,12 @@ class _PrecisionRecallCurveBase:
 
         Parameters
         ----------
-        y : np.ndarray
-            true labels for observations, supported dtypes are [bool, int32,
-            int64, float32, float64]
-        scores : np.ndarray, default=None
+        y : np.ndarray[bool, int32, int64, float32, float64]
+            true labels for the observations
+        scores : np.ndarray[float32, float64], default=None
             the classifier score to be evaluated against the `thresholds`, i.e.
             `yhat` = `score` >= `threshold`.
-            Supported dtypes are float32 and float64.
-        thresholds : np.ndarray, default=None
+        thresholds : np.ndarray[float64], default=None
             the inclusive classification threshold against which the classifier
             score is evaluated. If None the classification thresholds are
             determined such that each thresholds results in a different
@@ -155,10 +154,10 @@ class _PrecisionRecallCurveBase:
 
         """
         self = cls()
-        self._parse_thresholds(thresholds, score, auto_max_steps, auto_seed)
+        self._parse_thresholds(thresholds, scores, auto_max_steps, auto_seed)
         self._parse_nbins(n_bins)
         self.conf_mats = confusion_matrices_thresholds(
-            y=y, score=score, thresholds=self.thresholds
+            y=y, scores=scores, thresholds=self.thresholds
         )
         self.n_conf_mats = self.conf_mats.shape[0]
         self._compute_scores(n_sigmas, epsilon, n_threads)
@@ -177,10 +176,10 @@ class _PrecisionRecallCurveBase:
 
         Parameters
         ----------
-        conf_mat : np.ndarray,
+        conf_mat : np.ndarray[int64],
             confusion matrix as returned by mmu.confusion_matrix, i.e.
             with layout [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP or
-            the flattened equivalent. Supported dtypes are int32, int64
+            the flattened equivalent.
         n_bins : int, array-like[int], default=1000
             the number of bins in the precision/recall grid for which the
             uncertainty is computed. If an int the `chi2_scores` will be a
@@ -237,9 +236,8 @@ class _PrecisionRecallCurveBase:
             the classifier scores
         X : np.ndarray
             the feature array to be used to compute the classifier scores
-        y : np.ndarray
-            true labels for observations, supported dtypes are [bool, int32,
-            int64, float32, float64]
+        y : np.ndarray[bool, int32, int64, float32, float64]
+            true labels for observations, supported dtypes are
         threshold : float, default=0.5
             the classification threshold to which the classifier score is evaluated,
             is inclusive.
@@ -450,9 +448,10 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
     Attributes
     ----------
     conf_mat : np.ndarray[int64]
-        the confusion_matrices over the thresholds with columns
-        [0] = TN, [1] = FP, [2] = FN, [3] = TP
+        the confusion_matrices over the thresholds with columns [TN, FP, FN, TP].
         A DataFrame can be obtained by calling `get_conf_mat`.
+    cov_mats : np.ndarray[float64]
+        flattened covariance matrices for each threshold.
     precision : np.ndarray[float64]
         the Positive Predictive Values aka positive precisions
     recall : np.ndarray[float64]
@@ -461,22 +460,20 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
         The profile loglikelihood scores which follow a chi2 distribution with 2DF.
         Has shape (`n_bins`, `n_bins`) with bounds precision_bounds on the
         y-axis and recall_bounds on the x-axis
-
-    Methods
-    -------
-    from_scores
-        compute the uncertainty based on classifier scores and true labels
-    from_confusion_matrix
-        compute the uncertainty based on a confusion matrix
-    from_classifier
-        compute the uncertainty based on classifier scores from a trained
-        classifier and true labels
-    plot
-        plot the joint uncertainty of precision and recall
-    get_conf_mats
-        get the confusion matrices
-    get_scores
-        get the profile loglikelihood scores which are distributed as Chi2(2)
+    thresholds : np.ndarray[float64]
+        the inclusive classification/discrimination thresholds used to compute
+        the confusion matrices
+    rec_grid : np.ndarray[float64]
+        the recall values that where evaluated.
+    prec_grid : np.ndarray[float64]
+        the precision values that where evaluated.
+    n_sigmas : int, float, default=6.0
+        the number of marginal standard deviations used to determine the
+        bounds of the grid which is evaluated for each observed precision and
+        recall.
+    epsilon : float, default=1e-12
+        the value used to prevent the bounds from reaching precision/recall
+        1.0/0.0 which would result in NaNs.
 
     """
     def __init__(self):
@@ -489,6 +486,7 @@ class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
         self.rec_grid = None
         self.n_sigmas = None
         self.epsilon = None
+        self.thresholds = None
 
     def _compute_scores(self, n_sigmas, epsilon, n_threads):
         n_threads = _check_n_threads(n_threads)
@@ -542,35 +540,33 @@ class PrecisionRecallCurveEllipticalUncertainty(_PrecisionRecallCurveBase):
     Attributes
     ----------
     conf_mat : np.ndarray[int64]
-        the confusion_matrices over the thresholds with columns
-        [0] = TN, [1] = FP, [2] = FN, [3] = TP
+        the confusion_matrices over the thresholds with columns [TN, FP, FN, TP].
         A DataFrame can be obtained by calling `get_conf_mat`.
     cov_mats : np.ndarray[float64]
-        flattened covariance matrices for each threshold
+        flattened covariance matrices for each threshold.
     precision : np.ndarray[float64]
         the Positive Predictive Values aka positive precisions
     recall : np.ndarray[float64]
         True Positive Rate aka Sensitivity aka positive recall
     chi2_scores : np.ndarray[float64]
-        The 2d Z scores which follow a chi2 distribution with 2DF.
-        Has shape (`n_bins`, `n_bins`) with bounds precision_bounds on the
-        y-axis and recall_bounds on the x-axis
-
-    Methods
-    -------
-    from_scores
-        compute the uncertainty based on classifier scores and true labels
-    from_confusion_matrix
-        compute the uncertainty based on a confusion matrix
-    from_classifier
-        compute the uncertainty based on classifier scores from a trained
-        classifier and true labels
-    plot
-        plot the joint uncertainty of precision and recall
-    get_conf_mats
-        get the confusion matrices
-    get_cov_mats
-        get the covariance matrices
+        the sum of squared z scores which follow a chi2 distribution with
+        two degrees of freedom. Has shape (`n_bins`, `n_bins`) with bounds
+        `precision_bounds` on the y-axis and `recall_bounds` on the x-axis.
+    thresholds : np.ndarray[float64], Optional
+        the inclusive classification/discrimination thresholds used to compute
+        the confusion matrices. Is None when the class is instantiated with
+        `from_confusion_matrices`.
+    rec_grid : np.ndarray[float64]
+        the recall values that where evaluated.
+    prec_grid : np.ndarray[float64]
+        the precision values that where evaluated.
+    n_sigmas : int, float, default=6.0
+        the number of marginal standard deviations used to determine the
+        bounds of the grid which is evaluated for each observed precision and
+        recall.
+    epsilon : float, default=1e-12
+        the value used to prevent the bounds from reaching precision/recall
+        1.0/0.0 which would result in NaNs.
 
     """
     def __init__(self):
@@ -583,6 +579,7 @@ class PrecisionRecallCurveEllipticalUncertainty(_PrecisionRecallCurveBase):
         self.rec_grid = None
         self.n_sigmas = None
         self.epsilon = None
+        self.thresholds = None
 
     def get_cov_mats(self):
         """Get the covariance matrices over the thresholds.

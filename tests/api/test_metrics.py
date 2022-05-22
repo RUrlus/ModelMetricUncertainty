@@ -139,7 +139,7 @@ def test_binary_metrics_proba():
             y, proba=proba, threshold=threshold
         )
 
-        conf_mat, metrics = mmu.binary_metrics(y, score=proba, threshold=threshold)
+        conf_mat, metrics = mmu.binary_metrics(y, scores=proba, threshold=threshold)
         assert np.array_equal(conf_mat, sk_conf_mat), (
             f"test failed for dtypes: {y_dtype}, {proba_dtype}"
             f" and threshold: {threshold}"
@@ -157,7 +157,7 @@ def test_binary_metrics_proba():
 
     for threshold, fill in itertools.product(thresholds, fills):
         conf_mat, metrics = mmu.binary_metrics(
-            y, score=proba, threshold=threshold, fill=fill
+            y, scores=proba, threshold=threshold, fill=fill
         )
         sk_conf_mat, sk_metrics = compute_reference_metrics(
             y, proba=proba, threshold=threshold, fill=fill
@@ -180,7 +180,7 @@ def test_binary_metrics_proba_shapes():
     )
 
     for y_, proba_ in itertools.product(y_shapes, proba_shapes):
-        conf_mat, metrics = mmu.binary_metrics(y_, score=proba_, threshold=0.5)
+        conf_mat, metrics = mmu.binary_metrics(y_, scores=proba_, threshold=0.5)
         assert np.array_equal(conf_mat, sk_conf_mat), (
             f"test failed for shapes: {y_.shape}, {proba_.shape}"
         )
@@ -190,9 +190,9 @@ def test_binary_metrics_proba_shapes():
 
     # unequal length
     with pytest.raises(ValueError):
-        mmu.binary_metrics(y, score=proba[:100], threshold=0.5)
+        mmu.binary_metrics(y, scores=proba[:100], threshold=0.5)
     with pytest.raises(ValueError):
-        mmu.binary_metrics(y[:100], score=proba, threshold=0.5)
+        mmu.binary_metrics(y[:100], scores=proba, threshold=0.5)
 
     # 2d with more than one row/column for the second dimension or 3d
     y_shapes = [
@@ -206,7 +206,7 @@ def test_binary_metrics_proba_shapes():
     ]
     for y_, proba_ in itertools.product(y_shapes, proba_shapes):
         with pytest.raises(ValueError):
-            mmu.binary_metrics(y_, score=proba_, threshold=0.5)
+            mmu.binary_metrics(y_, scores=proba_, threshold=0.5)
 
 
 def test_binary_metrics_proba_order():
@@ -235,7 +235,7 @@ def test_binary_metrics_proba_order():
     )
 
     for y_, proba_ in itertools.product(y_orders, proba_orders):
-        conf_mat, metrics = mmu.binary_metrics(y_, score=proba_, threshold=0.5)
+        conf_mat, metrics = mmu.binary_metrics(y_, scores=proba_, threshold=0.5)
         assert np.array_equal(conf_mat, sk_conf_mat), (
             f"test failed for shapes: {y_.shape}, {proba_.shape}"
         )
