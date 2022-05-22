@@ -6,4 +6,6 @@ MMU - Model Metric Uncertainty
   :width: 1000
   :alt: Uncertainty on the Precision-Recall curve
 
-.. include:: ../../readme.rst
+.. only:: latex
+
+.. include:: readme.rst
