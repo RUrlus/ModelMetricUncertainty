@@ -273,7 +273,7 @@ class _PrecisionRecallCurveBase:
         self._parse_thresholds(thresholds, score, auto_max_steps, auto_seed)
         self._parse_nbins(n_bins)
         self.conf_mats = confusion_matrices_thresholds(
-            y=y, score=score, thresholds=self.thresholds
+            y=y, scores=score, thresholds=self.thresholds
         )
         self.n_conf_mats = self.conf_mats.shape[0]
         self._compute_scores(n_sigmas, epsilon, n_threads)
