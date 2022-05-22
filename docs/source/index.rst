@@ -1,31 +1,9 @@
 ==============================
 MMU - Model Metric Uncertainty
 ==============================
-*MMU is a library for ...*
 
-.. only: not latex
-    Contents:
-.. toctree::
-    :caption: MMU
-    :maxdepth: 2
+.. image:: figs/pr_curve_mult_w_points.png
+  :width: 1000
+  :alt: Uncertainty on the Precision-Recall curve
 
-    introduction
-
-.. toctree::
-    :caption: Usage
-    :maxdepth: 2
-
-    usage
-
-.. toctree::
-    :caption: API
-    :maxdepth: 2
-
-    metrics
-    estimators
-
-.. toctree::
-    :caption: Advanced
-    :maxdepth: 1
-
-    extension
+.. include:: ../../readme.rst
