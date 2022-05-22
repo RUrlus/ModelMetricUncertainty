@@ -22,22 +22,6 @@ from mmu.metrics.pr_lep import precision_recall_uncertainty_runs
 from mmu.metrics.pr_lep import precision_recall_uncertainty_confusion_matrix
 from mmu.metrics.pr_lep import precision_recall_uncertainty_confusion_matrices
 
-bmetrics = binary_metrics
-bmetrics_runs = binary_metrics_runs
-bmetrics_thresh = binary_metrics_thresholds
-bmetrics_runs_thresh = binary_metrics_runs_thresholds
-bmetrics_conf_mat = binary_metrics_confusion_matrix
-bmetrics_conf_mats = binary_metrics_confusion_matrices
-
-conf_mat = confusion_matrix
-conf_mats = confusion_matrices
-conf_mats_thresh = confusion_matrices_thresholds
-conf_mats_runs_thresh = confusion_matrices_runs_thresholds
-
-conf_mat_to_df = confusion_matrix_to_dataframe
-conf_mats_to_df = confusion_matrices_to_dataframe
-
-pr_curve = precision_recall_curve
 pr_error = precision_recall_uncertainty
 pr_error_runs = precision_recall_uncertainty_runs
 pr_error_conf_mat = precision_recall_uncertainty_confusion_matrix
@@ -45,12 +29,6 @@ pr_error_conf_mats = precision_recall_uncertainty_confusion_matrices
 
 __all__ = [
     'auto_thresholds',
-    'bmetrics',
-    'bmetrics_runs',
-    'bmetrics_thresh',
-    'bmetrics_runs_thresh',
-    'bmetrics_conf_mat',
-    'bmetrics_conf_mats',
     'binary_metrics',
     'binary_metrics_runs',
     'binary_metrics_thresholds',
@@ -59,12 +37,6 @@ __all__ = [
     'binary_metrics_confusion_matrices',
     'col_index',
     'col_names',
-    'conf_mat',
-    'conf_mats',
-    'conf_mats_thresh',
-    'conf_mats_runs_thresh',
-    'conf_mat_to_df',
-    'conf_mats_to_df',
     'confusion_matrix',
     'confusion_matrices',
     'confusion_matrices_thresholds',
@@ -73,7 +45,6 @@ __all__ = [
     'confusion_matrices_to_dataframe',
     'metrics_to_dataframe',
     'precision_recall',
-    'pr_curve',
     'precision_recall_curve',
     'pr_error',
     'pr_error_runs',
