@@ -13,7 +13,6 @@ The Multinomial approach computes the profile log-likelihoods scores for a grid 
 The Multinomial approach is usually robust for relatively low statistics tests.
 Additionally it is valid for the extreme values of precision and recall, which the Bivariate-Normal approach is not. However, the Multinomial approach does not allow the statistical uncertainty of the train set to be incorporated which the Bivariate-Normal does.
 
-
 **Bivariate-Normal approach**
 
 The statistical/sampling uncertainty over the Precision and Recall are modelled
@@ -34,45 +33,21 @@ To help with this the curve methods provide functionality to overlay threshold u
 Threshold
 +++++++++
 
-**Multinomial uncertainty**
-
-.. autoclass:: mmu.PRMU
+.. autoclass:: mmu.PRU
     :members:
     :inherited-members:
 
-.. autoclass:: mmu.PrecisionRecallMultinomialUncertainty
-    :members:
-    :inherited-members:
-
-**Elliptical uncertainty**
-
-.. autoclass:: mmu.PREU
-    :members:
-    :inherited-members:
-
-.. autoclass:: mmu.PrecisionRecallEllipticalUncertainty
+.. autoclass:: mmu.PrecisionRecallUncertainty
     :members:
     :inherited-members:
 
 Curve
 +++++
 
-**Multinomial uncertainty**
-
-.. autoclass:: mmu.PRCMU
+.. autoclass:: mmu.PRCU
     :members:
     :inherited-members:
 
-.. autoclass:: mmu.PrecisionRecallCurveMultinomialUncertainty
-    :members:
-    :inherited-members:
-
-**Elliptical uncertainty**
-
-.. autoclass:: mmu.PRCEU
-    :members:
-    :inherited-members:
-
-.. autoclass:: mmu.PrecisionRecallCurveEllipticalUncertainty
+.. autoclass:: mmu.PrecisionRecallCurveUncertainty
     :members:
     :inherited-members:

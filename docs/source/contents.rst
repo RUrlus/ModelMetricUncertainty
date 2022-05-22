@@ -26,5 +26,4 @@ Model Metric Uncertainty
     :maxdepth: 2
 
     contributing
-    extconfig
     extension

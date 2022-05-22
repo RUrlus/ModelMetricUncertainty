@@ -95,7 +95,7 @@ Usage
     scores, y, yhat = mmu.generate_data(n_samples=1000)
 
     # Compute the joint uncertainty on precision and recall
-    pr_err = mmu.PrecisionRecallCurveMultinomialUncertainty.from_scores(y, scores, 0.85)
+    pr_err = mmu.PrecisionRecallCurveUncertainty.from_scores(y, scores, 0.85)
     
     # Plot the uncertainty
     pr_err.plot()
