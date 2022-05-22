@@ -1,19 +1,12 @@
-from mmu.methods.prpoint import PrecisionRecallEllipticalUncertainty
-from mmu.methods.prpoint import PrecisionRecallMultinomialUncertainty
-from mmu.methods.prcurve import PrecisionRecallCurveMultinomialUncertainty
-from mmu.methods.prcurve import PrecisionRecallCurveEllipticalUncertainty
+from mmu.methods.prpoint import PrecisionRecallUncertainty
+from mmu.methods.prcurve import PrecisionRecallCurveUncertainty
 
-PREU = PrecisionRecallEllipticalUncertainty
-PRMU = PrecisionRecallMultinomialUncertainty
-PRCMU = PrecisionRecallCurveMultinomialUncertainty
-PRCEU = PrecisionRecallCurveEllipticalUncertainty
+PRU = PrecisionRecallUncertainty
+PRCU = PrecisionRecallCurveUncertainty
 
 __all__ = [
-    'PREU',
-    'PRMU',
-    'PRCMU',
-    'PRCEU',
-    'PrecisionRecallEllipticalUncertainty',
-    'PrecisionRecallMultinomialUncertainty',
-    'PrecisionRecallCurveMultinomialUncertainty',
+    'PRU',
+    'PRCU',
+    'PrecisionRecallUncertainty',
+    'PrecisionRecallCurveUncertainty',
 ]
