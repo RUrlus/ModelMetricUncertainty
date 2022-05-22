@@ -82,8 +82,10 @@ def metrics_to_dataframe(metrics, metric_names=None):
     return pd.DataFrame(metrics, columns=metric_names)
 
 
-def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df=False):
+def binary_metrics(y, yhat=None, scores=None, threshold=None, fill=0.0, return_df=False):
     r"""Compute binary classification metrics.
+
+    `bmetrics` is an alias for this function.
 
     Computes the following metrics where [i] indicates the i'th value in the
     array.
@@ -105,13 +107,13 @@ def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df
         true labels for observations
     yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
         the predicted labels, the same dtypes are supported as y. Can be `None`
-        if `score` is not `None`, if both are provided, `score` is ignored.
-    score : np.ndarray[float32, float64], default=None
-        the classifier score to be evaluated against the `threshold`, i.e.
-        `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
+        if `scores` is not `None`, if both are provided, `scores` is ignored.
+    scores : np.ndarray[float32, float64], default=None
+        the classifier scores to be evaluated against the `threshold`, i.e.
+        `yhat` = `scores` >= `threshold`. Can be `None` if `yhat` is not `None`,
         if both are provided, this parameter is ignored.
     threshold : float, default=0.5
-        the classification threshold to which the classifier score is evaluated,
+        the classification threshold to which the classifier scores is evaluated,
         is inclusive.
     fill : float, default=0.0
         value to fill when a metric is not defined, e.g. divide by zero.
@@ -136,17 +138,17 @@ def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df
         dtype_check=_convert_to_ext_types
     )
 
-    if score is not None:
-        score = check_array(
-            score,
+    if scores is not None:
+        scores = check_array(
+            scores,
             max_dim=1,
             dtype_check=_convert_to_float,
         )
         if not isinstance(threshold, float):
-            raise TypeError("`threshold` must be a float if score is not None")
-        if score.size != y.size:
-            raise ValueError('`score` and `y` must have equal length.')
-        conf_mat = _core.confusion_matrix_score(y, score, threshold)
+            raise TypeError("`threshold` must be a float if scores is not None")
+        if scores.size != y.size:
+            raise ValueError('`scores` and `y` must have equal length.')
+        conf_mat = _core.confusion_matrix_score(y, scores, threshold)
 
     elif yhat is not None:
         yhat = check_array(
@@ -158,7 +160,7 @@ def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df
             raise ValueError('`yhat` and `y` must have equal length.')
         conf_mat = _core.confusion_matrix(y, yhat)
     else:
-        raise TypeError("`yhat` must not be None if `score` is None")
+        raise TypeError("`yhat` must not be None if `scores` is None")
 
     metrics = _core.binary_metrics(conf_mat, fill)
 
@@ -172,6 +174,8 @@ def binary_metrics(y, yhat=None, score=None, threshold=None, fill=0.0, return_df
 
 def binary_metrics_confusion_matrix(conf_mat, fill=0.0, return_df=False):
     """Compute binary classification metrics.
+
+    `bmetrics_conf_mat` is an alias for this function.
 
     Computes the following metrics where [i] indicates the i'th value in the
     array.
@@ -224,6 +228,8 @@ def binary_metrics_confusion_matrix(conf_mat, fill=0.0, return_df=False):
 def binary_metrics_confusion_matrices(conf_mat, fill=0.0, return_df=False):
     """Compute binary classification metrics.
 
+    `bmetrics_conf_mats` is an alias for this function.
+
     Computes the following metrics where [i] indicates the i'th value in the
     array.
 
@@ -271,9 +277,11 @@ def binary_metrics_confusion_matrices(conf_mat, fill=0.0, return_df=False):
 
 
 def binary_metrics_thresholds(
-    y, score, thresholds, fill=0.0, return_df=False
+    y, scores, thresholds, fill=0.0, return_df=False
 ):
     """Compute binary classification metrics over multiple thresholds.
+
+    `bmetrics_thresh` is an alias for this function.
 
     Computes the following metrics where [i] indicates the i'th column in the
     array.
@@ -295,13 +303,13 @@ def binary_metrics_thresholds(
         true labels for observations
     yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
         the predicted labels, the same dtypes are supported as y. Can be `None`
-        if `score` is not `None`, if both are provided, `score` is ignored.
-    score : np.ndarray[float32, float64], default=None
-        the classifier score to be evaluated against the `threshold`, i.e.
-        `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
+        if `scores` is not `None`, if both are provided, `scores` is ignored.
+    scores : np.ndarray[float32, float64], default=None
+        the classifier scores to be evaluated against the `threshold`, i.e.
+        `yhat` = `scores` >= `threshold`. Can be `None` if `yhat` is not `None`,
         if both are provided, this parameter is ignored.
     thresholds : np.ndarray[float32, float64]
-        the classification thresholds for which the classifier score is evaluated,
+        the classification thresholds for which the classifier scores is evaluated,
         is inclusive.
     fill : float, default=0.0
         value to fill when a metric is not defined, e.g. divide by zero.
@@ -327,8 +335,8 @@ def binary_metrics_thresholds(
         dtype_check=_convert_to_ext_types,
     )
 
-    score = check_array(
-        score,
+    scores = check_array(
+        scores,
         max_dim=1,
         dtype_check=_convert_to_float,
     )
@@ -339,9 +347,9 @@ def binary_metrics_thresholds(
         dtype_check=_convert_to_float,
     )
 
-    if score.size != y.size:
-        raise ValueError('`score` and `y` must have equal length.')
-    conf_mat = _core.confusion_matrix_thresholds(y, score, thresholds)
+    if scores.size != y.size:
+        raise ValueError('`scores` and `y` must have equal length.')
+    conf_mat = _core.confusion_matrix_thresholds(y, scores, thresholds)
     metrics = _core.binary_metrics_2d(conf_mat, fill)
 
     if return_df:
@@ -353,9 +361,11 @@ def binary_metrics_thresholds(
 
 
 def binary_metrics_runs(
-    y, yhat=None, score=None, threshold=None, obs_axis=0, fill=0.0, return_df=False
+    y, yhat=None, scores=None, threshold=None, obs_axis=0, fill=0.0, return_df=False
 ):
     """Compute binary classification metrics over multiple runs.
+
+    `bmetrics_runs` is an alias for this function.
 
     Computes the following metrics where [i] indicates the i'th column in the
     array.
@@ -378,19 +388,19 @@ def binary_metrics_runs(
         each consisting of `N` observations if `obs_axis`
     yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
         the predicted labels, the same dtypes are supported as y. Can be `None`
-        if `score` is not `None`, if both are provided, `score` is ignored.
+        if `scores` is not `None`, if both are provided, `scores` is ignored.
         `yhat` shape must be compatible with `y`.
-    score : np.ndarray[float32, float64], default=None
-        the classifier score to be evaluated against the `threshold`, i.e.
-        `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
+    scores : np.ndarray[float32, float64], default=None
+        the classifier scores to be evaluated against the `threshold`, i.e.
+        `yhat` = `scores` >= `threshold`. Can be `None` if `yhat` is not `None`,
         if both are provided, this parameter is ignored.
-        `score` shape must be compatible with `y`.
+        `scores` shape must be compatible with `y`.
     thresholds : np.ndarray[float32, float64]
-        the classification thresholds for which the classifier score is evaluated,
+        the classification thresholds for which the classifier scores is evaluated,
         is inclusive.
     obs_axis : int, default=0
         the axis containing the observations for a single run, e.g. 0 when the
-        labels and scores are stored as columns
+        labels and scoress are stored as columns
     fill : float, default=0.0
         value to fill when a metric is not defined, e.g. divide by zero.
     return_df : bool, default=False
@@ -420,9 +430,9 @@ def binary_metrics_runs(
         dtype_check=_convert_to_ext_types,
     )
 
-    if score is not None:
-        score = check_array(
-            score,
+    if scores is not None:
+        scores = check_array(
+            scores,
             axis=obs_axis,
             target_axis=obs_axis,
             target_order=1-obs_axis,
@@ -430,10 +440,10 @@ def binary_metrics_runs(
             dtype_check=_convert_to_float,
         )
         if not isinstance(threshold, float):
-            raise TypeError("`threshold` must be a float if score is not None")
-        if score.size != y.size:
-            raise ValueError('`score` and `y` must have equal length.')
-        conf_mat = _core.confusion_matrix_score_runs(y, score, threshold, obs_axis)
+            raise TypeError("`threshold` must be a float if scores is not None")
+        if scores.size != y.size:
+            raise ValueError('`scores` and `y` must have equal length.')
+        conf_mat = _core.confusion_matrix_score_runs(y, scores, threshold, obs_axis)
 
     elif yhat is not None:
         yhat = check_array(
@@ -448,7 +458,7 @@ def binary_metrics_runs(
             raise ValueError('`yhat` and `y` must have equal length.')
         conf_mat = _core.confusion_matrix_runs(y, yhat, obs_axis)
     else:
-        raise TypeError("`yhat` must not be None if `score` is None")
+        raise TypeError("`yhat` must not be None if `scores` is None")
 
     metrics = _core.binary_metrics_2d(conf_mat, fill)
 
@@ -462,8 +472,10 @@ def binary_metrics_runs(
 
 
 def binary_metrics_runs_thresholds(
-    y, score, thresholds, n_obs=None, fill=0.0, obs_axis=0):
+    y, scores, thresholds, n_obs=None, fill=0.0, obs_axis=0):
     """Compute binary classification metrics over runs and thresholds.
+
+    `bmetrics_runs_thresh` is an alias for this function.
 
     Computes the following metrics where [i] indicates the i'th column in the
     array.
@@ -484,10 +496,10 @@ def binary_metrics_runs_thresholds(
     y : np.ndarray[bool, int32, int64, float32, float64]
         the ground truth labels, if different runs have different number of
         observations the n_obs parameter must be set to avoid computing metrics
-        of the filled values. If ``y`` is one dimensional and ``score`` is not
+        of the filled values. If ``y`` is one dimensional and ``scores`` is not
         the ``y`` values are assumed to be the same for each run.
-    score : np.array[float32, float64]
-        the classifier scores, if different runs have different number of
+    scores : np.array[float32, float64]
+        the classifier scoress, if different runs have different number of
         observations the n_obs parameter must be set to avoid computing metrics
         of the filled values.
     thresholds : np.array[float32, float64]
@@ -521,8 +533,8 @@ def binary_metrics_runs_thresholds(
         dtype_check=_convert_to_ext_types,
     )
 
-    score = check_array(
-        score,
+    scores = check_array(
+        scores,
         axis=obs_axis,
         target_axis=obs_axis,
         target_order=1-obs_axis,
@@ -536,8 +548,8 @@ def binary_metrics_runs_thresholds(
         dtype_check=_convert_to_float,
     )
 
-    n_runs = score.shape[1 - obs_axis]
-    max_obs = score.shape[obs_axis]
+    n_runs = scores.shape[1 - obs_axis]
+    max_obs = scores.shape[obs_axis]
 
     if y.shape[1] < 2:
         y = np.tile(y, (y.shape[0], n_runs))
@@ -547,7 +559,7 @@ def binary_metrics_runs_thresholds(
         n_obs = np.repeat(max_obs, n_runs)
 
     cm = _core.confusion_matrix_runs_thresholds(
-        y, score, thresholds, n_obs
+        y, scores, thresholds, n_obs
     )
     mtr = _core.binary_metrics_2d(cm, fill)
 
@@ -583,9 +595,8 @@ def binary_metrics_runs_thresholds(
     return cm, mtr
 
 
-def precision_recall(y, yhat=None, score=None, threshold=None, fill=0.0, return_df=False):
+def precision_recall(y, yhat=None, scores=None, threshold=None, fill=0.0, return_df=False):
     r"""Compute precision and recall.
-
 
     Parameters
     ----------
@@ -593,13 +604,13 @@ def precision_recall(y, yhat=None, score=None, threshold=None, fill=0.0, return_
         true labels for observations
     yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
         the predicted labels, the same dtypes are supported as y. Can be `None`
-        if `score` is not `None`, if both are provided, `score` is ignored.
-    score : np.ndarray[float32, float64], default=None
-        the classifier score to be evaluated against the `threshold`, i.e.
-        `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
+        if `scores` is not `None`, if both are provided, `scores` is ignored.
+    scores : np.ndarray[float32, float64], default=None
+        the classifier scores to be evaluated against the `threshold`, i.e.
+        `yhat` = `scores` >= `threshold`. Can be `None` if `yhat` is not `None`,
         if both are provided, this parameter is ignored.
     threshold : float, default=0.5
-        the classification threshold to which the classifier score is evaluated,
+        the classification threshold to which the classifier scores is evaluated,
         is inclusive.
     fill : float, default=0.0
         value to fill when a metric is not defined, e.g. divide by zero.
@@ -611,8 +622,8 @@ def precision_recall(y, yhat=None, score=None, threshold=None, fill=0.0, return_
     confusion_matrix : np.ndarray, pd.DataFrame
         the confusion_matrix with layout
         [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP
-    metrics : np.ndarray, pd.DataFrame
-        the computed metrics
+    prec_rec : np.ndarray, pd.DataFrame
+        precision and recall
 
     """
     if not isinstance(fill, float):
@@ -624,17 +635,17 @@ def precision_recall(y, yhat=None, score=None, threshold=None, fill=0.0, return_
         dtype_check=_convert_to_ext_types
     )
 
-    if score is not None:
-        score = check_array(
-            score,
+    if scores is not None:
+        scores = check_array(
+            scores,
             max_dim=1,
             dtype_check=_convert_to_float,
         )
         if not isinstance(threshold, float):
-            raise TypeError("`threshold` must be a float if score is not None")
-        if score.size != y.size:
-            raise ValueError('`score` and `y` must have equal length.')
-        conf_mat = _core.confusion_matrix_score(y, score, threshold)
+            raise TypeError("`threshold` must be a float if scores is not None")
+        if scores.size != y.size:
+            raise ValueError('`scores` and `y` must have equal length.')
+        conf_mat = _core.confusion_matrix_score(y, scores, threshold)
 
     elif yhat is not None:
         yhat = check_array(
@@ -646,30 +657,32 @@ def precision_recall(y, yhat=None, score=None, threshold=None, fill=0.0, return_
             raise ValueError('`yhat` and `y` must have equal length.')
         conf_mat = _core.confusion_matrix(y, yhat)
     else:
-        raise TypeError("`yhat` must not be None if `score` is None")
+        raise TypeError("`yhat` must not be None if `scores` is None")
 
-    metrics = _core.precision_recall(conf_mat, fill)
+    prec_rec = _core.precision_recall(conf_mat, fill)
 
     if return_df:
         return (
             confusion_matrix_to_dataframe(conf_mat),
-            pd.DataFrame(metrics, columns=['precision', 'recall'])
+            pd.DataFrame(prec_rec, columns=['precision', 'recall'])
         )
-    return conf_mat, metrics
+    return conf_mat, prec_rec
 
 
-def precision_recall_curve(y, score, thresholds=None, fill=0.0, return_df=False):
+def precision_recall_curve(y, scores, thresholds=None, fill=0.0, return_df=False):
     """Compute precision and recall over the thresholds.
+
+    `pr_curve` is an alias for this function.
 
     Parameters
     ----------
     y : np.ndarray[bool, int32, int64, float32, float64]
         true labels for observations
-    score : np.ndarray[float32, float64]
-        the classifier score to be evaluated against the `threshold`, i.e.
-        `yhat` = `score` >= `threshold`
+    scores : np.ndarray[float32, float64]
+        the classifier scores to be evaluated against the `threshold`, i.e.
+        `yhat` = `scores` >= `threshold`
     threshold : np.ndarray[float32, float64]
-        the classification thresholds to which the classifier score is evaluated,
+        the classification thresholds to which the classifier scores is evaluated,
         is inclusive.
     fill : float, default=0.0
         value to fill when a metric is not defined, e.g. divide by zero.
@@ -693,8 +706,8 @@ def precision_recall_curve(y, score, thresholds=None, fill=0.0, return_df=False)
         dtype_check=_convert_to_ext_types,
     )
 
-    score = check_array(
-        score,
+    scores = check_array(
+        scores,
         max_dim=1,
         dtype_check=_convert_to_float,
     )
@@ -705,9 +718,9 @@ def precision_recall_curve(y, score, thresholds=None, fill=0.0, return_df=False)
         dtype_check=_convert_to_float,
     )
 
-    if score.size != y.size:
-        raise ValueError('`score` and `y` must have equal length.')
-    conf_mat = _core.confusion_matrix_thresholds(y, score, thresholds)
+    if scores.size != y.size:
+        raise ValueError('`scores` and `y` must have equal length.')
+    conf_mat = _core.confusion_matrix_thresholds(y, scores, thresholds)
     metrics = _core.precision_recall_2d(conf_mat, fill)
 
     if return_df:

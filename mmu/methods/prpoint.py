@@ -92,6 +92,10 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
         the covariance matrix of precision and recall with layout
         [0, 0] = V[P], [0, 1] = COV[P, R], [1, 0] = COV[P, R], [1, 1] = V[R]
         A DataFrame can be obtained by calling `get_cov_mat`.
+    threshold : float, optional
+        the inclusive threshold used to determine the confusion matrix.
+        Is None when the class is instantiated with `from_predictions` or
+        `from_confusion_matrix`.
     train_conf_mats : np.ndarray, optional
         the confusion matrices from the multiple training runs.
         Only set when `add_train_uncertainty` is called.
@@ -105,32 +109,6 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
         training sampling uncertainty.
         Only set when `add_train_uncertainty` is called.
         A DataFrame can be obtained by calling `get_total_cov_mat`.
-
-    Methods
-    -------
-    from_scores
-        compute the uncertainty based on classifier scores and true labels
-    from_predictions
-        compute the uncertainty based on predictions and true labels
-    from_confusion_matrix
-        compute the uncertainty based on a confusion matrix
-    from_classifier
-        compute the uncertainty based on classifier scores from a trained
-        classifier and true labels
-    add_train_uncertainty
-        the the training sampling uncertainty to the test uncertainty
-    plot
-        plot the joint uncertainty of precision and recall
-    get_conf_mat
-        get the confusion matrix
-    get_cov_mat
-        get the covariance matrix of the test uncertainty
-    get_train_cov_mat
-        get the covariance matrix of the train uncertainty
-    get_total_cov_mat
-        get the covariance matrix of the combined train and test uncertainty
-    get_train_conf_mats
-        get the confusion matrices over the training runs
 
     """
     def __init__(self):
@@ -171,7 +149,7 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
             )
 
     @classmethod
-    def from_scores(cls, y : np.ndarray, score : np.ndarray, threshold : float = 0.5):
+    def from_scores(cls, y : np.ndarray, scores : np.ndarray, threshold : float = 0.5):
         """Compute elliptical uncertainty on precision and recall.
 
         Model's the linearly propogated errors of the confusion matrix as a
@@ -182,13 +160,11 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
 
         Parameters
         ----------
-        y : np.ndarray
-            true labels for observations, supported dtypes are [bool, int32,
-            int64, float32, float64]
-        score : np.ndarray, default=None
+        y : np.ndarray[bool, int32, int64, float32, float64]
+            true labels for the observations
+        scores : np.ndarray[float32, float64], default=None
             the classifier score to be evaluated against the `threshold`, i.e.
             `yhat` = `score` >= `threshold`.
-            Supported dtypes are float32 and float64.
         threshold : float, default=0.5
             the classification threshold to which the classifier score is evaluated,
             is inclusive.
@@ -196,7 +172,7 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
         """
         self = cls()
         self._parse_threshold(threshold)
-        self.conf_mat = confusion_matrix(y=y, score=score, threshold=threshold)
+        self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
         self._compute_mvn_cov()
         return self
 
@@ -212,10 +188,9 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
 
         Parameters
         ----------
-        y : np.ndarray
-            true labels for observations, supported dtypes are [bool, int32,
-            int64, float32, float64]
-        yhat : np.ndarray, default=None
+        y : np.ndarray[bool, int32, int64, float32, float64]
+            true labels for the observations
+        yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
             the predicted labels, the same dtypes are supported as y.
 
         """
@@ -236,7 +211,7 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
 
         Parameters
         ----------
-        conf_mat : np.ndarray,
+        conf_mat : np.ndarray[int64],
             confusion matrix as returned by mmu.confusion_matrix, i.e.
             with layout [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP or
             the flattened equivalent. Supported dtypes are int32, int64
@@ -271,9 +246,8 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
             the classifier scores
         X : np.ndarray
             the feature array to be used to compute the classifier scores
-        y : np.ndarray
-            true labels for observations, supported dtypes are [bool, int32,
-            int64, float32, float64]
+        y : np.ndarray[bool, int32, int64, float32, float64]
+            true labels for the observations
         threshold : float, default=0.5
             the classification threshold to which the classifier score is evaluated,
             is inclusive.
@@ -283,8 +257,8 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
         self._parse_threshold(threshold)
         if not hasattr(clf, 'predict_proba'):
             raise TypeError("`clf` must have a method `predict_proba`")
-        score = clf.predict_proba(X)[:, 1]
-        self.conf_mat = confusion_matrix(y=y, score=score, threshold=threshold)
+        scores = clf.predict_proba(X)[:, 1]
+        self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
         self._compute_mvn_cov()
         return self
 
@@ -304,13 +278,13 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
             true labels for observations
         yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
             the predicted labels, the same dtypes are supported as y. Can be `None`
-            if `score` is not `None`, if both are provided, `score` is ignored.
-        score : np.ndarray[float32, float64], default=None
-            the classifier score to be evaluated against the `threshold`, i.e.
-            `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
+            if `scores` is not `None`, if both are provided, `scores` is ignored.
+        scores : np.ndarray[float32, float64], default=None
+            the classifier scores to be evaluated against the `threshold`, i.e.
+            `yhat` = `scores` >= `threshold`. Can be `None` if `yhat` is not `None`,
             if both are provided, this parameter is ignored.
         threshold : float, default=0.5
-            the classification threshold to which the classifier score is evaluated,
+            the classification threshold to which the classifier scores are evaluated,
             is inclusive.
         obs_axis : int, default=0
             the axis containing the observations for a single run, e.g. 0 when the
@@ -548,24 +522,6 @@ class PrecisionRecallMultinomialUncertainty(PointUncertainty):
         the lower and upper bound for which recall was evaluated, equal
         to recall +- `n_sigmas` * sigma(recall)
 
-    Methods
-    -------
-    from_scores
-        compute the uncertainty based on classifier scores and true labels
-    from_predictions
-        compute the uncertainty based on predictions and true labels
-    from_confusion_matrix
-        compute the uncertainty based on a confusion matrix
-    from_classifier
-        compute the uncertainty based on classifier scores from a trained
-        classifier and true labels
-    plot
-        plot the joint uncertainty of precision and recall
-    get_conf_mat
-        get the confusion matrix
-    get_scores
-        get the profile loglikelihood scores
-
     """
     def __init__(self):
         self.conf_mat = None
@@ -619,7 +575,7 @@ class PrecisionRecallMultinomialUncertainty(PointUncertainty):
     @classmethod
     def from_scores(cls,
         y : np.ndarray,
-        score : np.ndarray,
+        scores : np.ndarray,
         threshold : float = 0.5,
         n_bins : int = 100,
         n_sigmas : Union[int, float] = 6.0,
@@ -637,11 +593,11 @@ class PrecisionRecallMultinomialUncertainty(PointUncertainty):
             true labels for observations, supported dtypes are [bool, int32,
             int64, float32, float64]
         scores : np.ndarray, default=None
-            the classifier score to be evaluated against the `threshold`, i.e.
-            `yhat` = `score` >= `threshold`.
+            the classifier scores to be evaluated against the `threshold`, i.e.
+            `yhat` = `scores` >= `threshold`.
             Supported dtypes are float32 and float64.
         threshold : float, default=0.5
-            the classification threshold to which the classifier score is evaluated,
+            the classification threshold to which the classifier scores are evaluated,
             is inclusive.
         n_bins : int, default=100
             the number of bins in the precision/recall grid for which the
@@ -657,7 +613,7 @@ class PrecisionRecallMultinomialUncertainty(PointUncertainty):
         """
         self = cls()
         self._parse_threshold(threshold)
-        self.conf_mat = confusion_matrix(y=y, score=score, threshold=threshold)
+        self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
         self._compute_loglike_scores(n_bins, n_sigmas, epsilon)
         return self
 
@@ -677,10 +633,9 @@ class PrecisionRecallMultinomialUncertainty(PointUncertainty):
 
         Parameters
         ----------
-        y : np.ndarray
-            true labels for observations, supported dtypes are [bool, int32,
-            int64, float32, float64]
-        yhat : np.ndarray, default=None
+        y : np.ndarray[bool, int32, int64, float32, float64]
+            true labels for observations, supported dtypes are
+        yhat : yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
             the predicted labels, the same dtypes are supported as y.
         n_bins : int, default=100
             the number of bins in the precision/recall grid for which the
@@ -714,7 +669,7 @@ class PrecisionRecallMultinomialUncertainty(PointUncertainty):
 
         Parameters
         ----------
-        conf_mat : np.ndarray,
+        conf_mat : np.ndarray[int64],
             confusion matrix as returned by mmu.confusion_matrix, i.e.
             with layout [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP or
             the flattened equivalent. Supported dtypes are int32, int64
@@ -760,9 +715,8 @@ class PrecisionRecallMultinomialUncertainty(PointUncertainty):
             the classifier scores
         X : np.ndarray
             the feature array to be used to compute the classifier scores
-        y : np.ndarray
-            true labels for observations, supported dtypes are [bool, int32,
-            int64, float32, float64]
+        y : np.ndarray[bool, int32, int64, float32, float64]
+            true labels for observations
         threshold : float, default=0.5
             the classification threshold to which the classifier score is evaluated,
             is inclusive.
@@ -782,8 +736,8 @@ class PrecisionRecallMultinomialUncertainty(PointUncertainty):
         self._parse_threshold(threshold)
         if not hasattr(clf, 'predict_proba'):
             raise TypeError("`clf` must have a method `predict_proba`")
-        score = clf.predict_proba(X)[:, 1]
-        self.conf_mat = confusion_matrix(y=y, score=score, threshold=threshold)
+        scores = clf.predict_proba(X)[:, 1]
+        self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
         self._compute_loglike_scores(n_bins, n_sigmas, epsilon)
         return self
 
