@@ -2,9 +2,25 @@
 Model-Metric-Uncertainty (MMU)
 ==============================
 
-**Model-Metric-Uncertainty (MMU) is a library for the evaluation of model performance and estimation of the uncertainty on these metrics.**
+.. image:: https://github.com/RUrlus/ModelMetricUncertainty/actions/workflows/macos.yml/badge.svg?branch=stable
+    :target: https://github.com/RUrlus/ModelMetricUncertainty/actions/workflows/macos.yml
+    :alt: MacOS build
+.. image:: https://github.com/RUrlus/ModelMetricUncertainty/actions/workflows/linux.yml/badge.svg?branch=stable
+    :target: https://github.com/RUrlus/ModelMetricUncertainty/actions/workflows/linux.yml
+    :alt: Linux build
+.. image:: https://github.com/RUrlus/ModelMetricUncertainty/actions/workflows/windows.yml/badge.svg?branch=stable
+    :target: https://github.com/RUrlus/ModelMetricUncertainty/actions/workflows/windows.yml
+    :alt: Windows build
+.. image:: https://readthedocs.org/projects/mmu/badge/?version=latest
+    :target: https://mmu.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation
+.. image:: https://img.shields.io/github/license/RUrlus/modelmetricuncertainty
+    :target: https://github.com/RUrlus/carma/blob/stable/LICENSE
+    :alt: License
 
-We currently focus on binary classification models but aim to include support for other types of models and their metrics in the future.
+`Documentation <https://mmu.readthedocs.io/en/latest/>`_
+
+**Model-Metric-Uncertainty (MMU) is a library for the evaluation of model performance and estimation of the uncertainty on these metrics.**
 
 Functionality
 -------------
@@ -13,6 +29,8 @@ On a high level ``MMU`` provides two types of functionality:
 
 * **Metrics** - functions to compute confusion matrix(ces) and binary classification metrics over classifier scores or predictions.
 * **Uncertainty estimators** - functionality to compute the joint uncertainty over classification metrics.
+
+We currently focus on binary classification models but aim to include support for other types of models and their metrics in the future.
 
 Confusion Matrix & Metrics
 **************************
