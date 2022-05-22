@@ -34,7 +34,7 @@ if DEV:
     FULL_VERSION += '.dev'
 
 # read the contents of readme file
-with open("README.md", encoding="utf-8") as f:
+with open("README.rst", encoding="utf-8") as f:
     long_description = f.read()
 
 def write_version_py(filename: str = 'mmu/version.py') -> None:
