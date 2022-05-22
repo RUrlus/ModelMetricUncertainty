@@ -664,7 +664,7 @@ def precision_recall(y, yhat=None, scores=None, threshold=None, fill=0.0, return
     if return_df:
         return (
             confusion_matrix_to_dataframe(conf_mat),
-            pd.DataFrame(prec_rec, columns=['precision', 'recall'])
+            pd.DataFrame(prec_rec, index=['precision', 'recall']).T
         )
     return conf_mat, prec_rec
 
