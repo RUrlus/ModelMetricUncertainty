@@ -11,6 +11,18 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 import os
 import sys
+import pathlib
+
+readme_path = (
+    pathlib.Path(__file__)
+    .parent.resolve()
+    .parent.resolve()
+    .parent.joinpath("README.rst")
+)
+readme_target = pathlib.Path(__file__).parent.joinpath("readme.rst")
+with readme_target.open("w") as outf:
+    outf.write(readme_path.read_text())
+
 sys.path.insert(0, os.path.abspath('../..'))
 sys.setrecursionlimit(1500)
 
@@ -46,7 +58,6 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
-
 
 # -- Options for HTML output -------------------------------------------------
 
