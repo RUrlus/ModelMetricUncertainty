@@ -55,7 +55,7 @@ def test_PRMU_from_scores():
         yhat = greater_equal_tol(proba, threshold)
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
-        pr_err = mmu.PRMU.from_scores(y=y, scores=proba, threshold=threshold)
+        pr_err = mmu.PRU.from_scores(y=y, scores=proba, threshold=threshold)
         assert pr_err.conf_mat is not None
         assert pr_err.conf_mat.dtype == np.dtype(np.int64)
 
@@ -82,7 +82,7 @@ def test_PRMU_from_predictions():
         )
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
-        pr_err = mmu.PRMU.from_predictions(y=y, yhat=yhat)
+        pr_err = mmu.PRU.from_predictions(y=y, yhat=yhat)
         assert pr_err.conf_mat is not None
         assert pr_err.conf_mat.dtype == np.dtype(np.int64)
 
@@ -108,7 +108,7 @@ def test_PRMU_from_confusion_matrix():
         )
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
-        pr_err = mmu.PRMU.from_confusion_matrix(sk_conf_mat)
+        pr_err = mmu.PRU.from_confusion_matrix(sk_conf_mat)
         prec, rec, _, _ = skm.precision_recall_fscore_support(
             y, yhat, zero_division=0.0  # type: ignore
         )
@@ -150,7 +150,7 @@ def test_PRMU_from_classifier():
         yhat = greater_equal_tol(y_scores, threshold)
         sk_conf_mat = skm.confusion_matrix(y_test, yhat)
 
-        pr_err = mmu.PRMU.from_classifier(
+        pr_err = mmu.PRU.from_classifier(
             model, X_test, y_test, threshold=threshold
         )
         prec, rec, _, _ = skm.precision_recall_fscore_support(
@@ -170,7 +170,7 @@ def test_PRMU_exceptions():
     proba, _, y = generate_test_labels(N=1000,)
     yhat = greater_equal_tol(proba, 0.5)
 
-    pr_err = mmu.PRMU.from_scores(
+    pr_err = mmu.PRU.from_scores(
         y=y, scores=proba, threshold=0.5, n_bins=40
     )
     assert pr_err.n_bins == 40
@@ -178,28 +178,28 @@ def test_PRMU_exceptions():
 
     # n_bins >= 1
     with pytest.raises(ValueError):
-        pr_err = mmu.PRMU.from_scores(
+        pr_err = mmu.PRU.from_scores(
             y=y, scores=proba, threshold=0.5, n_bins=-20
         )
 
     # n_bins >= 1
     with pytest.raises(ValueError):
-        pr_err = mmu.PRMU.from_scores(
+        pr_err = mmu.PRU.from_scores(
             y=y, scores=proba, threshold=0.5, n_bins=0
         )
 
     # n_bins must be an int
     with pytest.raises(TypeError):
-        pr_err = mmu.PRMU.from_scores(
+        pr_err = mmu.PRU.from_scores(
             y=y, scores=proba, threshold=0.5, n_bins=20.
         )
 
-    pr_err = mmu.PRMU.from_scores(
+    pr_err = mmu.PRU.from_scores(
         y=y, scores=proba, threshold=0.5, n_sigmas=1.
     )
 
     with pytest.raises(TypeError):
-        pr_err = mmu.PRMU.from_scores(
+        pr_err = mmu.PRU.from_scores(
             y=y, scores=proba, threshold=0.5, n_sigmas=[1., ]
         )
 
@@ -218,7 +218,9 @@ def test_PREU_from_scores():
         yhat = greater_equal_tol(proba, threshold)
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
-        pr_err = mmu.PREU.from_scores(y=y, scores=proba, threshold=threshold)
+        pr_err = mmu.PRU.from_scores(
+            y=y, scores=proba, threshold=threshold, method='bvn'
+        )
         assert pr_err.conf_mat is not None
         assert pr_err.conf_mat.dtype == np.dtype(np.int64)
         assert pr_err.cov_mat.shape == (2, 2)
@@ -244,7 +246,7 @@ def test_PREU_from_predictions():
         )
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
-        pr_err = mmu.PREU.from_predictions(y=y, yhat=yhat)
+        pr_err = mmu.PRU.from_predictions(y=y, yhat=yhat, method='bvn')
         assert pr_err.conf_mat is not None
         assert pr_err.conf_mat.dtype == np.dtype(np.int64)
 
@@ -270,7 +272,7 @@ def test_PREU_from_confusion_matrix():
         )
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
-        pr_err = mmu.PREU.from_confusion_matrix(sk_conf_mat)
+        pr_err = mmu.PRU.from_confusion_matrix(sk_conf_mat, method='bvn')
         prec, rec, _, _ = skm.precision_recall_fscore_support(
             y, yhat, zero_division=0.0  # type: ignore
         )
@@ -310,8 +312,8 @@ def test_PREU_from_classifier():
         yhat = greater_equal_tol(y_scores, threshold)
         sk_conf_mat = skm.confusion_matrix(y_test, yhat)
 
-        pr_err = mmu.PREU.from_classifier(
-            model, X_test, y_test, threshold=threshold
+        pr_err = mmu.PRU.from_classifier(
+            model, X_test, y_test, threshold=threshold, method='bvn'
         )
         prec, rec, _, _ = skm.precision_recall_fscore_support(
             y_test, yhat, zero_division=0.0  # type: ignore

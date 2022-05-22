@@ -39,14 +39,10 @@ conf_mats_to_df = confusion_matrices_to_dataframe
 
 pr_curve = precision_recall_curve
 
-from mmu.methods import PREU
-from mmu.methods import PRMU
-from mmu.methods import PRCMU
-from mmu.methods import PRCEU
-from mmu.methods import PrecisionRecallEllipticalUncertainty
-from mmu.methods import PrecisionRecallMultinomialUncertainty
-from mmu.methods import PrecisionRecallCurveMultinomialUncertainty
-from mmu.methods import PrecisionRecallCurveEllipticalUncertainty
+from mmu.methods import PRU
+from mmu.methods import PRCU
+from mmu.methods import PrecisionRecallUncertainty
+from mmu.methods import PrecisionRecallCurveUncertainty
 
 from mmu.commons.utils import generate_data
 
@@ -72,14 +68,10 @@ __all__ = [
     'pr_curve',
     'precision_recall_curve',
     # classes
-    'PREU',
-    'PRMU',
-    'PRCMU',
-    'PRCEU',
-    'PrecisionRecallEllipticalUncertainty',
-    'PrecisionRecallMultinomialUncertainty',
-    'PrecisionRecallCurveMultinomialUncertainty',
-    'PrecisionRecallCurveEllipticalUncertainty',
+    'PRU',
+    'PRCU',
+    'PrecisionRecallUncertainty',
+    'PrecisionRecallCurveUncertainty',
     # modules
     'metrics',
     'methods',

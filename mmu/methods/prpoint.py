@@ -19,64 +19,26 @@ from mmu.viz.contours import _plot_pr_contours
 import mmu.lib._mmu_core as _core
 
 
-class PointUncertainty:
-    def __init__(self):
-        self.threshold = None
-        self.conf_mat = None
+class PrecisionRecallUncertainty:
+    """Compute joint uncertainty Precision-Recall.
 
-    def _parse_threshold(self, threshold):
-        if not isinstance(threshold, float) or not (0.0 < threshold < 1.0):
-            raise TypeError("`threshold` must be a float in [0, 1]")
-        self.threshold = threshold
+    The joint statistical uncertainty can be computed using:
 
-    def get_conf_mat(self) -> pd.DataFrame:
-        """Obtain confusion matrix as a DataFrame.
+    Multinomial method:
 
-        Returns
-        -------
-        pd.DataFrame
-            the confusion matrix of the test set
-        """
-        return confusion_matrix_to_dataframe(self.conf_mat)
+    Model's the uncertainty using profile log-likelihoods between
+    the observed and most conservative confusion matrix for that
+    precision-recall. Unlike the Bivariate-Normal/Elliptical approach,
+    this approach is valid for relatively low statistic samples and
+    at the edges of the curve. However, it does not allow one to
+    add the training sample uncertainty to it.
 
-    def _add_point_to_plot(self, point, point_kwargs):
-        if isinstance(point_kwargs, dict):
-            if 'cmap' not in point_kwargs:
-                point_kwargs['cmap'] = 'Reds'
-            if 'ax' in point_kwargs:
-                point_kwargs.pop('ax')
-        elif point_kwargs is None:
-            point_kwargs = {'cmap': 'Reds'}
-        else:
-            raise TypeError("`point_kwargs` must be a Dict or None")
-        self._ax = point.plot(ax=self._ax, **point_kwargs)
-        self._handles = self._handles + point._handles
-        self._ax.legend(handles=self._handles, loc='lower left', fontsize=12)  # type: ignore
-    def _add_other_to_plot(self, other, other_kwargs):
-        if issubclass(type(other), PointUncertainty):
-            self._add_point_to_plot(other, other_kwargs)
-        elif isinstance(other, (list, tuple)):
-            if other_kwargs is None:
-                other_kwargs = {}
-            elif isinstance(other_kwargs, dict):
-                other_kwargs = [other_kwargs, ] * len(other)
-            for point, kwargs in zip_longest(other, other_kwargs):
-                self._add_point_to_plot(point, kwargs)
-        else:
-            raise TypeError(
-                "`point_uncertainty` must be a subclass of PointUncertainty"
-                " or a list of PointUncertainty's"
-            )
-
-
-class PrecisionRecallEllipticalUncertainty(PointUncertainty):
-    """Precision-Recall uncertainty modelled as a Bivariate Normal.
+    Bivariate Normal / Elliptical method:
 
     Model's the linearly propogated errors of the confusion matrix as a
     bivariate Normal distribution. Note that this method is not valid
     for low statistic sets or for precision/recall close to 1.0/0.0.
-    In these scenarios the `PrecisionRecallMultinomialUncertainty` class should
-    be used.
+    In these scenarios the Multinomial method should be used.
 
     Attributes
     ----------
@@ -88,27 +50,52 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
         the Positive Predictive Value aka positive precision
     recall : float
         True Positive Rate aka Sensitivity aka positive recall
-    cov_mat : np.ndarray[float64]
-        the covariance matrix of precision and recall with layout
-        [0, 0] = V[P], [0, 1] = COV[P, R], [1, 0] = COV[P, R], [1, 1] = V[R]
-        A DataFrame can be obtained by calling `get_cov_mat`.
     threshold : float, optional
         the inclusive threshold used to determine the confusion matrix.
         Is None when the class is instantiated with `from_predictions` or
         `from_confusion_matrix`.
+    cov_mat : np.ndarray[float64], optional
+        the covariance matrix of precision and recall with layout
+        [0, 0] = V[P], [0, 1] = COV[P, R], [1, 0] = COV[P, R], [1, 1] = V[R]
+        A DataFrame can be obtained by calling `get_cov_mat`.
+        Only set when Elliptical method is used.
     train_conf_mats : np.ndarray, optional
         the confusion matrices from the multiple training runs.
         Only set when `add_train_uncertainty` is called.
         A DataFrame can be obtained by calling `get_train_conf_mats`
+        Only set when Elliptical method is used.
     train_cov_mat : np.ndarray, optional
         the precision, recall covariance matrix from the multiple training runs.
         Only set when `add_train_uncertainty` is called.
         A DataFrame can be obtained by calling `get_train_cov_mat`.
+        Only set when Elliptical method is used.
     total_cov_mat : np.ndarray, optional
         the precision, recall covariance matrix that combines the test and
         training sampling uncertainty.
         Only set when `add_train_uncertainty` is called.
         A DataFrame can be obtained by calling `get_total_cov_mat`.
+        Only set when Elliptical method is used.
+    chi2_scores : np.ndarray[float64], optional
+        the chi2 scores for the grid with shape (`n_bins`, `n_bins`) and
+        bounds precision_bounds on the y-axis, recall_bounds on the x-axis
+        Only set when Multinomial method is used.
+    precision_bounds : np.ndarray[float64], optional
+        the lower and upper bound for which precision was evaluated, equal
+        to precision +- `n_sigmas` * sigma(precision)
+        Only set when Multinomial method is used.
+    recall_bounds : np.ndarray[float64], optional
+        the lower and upper bound for which recall was evaluated, equal
+        to recall +- `n_sigmas` * sigma(recall)
+        Only set when Multinomial method is used.
+    n_sigmas : int, float, optional
+        the number of marginal standard deviations used to determine the
+        bounds of the grid which is evaluated for each observed precision and
+        recall.
+        Only set when Multinomial method is used.
+    epsilon : float, optional
+        the value used to prevent the bounds from reaching precision/recall
+        1.0/0.0 which would result in NaNs.
+        Only set when Multinomial method is used.
 
     """
     def __init__(self):
@@ -119,8 +106,76 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
         self.train_conf_mats = None
         self.train_cov_mat = None
         self.total_cov_mat = None
+        self._bounds = None
+        self.precision_bounds = None
+        self.recall_bounds = None
+        self.chi2_scores = None
+        self.n_bins = None
+        self.n_sigmas = None
+        self.epsilon = None
+        self._has_cov = False
+        self._moptions = {
+            'mult': {'mult', 'multinomial'},
+            'bvn': {'bvn', 'bivariate', 'elliptical'}
+        }
 
-    def _compute_mvn_cov(self):
+    def _parse_threshold(self, threshold):
+        if not isinstance(threshold, float) or not (0.0 < threshold < 1.0):
+            raise TypeError("`threshold` must be a float in [0, 1]")
+        self.threshold = threshold
+
+    def _parse_method(self, method):
+        if method in self._moptions['mult']:
+            self.method = method
+            self._compute_scores = self._compute_multn_scores
+        elif method in self._moptions['bvn']:
+            self._has_cov = True
+            self.method = method
+            self._compute_scores = self._compute_bvn_scores
+        else:
+            raise ValueError(
+                "``method`` must be one of 'multinomial', 'mult', 'elliptical'"
+                ", 'bivariate', 'bvn'"
+            )
+
+    def _compute_multn_scores(self, n_bins, n_sigmas, epsilon):
+        # -- validate n_bins arg
+        if n_bins is None:
+            self.n_bins = 100
+        elif isinstance(n_bins, int):
+            if n_bins < 1:
+                raise ValueError("`n_bins` must be bigger than 0")
+            self.n_bins = n_bins
+        else:
+            raise TypeError("`n_bins` must be an int")
+
+        # -- validate n_sigmas arg
+        if not isinstance(n_sigmas, (int, float)):
+            raise TypeError("`n_sigmas` must be an int or float.")
+        elif n_sigmas < 1.0:
+            raise ValueError("`n_sigmas` must be greater than 1.")
+        self.n_sigmas = n_sigmas
+
+        # -- validate epsilon arg
+        if not isinstance(epsilon, float):
+            raise TypeError("`epsilon` must be a float")
+        elif not (1e-15 <= epsilon <= 0.1):
+            raise ValueError("`epsilon` must be  in [1e-15, 0.1]")
+        self.epsilon = epsilon
+
+        self.precision, self.recall = _core.precision_recall(self.conf_mat)
+        # compute scores
+        self.chi2_scores, bounds = _core.multinomial_uncertainty(
+            n_bins=self.n_bins,
+            conf_mat=self.conf_mat,
+            n_sigmas=self.n_sigmas,
+            epsilon=self.epsilon
+        )
+        self.precision_bounds = bounds[0, :].copy()
+        self.recall_bounds = bounds[1, :].copy()
+        self._bounds = bounds.flatten()
+
+    def _compute_bvn_scores(self, *args, **kwargs):
         out = _core.pr_mvn_cov(self.conf_mat)
         self.precision = out[0]
         if self.precision < 1e-12:
@@ -149,65 +204,106 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
             )
 
     @classmethod
-    def from_scores(cls, y : np.ndarray, scores : np.ndarray, threshold : float = 0.5):
-        """Compute elliptical uncertainty on precision and recall.
-
-        Model's the linearly propogated errors of the confusion matrix as a
-        bivariate Normal distribution. Note that this method is not valid
-        for low statistic sets or for precision/recall close to 1.0/0.0.
-        In these scenarios the `PrecisionRecallMultinomialUncertainty` class should
-        be used.
+    def from_scores(cls,
+        y : np.ndarray,
+        scores : np.ndarray,
+        threshold : float = 0.5,
+        method : str = 'multinomial',
+        n_bins : int = 100,
+        n_sigmas : Union[int, float] = 6.0,
+        epsilon : float = 1e-12
+    ):
+        """Compute joint-uncertainty on precision and recall.
 
         Parameters
         ----------
-        y : np.ndarray[bool, int32, int64, float32, float64]
-            true labels for the observations
-        scores : np.ndarray[float32, float64], default=None
-            the classifier score to be evaluated against the `threshold`, i.e.
-            `yhat` = `score` >= `threshold`.
+        y : np.ndarray
+            true labels for observations, supported dtypes are [bool, int32,
+            int64, float32, float64]
+        scores : np.ndarray, default=None
+            the classifier scores to be evaluated against the `threshold`, i.e.
+            `yhat` = `scores` >= `threshold`.
+            Supported dtypes are float32 and float64.
         threshold : float, default=0.5
-            the classification threshold to which the classifier score is evaluated,
+            the classification threshold to which the classifier scores are evaluated,
             is inclusive.
+        method : str, default='multinomial',
+            which method to use, options are the Multinomial approach
+            {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
+            {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
+        n_bins : int, default=100
+            the number of bins in the precision/recall grid for which the
+            uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
+            array.
+            Ignored when method is not the Multinomial approach.
+        n_sigmas : int, float, default=6.0
+            the number of marginal standard deviations used to determine the
+            bounds of the grid which is evaluated.
+            Ignored when method is not the Multinomial approach.
+        epsilon : float, default=1e-12
+            the value used to prevent the bounds from reaching precision/recall
+            1.0/0.0 which would result in NaNs.
+            Ignored when method is not the Multinomial approach.
 
         """
         self = cls()
+        self._parse_method(method)
         self._parse_threshold(threshold)
         self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
-        self._compute_mvn_cov()
+        self._compute_scores(n_bins, n_sigmas, epsilon)
         return self
 
     @classmethod
-    def from_predictions(cls, y : np.ndarray, yhat : np.ndarray):
-        """Compute elliptical uncertainty on precision and recall.
-
-        Model's the linearly propogated errors of the confusion matrix as a
-        bivariate Normal distribution. Note that this method is not valid
-        for low statistic sets or for precision/recall close to 1.0/0.0.
-        In these scenarios the `PrecisionRecallMultinomialUncertainty` class should
-        be used.
+    def from_predictions(cls,
+        y : np.ndarray,
+        yhat : np.ndarray,
+        method : str = 'multinomial',
+        n_bins : int = 100,
+        n_sigmas : Union[int, float] = 6.0,
+        epsilon : float = 1e-12
+    ):
+        """Compute joint-uncertainty on precision and recall.
 
         Parameters
         ----------
         y : np.ndarray[bool, int32, int64, float32, float64]
-            true labels for the observations
-        yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
+            true labels for observations, supported dtypes are
+        yhat : yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
             the predicted labels, the same dtypes are supported as y.
+        method : str, default='multinomial',
+            which method to use, options are the Multinomial approach
+            {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
+            {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
+        n_bins : int, default=100
+            the number of bins in the precision/recall grid for which the
+            uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
+            array.
+            Ignored when method is not the Multinomial approach.
+        n_sigmas : int, float, default=6.0
+            the number of marginal standard deviations used to determine the
+            bounds of the grid which is evaluated.
+            Ignored when method is not the Multinomial approach.
+        epsilon : float, default=1e-12
+            the value used to prevent the bounds from reaching precision/recall
+            1.0/0.0 which would result in NaNs.
+            Ignored when method is not the Multinomial approach.
 
         """
         self = cls()
+        self._parse_method(method)
         self.conf_mat = confusion_matrix(y=y, yhat=yhat)
-        self._compute_mvn_cov()
+        self._compute_scores(n_bins, n_sigmas, epsilon)
         return self
 
     @classmethod
-    def from_confusion_matrix(cls, conf_mat : np.ndarray):
-        """Compute elliptical uncertainty on precision and recall.
-
-        Model's the linearly propogated errors of the confusion matrix as a
-        bivariate Normal distribution. Note that this method is not valid
-        for low statistic sets or for precision/recall close to 1.0/0.0.
-        In these scenarios the `PrecisionRecallMultinomialUncertainty` class should
-        be used.
+    def from_confusion_matrix(cls,
+        conf_mat : np.ndarray,
+        method : str = 'multinomial',
+        n_bins : int = 100,
+        n_sigmas : Union[int, float] = 6.0,
+        epsilon : float = 1e-12
+    ):
+        """Compute joint-uncertainty on precision and recall.
 
         Parameters
         ----------
@@ -215,13 +311,31 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
             confusion matrix as returned by mmu.confusion_matrix, i.e.
             with layout [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP or
             the flattened equivalent. Supported dtypes are int32, int64
+        method : str, default='multinomial',
+            which method to use, options are the Multinomial approach
+            {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
+            {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
+        n_bins : int, default=100
+            the number of bins in the precision/recall grid for which the
+            uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
+            array.
+            Ignored when method is not the Multinomial approach.
+        n_sigmas : int, float, default=6.0
+            the number of marginal standard deviations used to determine the
+            bounds of the grid which is evaluated.
+            Ignored when method is not the Multinomial approach.
+        epsilon : float, default=1e-12
+            the value used to prevent the bounds from reaching precision/recall
+            1.0/0.0 which would result in NaNs.
+            Ignored when method is not the Multinomial approach.
 
         """
         self = cls()
+        self._parse_method(method)
         if conf_mat.shape == (2, 2):
             conf_mat = conf_mat.ravel()
         self.conf_mat = check_array(conf_mat, max_dim=1, dtype_check=_convert_to_int)
-        self._compute_mvn_cov()
+        self._compute_scores(n_bins, n_sigmas, epsilon)
         return self
 
     @classmethod
@@ -229,15 +343,13 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
         clf,
         X : np.ndarray,
         y : np.ndarray,
-        threshold : float = 0.5
+        threshold : float = 0.5,
+        method : str = 'multinomial',
+        n_bins : int = 100,
+        n_sigmas : Union[int, float] = 6.0,
+        epsilon : float = 1e-12
     ):
-        """Compute elliptical uncertainty on precision and recall.
-
-        Model's the linearly propogated errors of the confusion matrix as a
-        bivariate Normal distribution. Note that this method is not valid
-        for low statistic sets or for precision/recall close to 1.0/0.0.
-        In these scenarios the `PrecisionRecallMultinomialUncertainty` class should
-        be used.
+        """Compute joint-uncertainty on precision and recall.
 
         Parameters
         ----------
@@ -247,20 +359,59 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
         X : np.ndarray
             the feature array to be used to compute the classifier scores
         y : np.ndarray[bool, int32, int64, float32, float64]
-            true labels for the observations
+            true labels for observations
         threshold : float, default=0.5
             the classification threshold to which the classifier score is evaluated,
             is inclusive.
+        method : str, default='multinomial',
+            which method to use, options are the Multinomial approach
+            {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
+            {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
+        n_bins : int, default=100
+            the number of bins in the precision/recall grid for which the
+            uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
+            array.
+            Ignored when method is not the Multinomial approach.
+        n_sigmas : int, float, default=6.0
+            the number of marginal standard deviations used to determine the
+            bounds of the grid which is evaluated.
+            Ignored when method is not the Multinomial approach.
+        epsilon : float, default=1e-12
+            the value used to prevent the bounds from reaching precision/recall
+            1.0/0.0 which would result in NaNs.
+            Ignored when method is not the Multinomial approach.
 
         """
         self = cls()
+        self._parse_method(method)
         self._parse_threshold(threshold)
         if not hasattr(clf, 'predict_proba'):
             raise TypeError("`clf` must have a method `predict_proba`")
         scores = clf.predict_proba(X)[:, 1]
         self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
-        self._compute_mvn_cov()
+        self._compute_scores(n_bins, n_sigmas, epsilon)
         return self
+
+    def _get_scaling_factor_alpha(self, alphas):
+        """Compute critical value given a number alphas."""
+        # Get the scale for 2 degrees of freedom confidence interval
+        # We use chi2 because the equation of an ellipse is a sum of squared variable,
+        return np.sqrt(sts.chi2.ppf(alphas, 2))
+
+    def _get_scaling_factor_std(self, stds):
+        alphas = 2. * (sts.norm.cdf(stds) - 0.5)
+        return np.sqrt(sts.chi2.ppf(alphas, 2))
+
+    def _get_critical_values_std(self, n_std):
+        """Compute the critical values for a chi2 with 2df using the continuity correction"""
+        alphas = 2. * (sts.norm.cdf(n_std) - 0.5)
+        # confidence limits in two dimensions
+        return sts.chi2.ppf(alphas, 2)
+
+    def _get_critical_values_alpha(self, alphas):
+        """Compute the critical values for a chi2 with 2df."""
+        # confidence limits in two dimensions
+        return sts.chi2.ppf(alphas, 2)
 
     def add_train_uncertainty(
         self,
@@ -271,6 +422,8 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
         obs_axis : int = 0,
     ):
         """Incorporate the sampling uncertainty of the train set.
+
+        Can only be used when ``method`` is the bivariate-normal/elliptical.
 
         Parameters
         ----------
@@ -290,7 +443,17 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
             the axis containing the observations for a single run, e.g. 0 when the
             labels and scores are stored as columns
 
+        Raises
+        ------
+        NotImplementedError
+            when method is not Bivariate-Normal/Elliptical
+
         """
+        if not self._has_cov:
+            raise NotImplementedError(
+                "``add_train_uncertainty`` cannot be called when method is not"
+                " Bivariate-Normal/Elliptical."
+            )
         self.train_conf_mats = confusion_matrices(
             y, yhat, scores, threshold, obs_axis
         )
@@ -313,10 +476,26 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
         -------
         pd.DataFrame
             the confusion matrices of the training sets
+
+        Raises
+        ------
+        NotImplementedError
+            when method is not Bivariate-Normal/Elliptical
+
         """
+        if not self._has_cov:
+            raise NotImplementedError(
+                "`train_conf_mats` are not computed when method is not"
+                " Bivariate-Normal/Elliptical."
+            )
         return confusion_matrices_to_dataframe(self.train_conf_mats)
 
     def _get_cov_mat(self, cov_mat):
+        if not self._has_cov:
+            raise NotImplementedError(
+                "`cov_mat` is not computed when method is not"
+                " Bivariate-Normal/Elliptical."
+            )
         cov_cols = ['precision', 'recall']
         return pd.DataFrame(cov_mat, index=cov_cols, columns=cov_cols)
 
@@ -327,6 +506,12 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
         -------
         pd.DataFrame
             the covariance matrix
+
+        Raises
+        ------
+        NotImplementedError
+            when method is not Bivariate-Normal/Elliptical
+
         """
         return self._get_cov_mat(self.cov_mat)
 
@@ -337,6 +522,12 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
         -------
         pd.DataFrame
             the covariance matrix
+
+        Raises
+        ------
+        NotImplementedError
+            when method is not Bivariate-Normal/Elliptical
+
         """
         return self._get_cov_mat(self.train_cov_mat)
 
@@ -347,75 +538,68 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
         -------
         pd.DataFrame
             the covariance matrix
+
+        Raises
+        ------
+        NotImplementedError
+            when method is not Bivariate-Normal/Elliptical
+
         """
         return self._get_cov_mat(self.total_cov_mat)
 
-
-    def _get_scaling_factor_alpha(self, alphas):
-        """Compute critical value given a number alphas."""
-        # Get the scale for 2 degrees of freedom confidence interval
-        # We use chi2 because the equation of an ellipse is a sum of squared variable,
-        return np.sqrt(sts.chi2.ppf(alphas, 2))
-
-    def _get_scaling_factor_std(self, stds):
-        alphas = 2. * (sts.norm.cdf(stds) - 0.5)
-        return np.sqrt(sts.chi2.ppf(alphas, 2))
-
-    def plot(
-        self,
-        levels : Union[int, float, np.ndarray, None] = None,
-        uncertainties : str = 'test',
-        ax=None,
-        cmap : str = 'Blues',
-        equal_aspect : bool = False,
-        limit_axis : bool = True,
-        alpha : float = 0.6,
-        other : Union[PointUncertainty, List[PointUncertainty], None] = None,
-        other_kwargs : Union[Dict, List[Dict], None] = None
-    ):
-        """Plot elliptical confidence interval(s) for precision and recall
-
-        Parameters
-        ----------
-        levels : int, float np.ndarray, default=np.array((1, 2, 3,))
-            if int(s) levels is treated as the number of standard deviations
-            for the confidence interval. Note that the continuity correction
-            is applied when determining the corresponding quantiles of the chi2.
-            If float(s) it is taken to be the density to be contained in the
-            confidence interval, no continuity correction is applied.
-            By default we plot 1, 2 and 3 std deviations
-        uncertainties : str, default='test'
-            which uncertainty to plot, 'test' indicates only the sampling
-            uncertainty of the test set. 'train' only plots the sampling
-            uncertainty of the train set. 'all' plots to toal uncertainty over
-            both the train and test sets. Note that 'train' and 'all' require
-            that `add_train_uncertainty` has been called.
-        ax : matplotlib.axes.Axes, default=None
-            Pre-existing axes for the plot
-        cmap : str, default='Blues'
-            matplotlib cmap name to use for CIs
-        equal_aspect : bool, default=False
-            enforce square axis
-        limit_axis : bool, default=True
-            allow ax to be limited for optimal CI plot
-        alpha : float, defualt=0.8
-            opacity value of the ellipses
-        other : PrecisionRecallMultinomialUncertainty,
-        PrecisionRecallEllipticalUncertainty, List, default=None
-            Add other point uncertainty(ies) plot to the plot, by default the
-            `Reds` cmap is used for the `other` plot(s).
-        other_kwargs : dict, list[dict], default=None
-            Keyword arguments passed to `other.plot()`, ignored if
-            `other` is None. If `other` is a list and
-            `other_kwargs` is a dict, the kwargs are used for all point
-            others.
+    def get_conf_mat(self) -> pd.DataFrame:
+        """Obtain confusion matrix as a DataFrame.
 
         Returns
         -------
-        ax : matplotlib.axes.Axes
-            the axis with the ellipse added to it
-
+        pd.DataFrame
+            the confusion matrix of the test set
         """
+        return confusion_matrix_to_dataframe(self.conf_mat)
+
+    def _add_point_to_plot(self, point, point_kwargs):
+        if isinstance(point_kwargs, dict):
+            if 'cmap' not in point_kwargs:
+                point_kwargs['cmap'] = 'Reds'
+            if 'ax' in point_kwargs:
+                point_kwargs.pop('ax')
+        elif point_kwargs is None:
+            point_kwargs = {'cmap': 'Reds'}
+        else:
+            raise TypeError("`point_kwargs` must be a Dict or None")
+        self._ax = point.plot(ax=self._ax, **point_kwargs)
+        self._handles = self._handles + point._handles
+        self._ax.legend(handles=self._handles, loc='lower left', fontsize=12)  # type: ignore
+
+    def _add_other_to_plot(self, other, other_kwargs):
+        if isinstance(other, PrecisionRecallUncertainty):
+            self._add_point_to_plot(other, other_kwargs)
+        elif isinstance(other, (list, tuple)):
+            if other_kwargs is None:
+                other_kwargs = {}
+            elif isinstance(other_kwargs, dict):
+                other_kwargs = [other_kwargs, ] * len(other)
+            for point, kwargs in zip_longest(other, other_kwargs):
+                self._add_point_to_plot(point, kwargs)
+        else:
+            raise TypeError(
+                "`point_uncertainty` must be a subclass of PointUncertainty"
+                " or a list of PointUncertainty's"
+            )
+
+    def _plot_ellipse(
+        self,
+        levels = None,
+        uncertainties = 'test',
+        ax=None,
+        cmap= 'Blues',
+        equal_aspect = False,
+        limit_axis = True,
+        alpha = 0.6,
+        other = None,
+        other_kwargs = None
+    ):
+        """Plot elliptical confidence interval(s) for precision and recall."""
         if self.cov_mat is None:
             raise RuntimeError("the class needs to be initialised with from_*")
 
@@ -491,314 +675,18 @@ class PrecisionRecallEllipticalUncertainty(PointUncertainty):
             self._add_other_to_plot(other, other_kwargs)
         return self._ax
 
-
-class PrecisionRecallMultinomialUncertainty(PointUncertainty):
-    """Precision-Recall uncertainty modelled as a Multinomial.
-
-    Model's the uncertainty using profile log-likelihoods between
-    the observed and most conservative confusion matrix for that
-    precision recall. Unlike the PrecisionRecallEllipticalUncertainty
-    this approach is valid for relatively low statistic samples and
-    at the edges of the curve. However, it does not allow one to
-    add the training sample uncertainty to it.
-
-    Attributes
-    ----------
-    conf_mat : np.ndarray[int64]
-        the confusion_matrix with layout
-        [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP
-        A DataFrame can be obtained by calling `get_conf_mat`.
-    precision : float
-        the Positive Predictive Value aka positive precision
-    recall : float
-        True Positive Rate aka Sensitivity aka positive recall
-    chi2_scores : np.ndarray[float64]
-        the chi2 scores for the grid with shape (`n_bins`, `n_bins`) and
-        bounds precision_bounds on the y-axis, recall_bounds on the x-axis
-    precision_bounds : np.ndarray[float64]
-        the lower and upper bound for which precision was evaluated, equal
-        to precision +- `n_sigmas` * sigma(precision)
-    recall_bounds : np.ndarray[float64]
-        the lower and upper bound for which recall was evaluated, equal
-        to recall +- `n_sigmas` * sigma(recall)
-
-    """
-    def __init__(self):
-        self.conf_mat = None
-        self.precision = None
-        self.recall = None
-        self._bounds = None
-        self.precision_bounds = None
-        self.recall_bounds = None
-        self.chi2_scores = None
-        self.n_bins = None
-        self.n_sigmas = None
-        self.epsilon = None
-
-    def _compute_loglike_scores(self, n_bins, n_sigmas, epsilon):
-        # -- validate n_bins arg
-        if n_bins is None:
-            self.n_bins = 100
-        elif isinstance(n_bins, int):
-            if n_bins < 1:
-                raise ValueError("`n_bins` must be bigger than 0")
-            self.n_bins = n_bins
-        else:
-            raise TypeError("`n_bins` must be an int")
-
-        # -- validate n_sigmas arg
-        if not isinstance(n_sigmas, (int, float)):
-            raise TypeError("`n_sigmas` must be an int or float.")
-        elif n_sigmas < 1.0:
-            raise ValueError("`n_sigmas` must be greater than 1.")
-        self.n_sigmas = n_sigmas
-
-        # -- validate epsilon arg
-        if not isinstance(epsilon, float):
-            raise TypeError("`epsilon` must be a float")
-        elif not (1e-15 <= epsilon <= 0.1):
-            raise ValueError("`epsilon` must be  in [1e-15, 0.1]")
-        self.epsilon = epsilon
-
-        self.precision, self.recall = _core.precision_recall(self.conf_mat)
-        # compute scores
-        self.chi2_scores, bounds = _core.multinomial_uncertainty(
-            n_bins=self.n_bins,
-            conf_mat=self.conf_mat,
-            n_sigmas=self.n_sigmas,
-            epsilon=self.epsilon
-        )
-        self.precision_bounds = bounds[0, :].copy()
-        self.recall_bounds = bounds[1, :].copy()
-        self._bounds = bounds.flatten()
-
-    @classmethod
-    def from_scores(cls,
-        y : np.ndarray,
-        scores : np.ndarray,
-        threshold : float = 0.5,
-        n_bins : int = 100,
-        n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12
-    ):
-        """Compute Multinomial uncertainty on precision and recall.
-
-        Model's the uncertainty using profile log-likelihoods between
-        the observed and most conservative confusion matrix for that
-        precision recall.
-
-        Parameters
-        ----------
-        y : np.ndarray
-            true labels for observations, supported dtypes are [bool, int32,
-            int64, float32, float64]
-        scores : np.ndarray, default=None
-            the classifier scores to be evaluated against the `threshold`, i.e.
-            `yhat` = `scores` >= `threshold`.
-            Supported dtypes are float32 and float64.
-        threshold : float, default=0.5
-            the classification threshold to which the classifier scores are evaluated,
-            is inclusive.
-        n_bins : int, default=100
-            the number of bins in the precision/recall grid for which the
-            uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
-            array.
-        n_sigmas : int, float, default=6.0
-            the number of marginal standard deviations used to determine the
-            bounds of the grid which is evaluated.
-        epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching precision/recall
-            1.0/0.0 which would result in NaNs.
-
-        """
-        self = cls()
-        self._parse_threshold(threshold)
-        self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
-        self._compute_loglike_scores(n_bins, n_sigmas, epsilon)
-        return self
-
-    @classmethod
-    def from_predictions(cls,
-        y : np.ndarray,
-        yhat : np.ndarray,
-        n_bins : int = 100,
-        n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12
-    ):
-        """Compute Multinomial uncertainty on precision and recall.
-
-        Model's the uncertainty using profile log-likelihoods between
-        the observed and most conservative confusion matrix for that
-        precision recall.
-
-        Parameters
-        ----------
-        y : np.ndarray[bool, int32, int64, float32, float64]
-            true labels for observations, supported dtypes are
-        yhat : yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
-            the predicted labels, the same dtypes are supported as y.
-        n_bins : int, default=100
-            the number of bins in the precision/recall grid for which the
-            uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
-            array.
-        n_sigmas : int, float, default=6.0
-            the number of marginal standard deviations used to determine the
-            bounds of the grid which is evaluated.
-        epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching precision/recall
-            1.0/0.0 which would result in NaNs.
-
-        """
-        self = cls()
-        self.conf_mat = confusion_matrix(y=y, yhat=yhat)
-        self._compute_loglike_scores(n_bins, n_sigmas, epsilon)
-        return self
-
-    @classmethod
-    def from_confusion_matrix(cls,
-        conf_mat : np.ndarray,
-        n_bins : int = 100,
-        n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12
-    ):
-        """Compute Multinomial uncertainty on precision and recall.
-
-        Model's the uncertainty using profile log-likelihoods between
-        the observed and most conservative confusion matrix for that
-        precision recall.
-
-        Parameters
-        ----------
-        conf_mat : np.ndarray[int64],
-            confusion matrix as returned by mmu.confusion_matrix, i.e.
-            with layout [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP or
-            the flattened equivalent. Supported dtypes are int32, int64
-        n_bins : int, default=100
-            the number of bins in the precision/recall grid for which the
-            uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
-            array.
-        n_sigmas : int, float, default=6.0
-            the number of marginal standard deviations used to determine the
-            bounds of the grid which is evaluated.
-        epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching precision/recall
-            1.0/0.0 which would result in NaNs.
-
-        """
-        self = cls()
-        if conf_mat.shape == (2, 2):
-            conf_mat = conf_mat.ravel()
-        self.conf_mat = check_array(conf_mat, max_dim=1, dtype_check=_convert_to_int)
-        self._compute_loglike_scores(n_bins, n_sigmas, epsilon)
-        return self
-
-    @classmethod
-    def from_classifier(cls,
-        clf,
-        X : np.ndarray,
-        y : np.ndarray,
-        threshold : float = 0.5,
-        n_bins : int = 100,
-        n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12
-    ):
-        """Compute Multinomial uncertainty on precision and recall.
-
-        Model's the uncertainty using profile log-likelihoods between
-        the observed and most conservative confusion matrix for that
-        precision recall.
-
-        Parameters
-        ----------
-        clf : sklearn.Predictor
-            a trained model with method `predict_proba`, used to compute
-            the classifier scores
-        X : np.ndarray
-            the feature array to be used to compute the classifier scores
-        y : np.ndarray[bool, int32, int64, float32, float64]
-            true labels for observations
-        threshold : float, default=0.5
-            the classification threshold to which the classifier score is evaluated,
-            is inclusive.
-        n_bins : int, default=100
-            the number of bins in the precision/recall grid for which the
-            uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
-            array.
-        n_sigmas : int, float, default=6.0
-            the number of marginal standard deviations used to determine the
-            bounds of the grid which is evaluated.
-        epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching precision/recall
-            1.0/0.0 which would result in NaNs.
-
-        """
-        self = cls()
-        self._parse_threshold(threshold)
-        if not hasattr(clf, 'predict_proba'):
-            raise TypeError("`clf` must have a method `predict_proba`")
-        scores = clf.predict_proba(X)[:, 1]
-        self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
-        self._compute_loglike_scores(n_bins, n_sigmas, epsilon)
-        return self
-
-    def _get_critical_values_std(self, n_std):
-        """Compute the critical values for a chi2 with 2df using the continuity correction"""
-        alphas = 2. * (sts.norm.cdf(n_std) - 0.5)
-        # confidence limits in two dimensions
-        return sts.chi2.ppf(alphas, 2)
-
-    def _get_critical_values_alpha(self, alphas):
-        """Compute the critical values for a chi2 with 2df."""
-        # confidence limits in two dimensions
-        return sts.chi2.ppf(alphas, 2)
-
-    def plot(
+    def _plot_contour(
         self,
-        levels : Union[int, float, np.ndarray, None] = None,
+        levels = None,
         ax=None,
-        cmap : str = 'Blues',
-        equal_aspect : bool = False,
-        limit_axis : bool = True,
-        alpha : float = 0.8,
-        other : Union[PointUncertainty, List[PointUncertainty], None] = None,
-        other_kwargs : Union[Dict, List[Dict], None] = None
+        cmap = 'Blues',
+        equal_aspect = False,
+        limit_axis = True,
+        alpha = 0.8,
+        other = None,
+        other_kwargs = None
     ):
-        """Plot confidence interval(s) for precision and recall
-
-        Parameters
-        ----------
-        levels : int, float np.ndarray, default=np.array((1, 2, 3,))
-            if int(s) levels is treated as the number of standard deviations
-            for the confidence interval.
-            If float(s) it is taken to be the density to be contained in the
-            confidence interval
-            By default we plot 1, 2 and 3 std deviations
-        ax : matplotlib.axes.Axes, default=None
-            Pre-existing axes for the plot
-        cmap : str, default='Blues'
-            matplotlib cmap name to use for CIs
-        equal_aspect : bool, default=False
-            enforce square axis
-        limit_axis : bool, default=True
-            allow ax to be limited for optimal CI plot
-        alpha : float, defualt=0.8
-            opacity value of the contours
-        other : PrecisionRecallMultinomialUncertainty,
-        PrecisionRecallEllipticalUncertainty, List, default=None
-            Add other point uncertainty(ies) plot to the plot, by default the
-            `Reds` cmap is used for the `other` plot(s).
-        other_kwargs : dict, list[dict], default=None
-            Keyword arguments passed to `other.plot()`, ignored if
-            `other` is None. If `other` is a list and
-            `other_kwargs` is a dict, the kwargs are used for all point
-            others.
-
-        Returns
-        -------
-        ax : matplotlib.axes.Axes
-            the axis with the ellipse added to it
-
-        """
+        """Plot confidence interval(s) for precision and recall."""
         if self.chi2_scores is None:
             raise RuntimeError("the class needs to be initialised with from_*")
 
@@ -853,3 +741,80 @@ class PrecisionRecallMultinomialUncertainty(PointUncertainty):
         if other is not None:
             self._add_other_to_plot(other, other_kwargs)
         return self._ax
+
+    def plot(
+        self,
+        levels : Union[int, float, np.ndarray, None] = None,
+        uncertainties = 'test',
+        ax=None,
+        cmap : str = 'Blues',
+        equal_aspect : bool = False,
+        limit_axis : bool = True,
+        alpha : float = 0.8,
+        other : Union['PrecisionRecallUncertainty', List['PrecisionRecallUncertainty'], None] = None,
+        other_kwargs : Union[Dict, List[Dict], None] = None
+    ):
+        """Plot confidence interval(s) for precision and recall.
+
+        Parameters
+        ----------
+        levels : int, float np.ndarray, default=np.array((1, 2, 3,))
+            if int(s) levels is treated as the number of standard deviations
+            for the confidence interval.
+            If float(s) it is taken to be the density to be contained in the
+            confidence interval
+            By default we plot 1, 2 and 3 std deviations
+        uncertainties : str, default='test'
+            which uncertainty to plot, ignored when method is not
+            Bivariate-Normal / Elliptical. 'test' indicates only the sampling
+            uncertainty of the test set. 'train' only plots the sampling
+            uncertainty of the train set. 'all' plots to toal uncertainty over
+            both the train and test sets. Note that 'train' and 'all' require
+            that `add_train_uncertainty` has been called.
+        ax : matplotlib.axes.Axes, default=None
+            Pre-existing axes for the plot
+        cmap : str, default='Blues'
+            matplotlib cmap name to use for CIs
+        equal_aspect : bool, default=False
+            enforce square axis
+        limit_axis : bool, default=True
+            allow ax to be limited for optimal CI plot
+        alpha : float, defualt=0.8
+            opacity value of the contours
+        other : PrecisionRecallMultinomialUncertainty,
+        PrecisionRecallEllipticalUncertainty, List, default=None
+            Add other point uncertainty(ies) plot to the plot, by default the
+            `Reds` cmap is used for the `other` plot(s).
+        other_kwargs : dict, list[dict], default=None
+            Keyword arguments passed to `other.plot()`, ignored if
+            `other` is None. If `other` is a list and
+            `other_kwargs` is a dict, the kwargs are used for all point
+            others.
+
+        Returns
+        -------
+        ax : matplotlib.axes.Axes
+            the axis with the ellipse added to it
+
+        """
+        if self._has_cov is True:
+            return self._plot_ellipse(
+                levels=levels,
+                uncertainties=uncertainties,
+                ax=ax,
+                cmap=cmap,
+                equal_aspect=equal_aspect,
+                alpha=alpha,
+                other=other,
+                other_kwargs=other_kwargs
+            )
+        else:
+            return self._plot_contour(
+                levels=levels,
+                ax=ax,
+                cmap=cmap,
+                equal_aspect=equal_aspect,
+                alpha=alpha,
+                other=other,
+                other_kwargs=other_kwargs
+            )

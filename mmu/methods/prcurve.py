@@ -13,7 +13,7 @@ from mmu.metrics.confmat import confusion_matrices_thresholds
 from mmu.metrics.confmat import confusion_matrices_to_dataframe
 from mmu.viz.contours import _plot_pr_curve_contours
 from mmu.lib import MMU_MT_SUPPORT as _MMU_MT_SUPPORT
-from mmu.methods.prpoint import PointUncertainty
+from mmu.methods.prpoint import PrecisionRecallUncertainty
 
 import mmu.lib._mmu_core as _core
 from mmu.lib._mmu_core import (
@@ -26,15 +26,171 @@ if _MMU_MT_SUPPORT:
         mvn_uncertainty_over_grid_thresholds_mt as mvn_error_grid_thresh_mt,
     )
 
-class _PrecisionRecallCurveBase:
+class PrecisionRecallCurveUncertainty:
+    """Compute joint uncertainty Precision-Recall curve.
+
+    The joint statistical uncertainty can be computed using:
+
+    Multinomial method:
+
+    Model's the uncertainty using profile log-likelihoods between
+    the observed and most conservative confusion matrix for that
+    precision recall. Unlike the Bivariate-Normal/Elliptical approach,
+    this approach is valid for relatively low statistic samples and
+    at the edges of the curve. However, it does not allow one to
+    add the training sample uncertainty to it.
+
+    Bivariate Normal / Elliptical method:
+
+    Model's the linearly propogated errors of the confusion matrix as a
+    bivariate Normal distribution. Note that this method is not valid
+    for low statistic sets or for precision/recall close to 1.0/0.0.
+    In these scenarios the Multinomial method should be used.
+
+    Attributes
+    ----------
+    conf_mat : np.ndarray[int64]
+        the confusion_matrices over the thresholds with columns [TN, FP, FN, TP].
+        A DataFrame can be obtained by calling `get_conf_mat`.
+    cov_mats : np.ndarray[float64], optional
+        flattened covariance matrices for each threshold. Not computed when the
+        multinomial approach is used
+    precision : np.ndarray[float64]
+        the Positive Predictive Values aka positive precisions
+    recall : np.ndarray[float64]
+        True Positive Rate aka Sensitivity aka positive recall
+    chi2_scores : np.ndarray[float64]
+        the sum of squared z scores which follow a chi2 distribution with
+        two degrees of freedom. Has shape (`n_bins`, `n_bins`) with bounds
+        `precision_bounds` on the y-axis and `recall_bounds` on the x-axis.
+    thresholds : np.ndarray[float64], Optional
+        the inclusive classification/discrimination thresholds used to compute
+        the confusion matrices. Is None when the class is instantiated with
+        `from_confusion_matrices`.
+    rec_grid : np.ndarray[float64]
+        the recall values that where evaluated.
+    prec_grid : np.ndarray[float64]
+        the precision values that where evaluated.
+    n_sigmas : int, float
+        the number of marginal standard deviations used to determine the
+        bounds of the grid which is evaluated for each observed precision and
+        recall.
+    epsilon : float
+        the value used to prevent the bounds from reaching precision/recall
+        1.0/0.0 which would result in NaNs.
+
+    """
+
     def __init__(self):
         self.n_conf_mats = None
         self.conf_mats = None
-        self.chi2_scores = None
         self.precision = None
         self.recall = None
-        self._doc_pref = " "
+        self.chi2_scores = None
+        self.prec_grid = None
+        self.rec_grid = None
+        self.n_sigmas = None
+        self.epsilon = None
         self.thresholds = None
+        self._has_cov = False
+        self._moptions = {
+            'mult': {'mult', 'multinomial'},
+            'bvn': {'bvn', 'bivariate', 'elliptical'}
+        }
+
+    def _compute_bvn_scores(self, n_sigmas, epsilon, n_threads):
+        n_threads = _check_n_threads(n_threads)
+
+        # -- validate n_sigmas arg
+        self._parse_n_sigmas(n_sigmas)
+
+        # -- validate epsilon arg
+        self._parse_epsilon(epsilon)
+
+        # compute precision and recall
+        mtr = _core.pr_curve_mvn_cov(self.conf_mats)
+        self.precision = mtr[:, 0]
+        self.recall = mtr[:, 1]
+        self.cov_mats = mtr[:, 2:]
+
+        # compute scores
+        if _MMU_MT_SUPPORT and n_threads > 1:
+            self.chi2_scores = mvn_error_grid_thresh_mt(
+                n_conf_mats=self.n_conf_mats,
+                precs_grid=self.prec_grid,
+                recs_grid=self.rec_grid,
+                conf_mat=self.conf_mats,
+                n_sigmas=self.n_sigmas,
+                epsilon=self.epsilon,
+                n_threads=n_threads,
+            )
+        elif (n_threads > 1):
+            warnings.warn(
+                "mmu was not compiled with multi-threading enabled,"
+                " ignoring `n_threads`"
+            )
+        else:
+            self.chi2_scores = mvn_error_grid_thresh(
+                n_conf_mats=self.n_conf_mats,
+                precs_grid=self.prec_grid,
+                recs_grid=self.rec_grid,
+                conf_mat=self.conf_mats,
+                n_sigmas=self.n_sigmas,
+                epsilon=self.epsilon,
+            )
+
+    def _compute_multn_scores(self, n_sigmas, epsilon, n_threads):
+        n_threads = _check_n_threads(n_threads)
+
+        # -- validate n_sigmas arg
+        self._parse_n_sigmas(n_sigmas)
+
+        # -- validate epsilon arg
+        self._parse_epsilon(epsilon)
+
+        # compute precision and recall
+        mtr = _core.precision_recall_2d(self.conf_mats)
+        self.precision = mtr[:, 0].copy()
+        self.recall = mtr[:, 1].copy()
+        # compute scores
+        if _MMU_MT_SUPPORT and n_threads > 1:
+            self.chi2_scores = mult_error_grid_thresh_mt(
+                n_conf_mats=self.n_conf_mats,
+                precs_grid=self.prec_grid,
+                recs_grid=self.rec_grid,
+                conf_mat=self.conf_mats,
+                n_sigmas=self.n_sigmas,
+                epsilon=self.epsilon,
+                n_threads=n_threads,
+            )
+        elif (n_threads > 1):
+            warnings.warn(
+                "mmu was not compiled with multi-threading enabled,"
+                " ignoring `n_threads`"
+            )
+        else:
+            self.chi2_scores = mult_error_grid_thresh(
+                n_conf_mats=self.n_conf_mats,
+                precs_grid=self.prec_grid,
+                recs_grid=self.rec_grid,
+                conf_mat=self.conf_mats,
+                n_sigmas=self.n_sigmas,
+                epsilon=self.epsilon,
+            )
+
+    def _parse_method(self, method):
+        if method in self._moptions['mult']:
+            self.method = method
+            self._compute_scores = self._compute_multn_scores
+        elif method in self._moptions['bvn']:
+            self._has_cov = True
+            self.method = method
+            self._compute_scores = self._compute_bvn_scores
+        else:
+            raise ValueError(
+                "``method`` must be one of 'multinomial', 'mult', 'elliptical'"
+                ", 'bivariate', 'bvn'"
+            )
 
     def _parse_thresholds(self, thresholds, scores, max_steps, seed):
         if thresholds is None:
@@ -98,14 +254,12 @@ class _PrecisionRecallCurveBase:
             raise ValueError("`epsilon` must be  in [1e-15, 0.1]")
         self.epsilon = epsilon
 
-    def _compute_scores(self, *args, **kwargs):
-        raise NotImplementedError
-
     @classmethod
     def from_scores(cls,
         y : np.ndarray,
         scores : np.ndarray,
         thresholds : Optional[np.ndarray] = None,
+        method : str = 'multinomial',
         n_bins : Union[int, Tuple[int], List[int], np.ndarray, None] = 1000,
         n_sigmas : Union[int, float] = 6.0,
         epsilon : float = 1e-12,
@@ -128,6 +282,10 @@ class _PrecisionRecallCurveBase:
             determined such that each thresholds results in a different
             confusion matrix. Note that the maximum number of thresholds can
             be set using `max_steps`.
+        method : str, default='multinomial',
+            which method to use, options are the Multinomial approach
+            {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
+            {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
         n_bins : int, array-like[int], default=1000
             the number of bins in the precision/recall grid for which the
             uncertainty is computed. If an int the `chi2_scores` will be a
@@ -154,6 +312,7 @@ class _PrecisionRecallCurveBase:
 
         """
         self = cls()
+        self._parse_method(method)
         self._parse_thresholds(thresholds, scores, auto_max_steps, auto_seed)
         self._parse_nbins(n_bins)
         self.conf_mats = confusion_matrices_thresholds(
@@ -166,6 +325,7 @@ class _PrecisionRecallCurveBase:
     @classmethod
     def from_confusion_matrices(cls,
         conf_mats : np.ndarray,
+        method : str = 'multinomial',
         n_bins : Union[int, Tuple[int], List[int], np.ndarray, None] = 1000,
         n_sigmas : Union[int, float] = 6.0,
         epsilon : float = 1e-12,
@@ -180,6 +340,10 @@ class _PrecisionRecallCurveBase:
             confusion matrix as returned by mmu.confusion_matrix, i.e.
             with layout [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP or
             the flattened equivalent.
+        method : str, default='multinomial',
+            which method to use, options are the Multinomial approach
+            {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
+            {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
         n_bins : int, array-like[int], default=1000
             the number of bins in the precision/recall grid for which the
             uncertainty is computed. If an int the `chi2_scores` will be a
@@ -200,6 +364,7 @@ class _PrecisionRecallCurveBase:
 
         """
         self = cls()
+        self._parse_method(method)
         self.conf_mats = check_array(
             conf_mats,
             min_dim=2,
@@ -220,6 +385,7 @@ class _PrecisionRecallCurveBase:
         X : np.ndarray,
         y : np.ndarray,
         thresholds : Optional[np.ndarray] = None,
+        method : str = 'multinomial',
         n_bins : Union[int, Tuple[int], List[int], np.ndarray, None] = 1000,
         n_sigmas : Union[int, float] = 6.0,
         epsilon : float = 1e-12,
@@ -241,6 +407,10 @@ class _PrecisionRecallCurveBase:
         threshold : float, default=0.5
             the classification threshold to which the classifier score is evaluated,
             is inclusive.
+        method : str, default='multinomial',
+            which method to use, options are the Multinomial approach
+            {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
+            {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
         n_bins : int, array-like[int], default=1000
             the number of bins in the precision/recall grid for which the
             uncertainty is computed. If an int the `chi2_scores` will be a
@@ -267,6 +437,7 @@ class _PrecisionRecallCurveBase:
 
         """
         self = cls()
+        self._parse_method(method)
         if not hasattr(clf, 'predict_proba'):
             raise TypeError("`clf` must have a method `predict_proba`")
         score = clf.predict_proba(X)[:, 1]
@@ -289,6 +460,33 @@ class _PrecisionRecallCurveBase:
         """
         return confusion_matrices_to_dataframe(self.conf_mats)
 
+    def get_cov_mats(self):
+        """Get the covariance matrices over the thresholds.
+
+        Returns
+        -------
+        cov_df = pd.DataFrame
+            the flattened covariance matrix and the thresholds
+
+        Raises
+        ------
+        NotImplementedError
+            when method is not Bivariate-Normal/Elliptical
+
+        """
+        if not self._has_cov:
+            raise NotImplementedError(
+                "`cov_mats` are not computed when method is not"
+                " Bivariate-Normal/Elliptical."
+            )
+        cov_df = pd.DataFrame(
+            self.cov_mats,
+            columns=['var_prec', 'cov', 'cov', 'var_rec']
+        )
+        cov_df['thresholds'] = self.thresholds
+        return cov_df
+
+
     def _get_critical_values_std(self, n_std):
         """Compute the critical values for a chi2 with 2df using the continuity
         correction."""
@@ -302,6 +500,10 @@ class _PrecisionRecallCurveBase:
         return sts.chi2.ppf(alphas, 2)
 
     def _add_point_to_plot(self, point, point_kwargs):
+        if not isinstance(point, PrecisionRecallUncertainty):
+            raise TypeError(
+                "``point`` must be PrecisionRecallUncertainty isinstance."
+            )
         if isinstance(point_kwargs, dict):
             if 'cmap' not in point_kwargs:
                 point_kwargs['cmap'] = 'Reds'
@@ -316,7 +518,7 @@ class _PrecisionRecallCurveBase:
         self._ax.legend(handles=self._handles, loc='lower center', fontsize=12)  # type: ignore
 
     def _add_points_to_plot(self, point, point_kwargs):
-        if issubclass(type(point), PointUncertainty):
+        if isinstance(point, PrecisionRecallUncertainty):
             self._add_point_to_plot(point, point_kwargs)
         elif isinstance(point, (list, tuple)):
             if point_kwargs is None:
@@ -327,8 +529,8 @@ class _PrecisionRecallCurveBase:
                 self._add_point_to_plot(p, k)
         else:
             raise TypeError(
-                "`point_uncertainty` must be a subclass of PointUncertainty"
-                " or a list of PointUncertainty's"
+                "``point_uncertainty`` must be a PrecisionRecallUncertainty"
+                " isinstance or a list of PrecisionRecallUncertainty's."
             )
 
     def plot(
@@ -339,7 +541,7 @@ class _PrecisionRecallCurveBase:
         equal_aspect : bool = False,
         limit_axis : bool = True,
         alpha : float = 0.8,
-        point_uncertainty : Union[PointUncertainty, List[PointUncertainty], None] = None,
+        point_uncertainty : Union[PrecisionRecallUncertainty, List[PrecisionRecallUncertainty], None] = None,
         point_kwargs : Union[Dict, List[Dict], None] = None
     ):
         """Plot confidence interval(s) for precision and recall
@@ -362,8 +564,7 @@ class _PrecisionRecallCurveBase:
             allow ax to be limited for optimal CI plot
         alpha : float, defualt=0.8
             opacity value of the contours
-        point_uncertainty : PrecisionRecallMultinomialUncertainty,
-        PrecisionRecallEllipticalUncertainty, List, default=None
+        point_uncertainty : PrecisionRecallUncertainty, List, default=None
             Add a point uncertainty(ies) plot to the curve plot, by default the
             `Reds` cmap is used for the point plot(s).
         point_kwargs : dict, list[dict], default=None
@@ -433,207 +634,3 @@ class _PrecisionRecallCurveBase:
             self._add_points_to_plot(point_uncertainty, point_kwargs)
 
         return self._ax
-
-
-class PrecisionRecallCurveMultinomialUncertainty(_PrecisionRecallCurveBase):
-    """Precision-Recall curve uncertainty modelled as a Multinomial.
-
-    Model's the uncertainty using profile log-likelihoods between
-    the observed and most conservative confusion matrix for that
-    precision recall. Unlike the PrecisionRecallEllipticalUncertainty
-    this approach is valid for relatively low statistic samples and
-    at the edges of the curve. However, it does not allow one to
-    add the training sample uncertainty to it.
-
-    Attributes
-    ----------
-    conf_mat : np.ndarray[int64]
-        the confusion_matrices over the thresholds with columns [TN, FP, FN, TP].
-        A DataFrame can be obtained by calling `get_conf_mat`.
-    cov_mats : np.ndarray[float64]
-        flattened covariance matrices for each threshold.
-    precision : np.ndarray[float64]
-        the Positive Predictive Values aka positive precisions
-    recall : np.ndarray[float64]
-        True Positive Rate aka Sensitivity aka positive recall
-    chi2_scores : np.ndarray[float64]
-        The profile loglikelihood scores which follow a chi2 distribution with 2DF.
-        Has shape (`n_bins`, `n_bins`) with bounds precision_bounds on the
-        y-axis and recall_bounds on the x-axis
-    thresholds : np.ndarray[float64]
-        the inclusive classification/discrimination thresholds used to compute
-        the confusion matrices
-    rec_grid : np.ndarray[float64]
-        the recall values that where evaluated.
-    prec_grid : np.ndarray[float64]
-        the precision values that where evaluated.
-    n_sigmas : int, float, default=6.0
-        the number of marginal standard deviations used to determine the
-        bounds of the grid which is evaluated for each observed precision and
-        recall.
-    epsilon : float, default=1e-12
-        the value used to prevent the bounds from reaching precision/recall
-        1.0/0.0 which would result in NaNs.
-
-    """
-    def __init__(self):
-        self.n_conf_mats = None
-        self.conf_mats = None
-        self.precision = None
-        self.recall = None
-        self.chi2_scores = None
-        self.prec_grid = None
-        self.rec_grid = None
-        self.n_sigmas = None
-        self.epsilon = None
-        self.thresholds = None
-
-    def _compute_scores(self, n_sigmas, epsilon, n_threads):
-        n_threads = _check_n_threads(n_threads)
-
-        # -- validate n_sigmas arg
-        self._parse_n_sigmas(n_sigmas)
-
-        # -- validate epsilon arg
-        self._parse_epsilon(epsilon)
-
-        # compute precision and recall
-        mtr = _core.precision_recall_2d(self.conf_mats)
-        self.precision = mtr[:, 0].copy()
-        self.recall = mtr[:, 1].copy()
-        # compute scores
-        if _MMU_MT_SUPPORT and n_threads > 1:
-            self.chi2_scores = mult_error_grid_thresh_mt(
-                n_conf_mats=self.n_conf_mats,
-                precs_grid=self.prec_grid,
-                recs_grid=self.rec_grid,
-                conf_mat=self.conf_mats,
-                n_sigmas=self.n_sigmas,
-                epsilon=self.epsilon,
-                n_threads=n_threads,
-            )
-        elif (n_threads > 1):
-            warnings.warn(
-                "mmu was not compiled with multi-threading enabled,"
-                " ignoring `n_threads`"
-            )
-        else:
-            self.chi2_scores = mult_error_grid_thresh(
-                n_conf_mats=self.n_conf_mats,
-                precs_grid=self.prec_grid,
-                recs_grid=self.rec_grid,
-                conf_mat=self.conf_mats,
-                n_sigmas=self.n_sigmas,
-                epsilon=self.epsilon,
-            )
-
-
-class PrecisionRecallCurveEllipticalUncertainty(_PrecisionRecallCurveBase):
-    """Precision-Recall Curve uncertainty modelled as a Bivariate Normal.
-
-    Model's the linearly propogated errors of the confusion matrix as a
-    bivariate Normal distribution. Note that this method is not valid
-    for low statistic sets or for precision/recall close to 1.0/0.0.
-    In these scenarios the `PrecisionRecallCurveMultinomialUncertainty` class
-    should be used.
-
-    Attributes
-    ----------
-    conf_mat : np.ndarray[int64]
-        the confusion_matrices over the thresholds with columns [TN, FP, FN, TP].
-        A DataFrame can be obtained by calling `get_conf_mat`.
-    cov_mats : np.ndarray[float64]
-        flattened covariance matrices for each threshold.
-    precision : np.ndarray[float64]
-        the Positive Predictive Values aka positive precisions
-    recall : np.ndarray[float64]
-        True Positive Rate aka Sensitivity aka positive recall
-    chi2_scores : np.ndarray[float64]
-        the sum of squared z scores which follow a chi2 distribution with
-        two degrees of freedom. Has shape (`n_bins`, `n_bins`) with bounds
-        `precision_bounds` on the y-axis and `recall_bounds` on the x-axis.
-    thresholds : np.ndarray[float64], Optional
-        the inclusive classification/discrimination thresholds used to compute
-        the confusion matrices. Is None when the class is instantiated with
-        `from_confusion_matrices`.
-    rec_grid : np.ndarray[float64]
-        the recall values that where evaluated.
-    prec_grid : np.ndarray[float64]
-        the precision values that where evaluated.
-    n_sigmas : int, float, default=6.0
-        the number of marginal standard deviations used to determine the
-        bounds of the grid which is evaluated for each observed precision and
-        recall.
-    epsilon : float, default=1e-12
-        the value used to prevent the bounds from reaching precision/recall
-        1.0/0.0 which would result in NaNs.
-
-    """
-    def __init__(self):
-        self.n_conf_mats = None
-        self.conf_mats = None
-        self.precision = None
-        self.recall = None
-        self.chi2_scores = None
-        self.prec_grid = None
-        self.rec_grid = None
-        self.n_sigmas = None
-        self.epsilon = None
-        self.thresholds = None
-
-    def get_cov_mats(self):
-        """Get the covariance matrices over the thresholds.
-
-        Returns
-        -------
-        cov_df = pd.DataFrame
-            the flattened covariance matrix and the thresholds
-
-        """
-        cov_df = pd.DataFrame(
-            self.cov_mats,
-            columns=['var_prec', 'cov', 'cov', 'var_rec']
-        )
-        cov_df['thresholds'] = self.thresholds
-        return cov_df
-
-    def _compute_scores(self, n_sigmas, epsilon, n_threads):
-        n_threads = _check_n_threads(n_threads)
-
-        # -- validate n_sigmas arg
-        self._parse_n_sigmas(n_sigmas)
-
-        # -- validate epsilon arg
-        self._parse_epsilon(epsilon)
-
-        # compute precision and recall
-        mtr = _core.pr_curve_mvn_cov(self.conf_mats)
-        self.precision = mtr[:, 0]
-        self.recall = mtr[:, 1]
-        self.cov_mats = mtr[:, 2:]
-
-        # compute scores
-        if _MMU_MT_SUPPORT and n_threads > 1:
-            self.chi2_scores = mvn_error_grid_thresh_mt(
-                n_conf_mats=self.n_conf_mats,
-                precs_grid=self.prec_grid,
-                recs_grid=self.rec_grid,
-                conf_mat=self.conf_mats,
-                n_sigmas=self.n_sigmas,
-                epsilon=self.epsilon,
-                n_threads=n_threads,
-            )
-        elif (n_threads > 1):
-            warnings.warn(
-                "mmu was not compiled with multi-threading enabled,"
-                " ignoring `n_threads`"
-            )
-        else:
-            self.chi2_scores = mvn_error_grid_thresh(
-                n_conf_mats=self.n_conf_mats,
-                precs_grid=self.prec_grid,
-                recs_grid=self.rec_grid,
-                conf_mat=self.conf_mats,
-                n_sigmas=self.n_sigmas,
-                epsilon=self.epsilon,
-            )

@@ -1,6 +1,4 @@
-import itertools
 import numpy as np
-import pytest
 import sklearn.metrics as skm
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
@@ -20,7 +18,7 @@ def test_PRCMU_from_scores():
     yhat = greater_equal_tol(proba, thresholds[100])
 
     sk_conf_mat = skm.confusion_matrix(y, yhat)
-    pr_err = mmu.PRCMU.from_scores(y=y, scores=proba, thresholds=thresholds)
+    pr_err = mmu.PRCU.from_scores(y=y, scores=proba, thresholds=thresholds)
     assert pr_err.conf_mats is not None
     assert pr_err.conf_mats.dtype == np.dtype(np.int64)
 
@@ -46,7 +44,7 @@ def test_PRCMU_from_confusion_matrices():
 
     sk_conf_mat = skm.confusion_matrix(y, yhat)
     conf_mats = mmu.confusion_matrices_thresholds(y, proba, thresholds)
-    pr_err = mmu.PRCMU.from_confusion_matrices(conf_mats=conf_mats)
+    pr_err = mmu.PRCU.from_confusion_matrices(conf_mats=conf_mats)
     assert pr_err.conf_mats is not None
     assert pr_err.conf_mats.dtype == np.dtype(np.int64)
 
@@ -88,7 +86,7 @@ def test_PRCMU_from_classifier():
     thresholds = np.linspace(1e-12, 1 - 1e-12, 200)
     yhat = greater_equal_tol(y_scores, thresholds[100])
     sk_conf_mat = skm.confusion_matrix(y_test, yhat)
-    pr_err = mmu.PRCMU.from_classifier(
+    pr_err = mmu.PRCU.from_classifier(
         clf=model, X=X_test, y=y_test, thresholds=thresholds
     )
     assert pr_err.conf_mats is not None
@@ -115,7 +113,9 @@ def test_PRCEU_from_scores():
     yhat = greater_equal_tol(proba, thresholds[100])
 
     sk_conf_mat = skm.confusion_matrix(y, yhat)
-    pr_err = mmu.PRCEU.from_scores(y=y, scores=proba, thresholds=thresholds)
+    pr_err = mmu.PRCU.from_scores(
+        y=y, scores=proba, thresholds=thresholds, method='bvn'
+    )
     assert pr_err.conf_mats is not None
     assert pr_err.conf_mats.dtype == np.dtype(np.int64)
 
@@ -141,7 +141,7 @@ def test_PRCEU_from_confusion_matrices():
 
     sk_conf_mat = skm.confusion_matrix(y, yhat)
     conf_mats = mmu.confusion_matrices_thresholds(y, proba, thresholds)
-    pr_err = mmu.PRCEU.from_confusion_matrices(conf_mats=conf_mats)
+    pr_err = mmu.PRCU.from_confusion_matrices(conf_mats=conf_mats, method='bvn')
     assert pr_err.conf_mats is not None
     assert pr_err.conf_mats.dtype == np.dtype(np.int64)
 
@@ -183,8 +183,8 @@ def test_PRCEU_from_classifier():
     thresholds = np.linspace(1e-12, 1 - 1e-12, 200)
     yhat = greater_equal_tol(y_scores, thresholds[100])
     sk_conf_mat = skm.confusion_matrix(y_test, yhat)
-    pr_err = mmu.PRCEU.from_classifier(
-        clf=model, X=X_test, y=y_test, thresholds=thresholds
+    pr_err = mmu.PRCU.from_classifier(
+        clf=model, X=X_test, y=y_test, thresholds=thresholds, method='bvn'
     )
     assert pr_err.conf_mats is not None
     assert pr_err.conf_mats.dtype == np.dtype(np.int64)
