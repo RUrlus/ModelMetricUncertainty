@@ -117,11 +117,10 @@ We have a few conventions that we would like you to adhere to.
 Pull requests
 +++++++++++++
 
-Please open pull-requests to the ``unstable`` branch.
-Merges to ``stable`` are largely reserved for new releases.
+Please open pull-requests to the ``stable`` branch.
 
-We use a semi-linear merge strategy.
-Please make sure that your branch/fork contains the latest state of ``unstable``, otherwise the merge cannot be completed.
+We use a linear merge strategy.
+Please make sure that your branch/fork contains the latest state of ``stable``, otherwise the merge cannot be completed.
 
 Commits
 +++++++
