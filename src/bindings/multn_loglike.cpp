@@ -197,5 +197,48 @@ void bind_simulated_multinomial_uncertainty(py::module& m) {
         py::arg("seed") = 0,
         py::arg("stream") = 0);
 }
+
+#ifdef MMU_HAS_OPENMP_SUPPORT
+void bind_simulated_multinomial_uncertainty_mt(py::module& m) {
+    m.def(
+        "simulated_multinomial_uncertainty_mt",
+        &api::simulated_multinomial_uncertainty_mt,
+        R"pbdoc(Compute multinomial uncertainty.
+
+        Parameters
+        ----------
+        n_sims : int,
+            number of confusion matrices to simulate for each point in the grid
+        n_bins : int,
+            number of bins in one axis for the precision and recall grid
+        conf_mat : np.ndarray[int64]
+            the confusion matrix with flattened order: TN, FP, FN, TP
+        n_sigmas : double, default=6.0
+            number std deviations of the marginal distributions to use as
+            grid boundaries
+        epsilon : double, default=1e-4
+            epsilon used to clip recall or precision at the 0, 1 boundaries
+        seed : int, default=0
+            seed for the random number generator, if equal to zero
+            the random device is used to generate a seed
+        n_threads : int, default=4,
+            the number of threads to use
+
+        Returns
+        -------
+        chi2 : np.array[np.float64]
+            chi2 score of the profile log-likelihoods over the Precision-Recall grid
+        bounds : np.array[np.float64]
+            the lower and upper bound of the grids for precision and recall respectively
+        )pbdoc",
+        py::arg("n_sims"),
+        py::arg("n_bins"),
+        py::arg("conf_mat"),
+        py::arg("n_sigmas") = 6.0,
+        py::arg("epsilon") = 1e-4,
+        py::arg("seed") = 0,
+        py::arg("n_threads") = 4);
+}
+#endif  // MMU_HAS_OPENMP_SUPPORT
 }  // namespace bindings
 }  // namespace mmu

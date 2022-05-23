@@ -18,7 +18,7 @@
 
 #include <mmu/core/common.hpp>
 #include <mmu/core/metrics.hpp>
-#include <mmu/core/mvn_error.hpp>
+#include <mmu/core/bvn_error.hpp>
 #include <mmu/core/pr_grid.hpp>
 #include <mmu/core/random.hpp>
 
@@ -496,7 +496,83 @@ inline void simulate_multn_uncertainty(
 }  // simulate_multn_uncertainty
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-// FIXME
+inline void simulate_multn_uncertainty_mt(
+    const int64_t n_sims,
+    const int64_t n_bins,
+    const int64_t* __restrict conf_mat,
+    double* scores,
+    const double n_sigmas = 6.0,
+    const double epsilon = 1e-4,
+    const uint64_t seed = 0,
+    const int n_threads = 4
+) {
+    std::array<double, 4> bounds;
+    // obtain prec_start, prec_end, rec_start, rec_end
+    details::get_pr_grid_bounds(conf_mat, bounds.data(), n_sigmas, epsilon);
+    auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
+    details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
+    const double prec_start = bounds[0];
+    const double prec_delta = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
+
+    random::pcg_seed_seq seed_source;
+    std::array<uint64_t, 2> gen_seeds;
+    seed_source.generate(gen_seeds.begin(), gen_seeds.end());
+
+#pragma omp parallel num_threads(n_threads) shared(conf_mat, gen_seeds, seed, prec_start, prec_delta, rec_grid)
+    {
+        random::pcg64_dxsm rng;
+        if (seed == 0) {
+            rng.seed(gen_seeds[0], omp_get_thread_num());
+        } else {
+            rng.seed(seed, omp_get_thread_num());
+        }
+
+        // -- memory allocation --
+        // memory to be used by constrained_fit_cmp
+        std::array<double, 4> probas;
+        double* p = probas.data();
+
+        // allocate memory block to be used by multinomial
+        std::array<int64_t, 4> mult;
+        int64_t* mult_ptr = mult.data();
+
+        // array used to store probabilities for the multinomial alternative
+        std::array<double, 4> p_sim;
+        double* p_sim_ptr = p_sim.data();
+
+        // struct used by the multinomial generation
+        auto binom_store = random::details::binomial_t();
+        random::details::binomial_t* sptr = &binom_store;
+
+        // struct used to store the elements used in the computation
+        // of the profile log-likelihood
+        auto nll_store = prof_loglike_t();
+        prof_loglike_t* nll_ptr = &nll_store;
+        // -- memory allocation --
+
+        set_prof_loglike_store(conf_mat, nll_ptr);
+        const int64_t n = nll_ptr->in;
+
+        double rec;
+        double prec;
+        double nll_obs;
+        int64_t idx = 0;
+        int64_t odx = 0;
+
+#pragma omp for
+        for (int64_t i = 0; i < n_bins; i++) {
+            prec = prec_start + (i * prec_delta);
+            odx = i * n_bins;
+            for (int64_t j = 0; j < n_bins; j++) {
+                idx = odx + j;
+                // prof_loglike also sets p which we can re-use in prof_loglike sim
+                rec = rec_grid[j];
+                nll_obs = prof_loglike(prec, rec, nll_ptr, p);
+                scores[idx] = prof_loglike_simulation_cov(n_sims, rng, prec, rec, nll_obs, n, p, sptr, mult_ptr, p_sim_ptr);
+            }
+        }
+    } // omp parallel
+}  // simulate_multn_uncertainty_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
 }  // namespace core

@@ -1,4 +1,4 @@
-/* pr_grid.hpp -- Utility functions used in multn_loglike and mvn_grid
+/* pr_grid.hpp -- Utility functions used in multn_loglike and bvn_grid
  * Copyright 2021 Ralph Urlus
  */
 #ifndef INCLUDE_MMU_CORE_PR_GRID_HPP_
@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <mmu/core/common.hpp>
-#include <mmu/core/mvn_error.hpp>
+#include <mmu/core/bvn_error.hpp>
 
 /* conf_mat layout:
  *  0 TN
@@ -50,7 +50,7 @@ inline void get_pr_grid_bounds(
     const double max_rec_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
     // computes prec, prec_sigma, rec, rec_sigma accounting for edge cases
     std::array<double, 4> prec_rec;
-    pr_mvn_sigma(conf_mat, prec_rec.data());
+    pr_bvn_sigma(conf_mat, prec_rec.data());
 
     const double ns_prec_sigma = n_sigmas * prec_rec[1];
     const double ns_rec_sigma = n_sigmas * prec_rec[3];
@@ -102,7 +102,7 @@ class PrGridBounds {
         max_prec_clip = conf_mat[1] == 0 ? 0.0 : epsilon;
         max_rec_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
         // computes prec, prec_sigma, rec, rec_sigma accounting for edge cases
-        pr_mvn_sigma(conf_mat, prec_rec.data());
+        pr_bvn_sigma(conf_mat, prec_rec.data());
 
         ns_prec_sigma = n_sigmas * prec_rec[1];
         prec_max = std::min(prec_rec[0] + ns_prec_sigma, 1 - max_prec_clip);
@@ -163,7 +163,7 @@ inline void get_pr_grid_bounds(
     const double max_rec_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
     // computes prec, prec_sigma, rec, rec_sigma accounting for edge cases
     std::array<double, 4> prec_rec;
-    pr_mvn_sigma(conf_mat, prec_rec.data());
+    pr_bvn_sigma(conf_mat, prec_rec.data());
 
     const double ns_prec_sigma = n_sigmas * prec_rec[1];
     const double prec_max = std::min(prec_rec[0] + ns_prec_sigma, 1 - max_prec_clip);

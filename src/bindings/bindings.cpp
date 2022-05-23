@@ -6,8 +6,8 @@
 #include <mmu/bindings/confusion_matrix.hpp>
 #include <mmu/bindings/metrics.hpp>
 #include <mmu/bindings/multn_loglike.hpp>
-#include <mmu/bindings/mvn_error.hpp>
-#include <mmu/bindings/mvn_grid.hpp>
+#include <mmu/bindings/bvn_error.hpp>
+#include <mmu/bindings/bvn_grid.hpp>
 #include <mmu/bindings/utils.hpp>
 #include <mmu/core/common.hpp>
 
@@ -34,19 +34,19 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     // npy
     bind_all_finite(m);
     bind_is_well_behaved_finite(m);
-    // lep_mvn
-    bind_pr_mvn_error(m);
-    bind_pr_mvn_error_runs(m);
-    bind_pr_curve_mvn_error(m);
+    // lep_bvn
+    bind_pr_bvn_error(m);
+    bind_pr_bvn_error_runs(m);
+    bind_pr_curve_bvn_error(m);
 
-    bind_pr_mvn_cov(m);
-    bind_pr_mvn_cov_runs(m);
-    bind_pr_curve_mvn_cov(m);
+    bind_pr_bvn_cov(m);
+    bind_pr_bvn_cov_runs(m);
+    bind_pr_curve_bvn_cov(m);
 
-    bind_mvn_uncertainty_over_grid(m);
-    bind_mvn_uncertainty_over_grid_thresholds(m);
+    bind_bvn_uncertainty_over_grid(m);
+    bind_bvn_uncertainty_over_grid_thresholds(m);
 #ifdef MMU_HAS_OPENMP_SUPPORT
-    bind_mvn_uncertainty_over_grid_thresholds_mt(m);
+    bind_bvn_uncertainty_over_grid_thresholds_mt(m);
 #endif  // MMU_HAS_OPENMP_SUPPORT
     // multn_loglike
     bind_multinomial_uncertainty(m);
@@ -56,6 +56,9 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_multinomial_uncertainty_over_grid_thresholds_mt(m);
 #endif  // MMU_HAS_OPENMP_SUPPORT
     bind_simulated_multinomial_uncertainty(m);
+#ifdef MMU_HAS_OPENMP_SUPPORT
+    bind_simulated_multinomial_uncertainty_mt(m);
+#endif  // MMU_HAS_OPENMP_SUPPORT
 
 #ifndef OS_WIN
 #ifdef VERSION_INFO

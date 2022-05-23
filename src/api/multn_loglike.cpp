@@ -119,5 +119,24 @@ f64arr simulated_multinomial_uncertainty(
     return scores;
 }  // multinomial_uncertainty
 
+#ifdef MMU_HAS_OPENMP_SUPPORT
+f64arr simulated_multinomial_uncertainty_mt(
+    const int64_t n_sims,
+    const int64_t n_bins,
+    const i64arr conf_mat,
+    const double n_sigmas,
+    const double epsilon,
+    const uint64_t seed,
+    const int n_threads) {
+    if (!npy::is_well_behaved(conf_mat)) {
+        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    }
+    auto scores = f64arr({n_bins, n_bins});
+    core::simulate_multn_uncertainty_mt(
+        n_sims, n_bins, npy::get_data(conf_mat), npy::get_data(scores), n_sigmas, epsilon, seed, n_threads);
+    return scores;
+}  // multinomial_uncertainty
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
 }  // namespace api
 }  // namespace mmu

@@ -55,6 +55,17 @@ f64arr simulated_multinomial_uncertainty(
     const uint64_t seed,
     const uint64_t stream);
 
+#ifdef MMU_HAS_OPENMP_SUPPORT
+f64arr simulated_multinomial_uncertainty_mt(
+    const int64_t n_sims,
+    const int64_t n_bins,
+    const i64arr conf_mat,
+    const double n_sigmas,
+    const double epsilon,
+    const uint64_t seed,
+    const int n_threads);
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
 }  // namespace api
 }  // namespace mmu
 
