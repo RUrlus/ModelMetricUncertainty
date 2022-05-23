@@ -153,3 +153,5 @@ dmypy.json
 *version.py
 
 _skbuild/
+
+docs/source/readme.rst
