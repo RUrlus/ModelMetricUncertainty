@@ -33,21 +33,21 @@ To help with this the curve methods provide functionality to overlay threshold u
 Threshold
 +++++++++
 
-.. autoclass:: mmu.PRU
+.. autoapiclass:: mmu.PRU
     :members:
     :inherited-members:
 
-.. autoclass:: mmu.PrecisionRecallUncertainty
+.. autoapiclass:: mmu.PrecisionRecallUncertainty
     :members:
     :inherited-members:
 
 Curve
 +++++
 
-.. autoclass:: mmu.PRCU
+.. autoapiclass:: mmu.PRCU
     :members:
     :inherited-members:
 
-.. autoclass:: mmu.PrecisionRecallCurveUncertainty
+.. autoapiclass:: mmu.PrecisionRecallCurveUncertainty
     :members:
     :inherited-members:

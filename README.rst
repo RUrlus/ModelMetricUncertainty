@@ -18,12 +18,9 @@ Model-Metric-Uncertainty (MMU)
     :target: https://github.com/RUrlus/carma/blob/stable/LICENSE
     :alt: License
 
-.. class:: center
+**Model-Metric-Uncertainty (MMU) is a library for the evaluation of model performance and estimation of the uncertainty on these metrics.**
 
 `Documentation <https://mmu.readthedocs.io/en/latest/>`_
-
-
-**Model-Metric-Uncertainty (MMU) is a library for the evaluation of model performance and estimation of the uncertainty on these metrics.**
 
 Functionality
 -------------
