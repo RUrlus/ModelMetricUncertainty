@@ -170,6 +170,15 @@ inline void mvn_uncertainty_over_grid_thresholds(
         rec_mu = prec_rec_cov[1];
         prec_simga = std::sqrt(prec_rec_cov[2]);
         rec_simga = std::sqrt(prec_rec_cov[5]);
+
+        // short circuit regions where uncertainty will be zero
+        if (
+            prec_simga < std::numeric_limits<double>::epsilon()
+            || rec_simga < std::numeric_limits<double>::epsilon()
+        ) {
+            continue;
+        }
+
         rho = prec_rec_cov[3] / (prec_simga * rec_simga);
         rho_rhs = std::sqrt(1 - std::pow(rho, 2));
 
@@ -260,6 +269,13 @@ inline void mvn_uncertainty_over_grid_thresholds_mt(
             rec_mu = prec_rec_cov[1];
             prec_simga = std::sqrt(prec_rec_cov[2]);
             rec_simga = std::sqrt(prec_rec_cov[5]);
+            // short circuit regions where uncertainty will be zero
+            if (
+                prec_simga < std::numeric_limits<double>::epsilon()
+                || rec_simga < std::numeric_limits<double>::epsilon()
+            ) {
+                continue;
+            }
             rho = prec_rec_cov[3] / (prec_simga * rec_simga);
             rho_rhs = std::sqrt(1 - std::pow(rho, 2));
 
