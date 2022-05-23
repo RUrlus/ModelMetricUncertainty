@@ -18,7 +18,10 @@ Model-Metric-Uncertainty (MMU)
     :target: https://github.com/RUrlus/carma/blob/stable/LICENSE
     :alt: License
 
+.. class:: center
+
 `Documentation <https://mmu.readthedocs.io/en/latest/>`_
+
 
 **Model-Metric-Uncertainty (MMU) is a library for the evaluation of model performance and estimation of the uncertainty on these metrics.**
 
@@ -100,7 +103,7 @@ Usage
     # Plot the uncertainty
     pr_err.plot()
 
-See  `Basics <https://mmu.readthedocs.io/en/latest/basics.html>`_ the `tutorials <https://github.com/RUrlus/ModelMetricUncertainty/blob/main/notebooks>`_ for more examples.
+See `Basics section <https://mmu.readthedocs.io/en/latest/basics.html>`_ of the docs or the `tutorial notebooks <https://github.com/RUrlus/ModelMetricUncertainty/blob/stable/notebooks>`_ for more examples.
 
 Contributing
 ------------
