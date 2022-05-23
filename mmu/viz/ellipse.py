@@ -38,12 +38,12 @@ def _plot_pr_ellipse(
     cov_mat,
     scales,
     labels,
-    ax=None,
-    alpha=0.5,
-    cmap=None,
-    legend_loc=None,
-    equal_aspect=True,
-    limit_axis=True
+    ax,
+    alpha,
+    cmap,
+    legend_loc,
+    equal_aspect,
+    limit_axis
 ):
     if cmap is None:
         cmap = 'Blues'
@@ -57,7 +57,7 @@ def _plot_pr_ellipse(
         fig = ax.get_figure()
 
     colors, c_marker = _get_color_hexes(
-        cmap, n_colors=len(labels), return_marker=True
+        cmap, n_colors=len(labels), return_marker=True, keep_alpha=False
     )
 
     # we multiply the radius by 2 because width and height are diameters

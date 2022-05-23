@@ -418,7 +418,7 @@ class PrecisionRecallUncertainty:
         y : np.ndarray,
         yhat : Optional[np.ndarray] = None,
         scores : Optional[np.ndarray] = None,
-        threshold : float = 0.5,
+        threshold : Optional[float] = None,
         obs_axis : int = 0,
     ):
         """Incorporate the sampling uncertainty of the train set.
@@ -436,9 +436,10 @@ class PrecisionRecallUncertainty:
             the classifier scores to be evaluated against the `threshold`, i.e.
             `yhat` = `scores` >= `threshold`. Can be `None` if `yhat` is not `None`,
             if both are provided, this parameter is ignored.
-        threshold : float, default=0.5
+        threshold : float, default=None
             the classification threshold to which the classifier scores are evaluated,
-            is inclusive.
+            is inclusive. Must be set when class was instantiated with
+            ``from_classifier`` or ``from_predictions`` and ``yhat`` is None, otherwhise ignored.
         obs_axis : int, default=0
             the axis containing the observations for a single run, e.g. 0 when the
             labels and scores are stored as columns
@@ -454,19 +455,20 @@ class PrecisionRecallUncertainty:
                 "``add_train_uncertainty`` cannot be called when method is not"
                 " Bivariate-Normal/Elliptical."
             )
-        self.train_conf_mats = confusion_matrices(
-            y, yhat, scores, threshold, obs_axis
-        )
-        out = _core.precision_recall_2d(self.train_conf_mats)
-        self.train_precisions = out[:, 0]
-        self.train_recalls = out[:, 1]
-        self.train_cov_mat = np.cov(out, rowvar=False)
-
         if self.cov_mat is None:
             raise RuntimeError(
                 "the class needs to be initialised with from_*"
                 " before adding train uncertainty."
             )
+
+        threshold = threshold or self.threshold
+        self.train_conf_mats = confusion_matrices(
+            y, yhat, scores, threshold, obs_axis
+        )
+        out = _core.pr_mvn_error_runs(self.train_conf_mats)
+        self.train_precision = out[:, 0]
+        self.train_recall = out[:, 1]
+        self.train_cov_mat = np.cov(out[:, 2:], rowvar=False)
         self.total_cov_mat = self.cov_mat + self.train_cov_mat
 
     def get_train_conf_mats(self) -> pd.DataFrame:
@@ -589,15 +591,16 @@ class PrecisionRecallUncertainty:
 
     def _plot_ellipse(
         self,
-        levels = None,
-        uncertainties = 'test',
-        ax=None,
-        cmap= 'Blues',
-        equal_aspect = False,
-        limit_axis = True,
-        alpha = 0.6,
-        other = None,
-        other_kwargs = None
+        levels,
+        uncertainties,
+        ax,
+        cmap,
+        equal_aspect,
+        limit_axis,
+        legend_loc,
+        alpha,
+        other,
+        other_kwargs
     ):
         """Plot elliptical confidence interval(s) for precision and recall."""
         if self.cov_mat is None:
@@ -659,17 +662,20 @@ class PrecisionRecallUncertainty:
                 "`levels` must be a int, float, array-like or None"
             )
 
+        self.critical_values_plot = levels
+
         self._ax, self._handles = _plot_pr_ellipse(
-            self.precision,
-            self.recall,
-            cov_mat,
-            scales,
-            labels,
+            precision=self.precision,
+            recall=self.recall,
+            cov_mat=cov_mat,
+            scales=scales,
+            labels=labels,
             cmap=cmap,
             ax=ax,
             alpha=alpha,
             equal_aspect=equal_aspect,
             limit_axis=limit_axis,
+            legend_loc=legend_loc
         )
         if other is not None:
             self._add_other_to_plot(other, other_kwargs)
@@ -677,14 +683,15 @@ class PrecisionRecallUncertainty:
 
     def _plot_contour(
         self,
-        levels = None,
-        ax=None,
-        cmap = 'Blues',
-        equal_aspect = False,
-        limit_axis = True,
-        alpha = 0.8,
-        other = None,
-        other_kwargs = None
+        levels,
+        ax,
+        cmap,
+        equal_aspect,
+        limit_axis,
+        legend_loc,
+        alpha,
+        other,
+        other_kwargs
     ):
         """Plot confidence interval(s) for precision and recall."""
         if self.chi2_scores is None:
@@ -723,19 +730,22 @@ class PrecisionRecallUncertainty:
                 "`levels` must be a int, float, array-like or None"
             )
 
+        self.critical_values_plot = levels
+
         self._ax, self._handles = _plot_pr_contours(
-            self.n_bins,
-            self.precision,
-            self.recall,
-            self.chi2_scores,
-            self._bounds,
-            levels,
-            labels,
+            n_bins=self.n_bins,
+            precision=self.precision,
+            recall=self.recall,
+            scores=self.chi2_scores,
+            bounds=self._bounds,
+            levels=levels,
+            labels=labels,
             cmap=cmap,
             ax=ax,
             alpha=alpha,
             equal_aspect=equal_aspect,
             limit_axis=limit_axis,
+            legend_loc=legend_loc
         )
 
         if other is not None:
@@ -750,6 +760,7 @@ class PrecisionRecallUncertainty:
         cmap : str = 'Blues',
         equal_aspect : bool = False,
         limit_axis : bool = True,
+        legend_loc : Optional[str] = None,
         alpha : float = 0.8,
         other : Union['PrecisionRecallUncertainty', List['PrecisionRecallUncertainty'], None] = None,
         other_kwargs : Union[Dict, List[Dict], None] = None
@@ -779,6 +790,8 @@ class PrecisionRecallUncertainty:
             enforce square axis
         limit_axis : bool, default=True
             allow ax to be limited for optimal CI plot
+        legend_loc : str, default=None
+            location of the legend, default is `lower left`
         alpha : float, defualt=0.8
             opacity value of the contours
         other : PrecisionRecallMultinomialUncertainty,
@@ -804,6 +817,8 @@ class PrecisionRecallUncertainty:
                 ax=ax,
                 cmap=cmap,
                 equal_aspect=equal_aspect,
+                limit_axis=limit_axis,
+                legend_loc=legend_loc,
                 alpha=alpha,
                 other=other,
                 other_kwargs=other_kwargs
@@ -814,6 +829,8 @@ class PrecisionRecallUncertainty:
                 ax=ax,
                 cmap=cmap,
                 equal_aspect=equal_aspect,
+                limit_axis=limit_axis,
+                legend_loc=legend_loc,
                 alpha=alpha,
                 other=other,
                 other_kwargs=other_kwargs
