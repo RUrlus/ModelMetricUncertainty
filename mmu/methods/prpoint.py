@@ -176,7 +176,7 @@ class PrecisionRecallUncertainty:
         self._bounds = bounds.flatten()
 
     def _compute_bvn_scores(self, *args, **kwargs):
-        out = _core.pr_mvn_cov(self.conf_mat)
+        out = _core.pr_bvn_cov(self.conf_mat)
         self.precision = out[0]
         if self.precision < 1e-12:
             warnings.warn("`precision` is close to zero, COV[P, R] is not valid")
@@ -469,7 +469,7 @@ class PrecisionRecallUncertainty:
         self.train_conf_mats = confusion_matrices(
             y, yhat, scores, threshold, obs_axis
         )
-        out = _core.pr_mvn_error_runs(self.train_conf_mats)
+        out = _core.pr_bvn_error_runs(self.train_conf_mats)
         self.train_precision = out[:, 0]
         self.train_recall = out[:, 1]
         self.train_cov_mat = np.cov(out[:, 2:], rowvar=False)

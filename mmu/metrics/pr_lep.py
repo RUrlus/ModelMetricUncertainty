@@ -9,8 +9,8 @@ from mmu.metrics.confmat import confusion_matrix
 from mmu.metrics.confmat import confusion_matrix_to_dataframe
 from mmu.metrics.confmat import confusion_matrices_to_dataframe
 from mmu.metrics.confmat import confusion_matrices
-from mmu.lib._mmu_core import pr_mvn_error
-from mmu.lib._mmu_core import pr_mvn_error_runs
+from mmu.lib._mmu_core import pr_bvn_error
+from mmu.lib._mmu_core import pr_bvn_error_runs
 
 
 def precision_recall_uncertainty(
@@ -55,7 +55,7 @@ def precision_recall_uncertainty(
 
     """
     conf_mat = confusion_matrix(y, yhat, score, threshold, return_df=False)
-    mtr = pr_mvn_error(conf_mat, alpha)
+    mtr = pr_bvn_error(conf_mat, alpha)
     cov = mtr[-4:].reshape(2, 2)
     metrics = mtr[:-4]
 
@@ -109,7 +109,7 @@ def precision_recall_uncertainty_confusion_matrix(
         max_dim=1,
         dtype_check=_convert_to_int
     )
-    mtr = pr_mvn_error(conf_mat, alpha)
+    mtr = pr_bvn_error(conf_mat, alpha)
     cov = mtr[-4:].reshape(2, 2)
     metrics = mtr[:-4]
 
@@ -166,7 +166,7 @@ def precision_recall_uncertainty_confusion_matrices(
         max_dim=2,
         dtype_check=_convert_to_int,
     )
-    mtr = pr_mvn_error_runs(conf_mat, alpha)
+    mtr = pr_bvn_error_runs(conf_mat, alpha)
     cov = mtr[:, -4:]
     metrics = mtr[:, :-4]
 
@@ -223,7 +223,7 @@ def precision_recall_uncertainty_runs(
 
     """
     conf_mat = confusion_matrices(y, yhat, score, threshold, return_df=False)
-    mtr = pr_mvn_error_runs(conf_mat, alpha)
+    mtr = pr_bvn_error_runs(conf_mat, alpha)
     cov = mtr[:, -4:]
     metrics = mtr[:, :-4]
 

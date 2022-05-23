@@ -18,12 +18,12 @@ from mmu.methods.prpoint import PrecisionRecallUncertainty
 import mmu.lib._mmu_core as _core
 from mmu.lib._mmu_core import (
     multinomial_uncertainty_over_grid_thresholds as mult_error_grid_thresh,
-    mvn_uncertainty_over_grid_thresholds as mvn_error_grid_thresh,
+    bvn_uncertainty_over_grid_thresholds as bvn_error_grid_thresh,
 )
 if _MMU_MT_SUPPORT:
     from mmu.lib._mmu_core import (
         multinomial_uncertainty_over_grid_thresholds_mt as mult_error_grid_thresh_mt,
-        mvn_uncertainty_over_grid_thresholds_mt as mvn_error_grid_thresh_mt,
+        bvn_uncertainty_over_grid_thresholds_mt as bvn_error_grid_thresh_mt,
     )
 
 class PrecisionRecallCurveUncertainty:
@@ -108,14 +108,14 @@ class PrecisionRecallCurveUncertainty:
         self._parse_epsilon(epsilon)
 
         # compute precision and recall
-        mtr = _core.pr_curve_mvn_cov(self.conf_mats)
+        mtr = _core.pr_curve_bvn_cov(self.conf_mats)
         self.precision = mtr[:, 0]
         self.recall = mtr[:, 1]
         self.cov_mats = mtr[:, 2:]
 
         # compute scores
         if _MMU_MT_SUPPORT and n_threads > 1:
-            self.chi2_scores = mvn_error_grid_thresh_mt(
+            self.chi2_scores = bvn_error_grid_thresh_mt(
                 n_conf_mats=self.n_conf_mats,
                 precs_grid=self.prec_grid,
                 recs_grid=self.rec_grid,
@@ -130,7 +130,7 @@ class PrecisionRecallCurveUncertainty:
                 " ignoring `n_threads`"
             )
         else:
-            self.chi2_scores = mvn_error_grid_thresh(
+            self.chi2_scores = bvn_error_grid_thresh(
                 n_conf_mats=self.n_conf_mats,
                 precs_grid=self.prec_grid,
                 recs_grid=self.rec_grid,
