@@ -461,7 +461,11 @@ class PrecisionRecallUncertainty:
                 " before adding train uncertainty."
             )
 
-        threshold = threshold or self.threshold
+        if self.threshold is not None:
+            threshold = self.threshold
+        elif threshold is None:
+            raise ValueError("``threshold`` must not be None if was not set before.")
+
         self.train_conf_mats = confusion_matrices(
             y, yhat, scores, threshold, obs_axis
         )
