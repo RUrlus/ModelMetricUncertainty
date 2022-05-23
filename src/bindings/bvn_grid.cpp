@@ -1,17 +1,17 @@
 /* multn_loglike.cpp -- Python bindings of multinomial log-likelihood uncertainty
  * Copyright 2021 Ralph Urlus
  */
-#include <mmu/bindings/mvn_grid.hpp>
+#include <mmu/bindings/bvn_grid.hpp>
 
 namespace py = pybind11;
 
 namespace mmu {
 namespace bindings {
 
-void bind_mvn_uncertainty_over_grid(py::module& m) {
+void bind_bvn_uncertainty_over_grid(py::module& m) {
     m.def(
-        "mvn_uncertainty_over_grid",
-        &api::mvn_uncertainty_over_grid,
+        "bvn_uncertainty_over_grid",
+        &api::bvn_uncertainty_over_grid,
         R"pbdoc(Compute minimum 2d-Z score for a confusion matrix and PR grid.
 
         Parameters
@@ -42,10 +42,10 @@ void bind_mvn_uncertainty_over_grid(py::module& m) {
         py::arg("epsilon") = 1e-4);
 }
 
-void bind_mvn_uncertainty_over_grid_thresholds(py::module& m) {
+void bind_bvn_uncertainty_over_grid_thresholds(py::module& m) {
     m.def(
-        "mvn_uncertainty_over_grid_thresholds",
-        &api::mvn_uncertainty_over_grid_thresholds,
+        "bvn_uncertainty_over_grid_thresholds",
+        &api::bvn_uncertainty_over_grid_thresholds,
         R"pbdoc(Compute minimum 2d-Z scores for each confusion matrix and grid.
 
         Parameters
@@ -81,10 +81,10 @@ void bind_mvn_uncertainty_over_grid_thresholds(py::module& m) {
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-void bind_mvn_uncertainty_over_grid_thresholds_mt(py::module& m) {
+void bind_bvn_uncertainty_over_grid_thresholds_mt(py::module& m) {
     m.def(
-        "mvn_uncertainty_over_grid_thresholds_mt",
-        &api::mvn_uncertainty_over_grid_thresholds_mt,
+        "bvn_uncertainty_over_grid_thresholds_mt",
+        &api::bvn_uncertainty_over_grid_thresholds_mt,
         R"pbdoc(Compute minimum profile loglike scores for each confusion matrix and grid.
 
         Parameters

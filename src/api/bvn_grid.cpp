@@ -1,14 +1,14 @@
-/* mvn_grid.cpp -- Implementation of Python API of mvn uncertainty over grid
+/* bvn_grid.cpp -- Implementation of Python API of bvn uncertainty over grid
  * Copyright 2021 Ralph Urlus
  */
-#include <mmu/api/mvn_grid.hpp>  // for py::array
+#include <mmu/api/bvn_grid.hpp>  // for py::array
 
 namespace py = pybind11;
 
 namespace mmu {
 namespace api {
 
-f64arr mvn_uncertainty_over_grid(
+f64arr bvn_uncertainty_over_grid(
     const f64arr prec_grid,
     const f64arr rec_grid,
     const i64arr conf_mat,
@@ -20,7 +20,7 @@ f64arr mvn_uncertainty_over_grid(
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();
     auto scores = f64arr({prec_bins, rec_bins});
-    core::mvn_uncertainty_over_grid(
+    core::bvn_uncertainty_over_grid(
         prec_bins,
         rec_bins,
         npy::get_data(prec_grid),
@@ -30,9 +30,9 @@ f64arr mvn_uncertainty_over_grid(
         n_sigmas,
         epsilon);
     return scores;
-}  // mvn_uncertainty_over_grid
+}  // bvn_uncertainty_over_grid
 
-f64arr mvn_uncertainty_over_grid_thresholds(
+f64arr bvn_uncertainty_over_grid_thresholds(
     const int64_t n_conf_mats,
     const f64arr prec_grid,
     const f64arr rec_grid,
@@ -45,7 +45,7 @@ f64arr mvn_uncertainty_over_grid_thresholds(
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();
     auto scores = f64arr({prec_bins, rec_bins});
-    core::mvn_uncertainty_over_grid_thresholds(
+    core::bvn_uncertainty_over_grid_thresholds(
         prec_bins,
         rec_bins,
         n_conf_mats,
@@ -56,10 +56,10 @@ f64arr mvn_uncertainty_over_grid_thresholds(
         n_sigmas,
         epsilon);
     return scores;
-}  // mvn_uncertainty_over_grid
+}  // bvn_uncertainty_over_grid
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-f64arr mvn_uncertainty_over_grid_thresholds_mt(
+f64arr bvn_uncertainty_over_grid_thresholds_mt(
     const int64_t n_conf_mats,
     const f64arr prec_grid,
     const f64arr rec_grid,
@@ -73,7 +73,7 @@ f64arr mvn_uncertainty_over_grid_thresholds_mt(
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();
     auto scores = f64arr({prec_bins, rec_bins});
-    core::mvn_uncertainty_over_grid_thresholds_mt(
+    core::bvn_uncertainty_over_grid_thresholds_mt(
         prec_bins,
         rec_bins,
         n_conf_mats,

@@ -1,4 +1,4 @@
-/* mvn_grid.hpp -- Implementation of Bivariate Normal uncertainty over the grid
+/* bvn_grid.hpp -- Implementation of Bivariate Normal uncertainty over the grid
  * Copyright 2022 Ralph Urlus
  *
  *  /Slide 4 at
@@ -24,8 +24,8 @@
  *  Z_{1}^{2} + Z_{2}^{2} \sim \chi^{2}(2)
  *
  */
-#ifndef INCLUDE_MMU_CORE_MVN_GRID_HPP_
-#define INCLUDE_MMU_CORE_MVN_GRID_HPP_
+#ifndef INCLUDE_MMU_CORE_BVN_GRID_HPP_
+#define INCLUDE_MMU_CORE_BVN_GRID_HPP_
 
 #if defined(MMU_HAS_OPENMP_SUPPORT)
 #include <omp.h>
@@ -41,7 +41,7 @@
 
 #include <mmu/core/common.hpp>
 #include <mmu/core/metrics.hpp>
-#include <mmu/core/mvn_error.hpp>
+#include <mmu/core/bvn_error.hpp>
 #include <mmu/core/pr_grid.hpp>
 #include <mmu/core/random.hpp>
 
@@ -55,7 +55,7 @@
 namespace mmu {
 namespace core {
 
-inline void mvn_uncertainty_over_grid(
+inline void bvn_uncertainty_over_grid(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const double* prec_grid,
@@ -83,7 +83,7 @@ inline void mvn_uncertainty_over_grid(
     const int64_t rec_idx_min = idx_bounds[2];
     const int64_t rec_idx_max = idx_bounds[3];
 
-    pr_mvn_cov(conf_mat, prc_ptr);
+    pr_bvn_cov(conf_mat, prc_ptr);
     const double prec_mu = prec_rec_cov[0];
     const double rec_mu = prec_rec_cov[1];
     const double prec_simga = std::sqrt(prec_rec_cov[2]);
@@ -121,9 +121,9 @@ inline void mvn_uncertainty_over_grid(
             }
         }
     }
-}  // mvn_uncertainty_over_grid
+}  // bvn_uncertainty_over_grid
 
-inline void mvn_uncertainty_over_grid_thresholds(
+inline void bvn_uncertainty_over_grid_thresholds(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const int64_t n_conf_mats,
@@ -165,7 +165,7 @@ inline void mvn_uncertainty_over_grid_thresholds(
         bounds.compute_bounds(conf_mat);
 
         // compute covariance matrix and mean
-        pr_mvn_cov(conf_mat, prc_ptr);
+        pr_bvn_cov(conf_mat, prc_ptr);
         prec_mu = prec_rec_cov[0];
         rec_mu = prec_rec_cov[1];
         prec_simga = std::sqrt(prec_rec_cov[2]);
@@ -207,10 +207,10 @@ inline void mvn_uncertainty_over_grid_thresholds(
         // increment ptr
         conf_mat += 4;
     }
-}  // mvn_uncertainty_over_grid_thresholds
+}  // bvn_uncertainty_over_grid_thresholds
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-inline void mvn_uncertainty_over_grid_thresholds_mt(
+inline void bvn_uncertainty_over_grid_thresholds_mt(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const int64_t n_conf_mats,
@@ -264,7 +264,7 @@ inline void mvn_uncertainty_over_grid_thresholds_mt(
             bounds.compute_bounds(lcm);
 
             // compute covariance matrix and mean
-            pr_mvn_cov(lcm, prc_ptr);
+            pr_bvn_cov(lcm, prc_ptr);
             prec_mu = prec_rec_cov[0];
             rec_mu = prec_rec_cov[1];
             prec_simga = std::sqrt(prec_rec_cov[2]);
@@ -322,10 +322,10 @@ inline void mvn_uncertainty_over_grid_thresholds_mt(
         }
         scores[i] = min_score;
     }
-}  // mvn_uncertainty_over_grid_thresholds_mt
+}  // bvn_uncertainty_over_grid_thresholds_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
 }  // namespace core
 }  // namespace mmu
 
-#endif  // INCLUDE_MMU_CORE_MVN_GRID_HPP_
+#endif  // INCLUDE_MMU_CORE_BVN_GRID_HPP_
