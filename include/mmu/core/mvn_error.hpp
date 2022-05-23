@@ -100,8 +100,14 @@ inline void pr_mvn_cov(T* __restrict const conf_mat, double* __restrict const me
     }
 
     // covariance
-    metrics[3] = metrics[4]
-        = (static_cast<double>(itp * conf_mat[1] * conf_mat[2]) / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2)));
+    if (itp != itp_fp && itp != itp_fn) {
+        metrics[3] = metrics[4] = (
+            static_cast<double>(itp * conf_mat[1] * conf_mat[2])
+            / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2))
+        );
+    } else {
+        metrics[3] = metrics[4] = 0.0;
+    }
 }  // pr_mvn_error
 
 /* This function computes the uncertainty on the precision-recall curve
