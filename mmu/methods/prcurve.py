@@ -540,6 +540,7 @@ class PrecisionRecallCurveUncertainty:
         cmap : str = 'Blues',
         equal_aspect : bool = False,
         limit_axis : bool = True,
+        legend_loc : Optional[str] = None,
         alpha : float = 0.8,
         point_uncertainty : Union[PrecisionRecallUncertainty, List[PrecisionRecallUncertainty], None] = None,
         point_kwargs : Union[Dict, List[Dict], None] = None
@@ -562,6 +563,8 @@ class PrecisionRecallCurveUncertainty:
             enforce square axis
         limit_axis : bool, default=True
             allow ax to be limited for optimal CI plot
+        legend_loc : str, default=None
+            location of the legend, default is `lower center`
         alpha : float, defualt=0.8
             opacity value of the contours
         point_uncertainty : PrecisionRecallUncertainty, List, default=None
@@ -615,19 +618,22 @@ class PrecisionRecallCurveUncertainty:
                 "`levels` must be a int, float, array-like or None"
             )
 
+        self.critical_values_plot = levels
+
         self._ax, self._handles = _plot_pr_curve_contours(
-            self.precision,
-            self.recall,
-            self.chi2_scores,
-            self.prec_grid,
-            self.rec_grid,
-            levels,
-            labels,
+            precision=self.precision,
+            recall=self.recall,
+            scores=self.chi2_scores,
+            prec_grid=self.prec_grid,
+            rec_grid=self.rec_grid,
+            levels=levels,
+            labels=labels,
             cmap=cmap,
             ax=ax,
             alpha=alpha,
             equal_aspect=equal_aspect,
             limit_axis=limit_axis,
+            legend_loc=legend_loc
         )
 
         if point_uncertainty is not None:
