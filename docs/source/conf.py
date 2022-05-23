@@ -13,15 +13,17 @@ import os
 import sys
 import pathlib
 
-readme_path = (
-    pathlib.Path(__file__)
-    .parent.resolve()
-    .parent.resolve()
-    .parent.joinpath("README.rst")
-)
-readme_target = pathlib.Path(__file__).parent.joinpath("readme.rst")
-with readme_target.open("w") as outf:
-    outf.write(readme_path.read_text())
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+if not on_rtd:
+    readme_path = (
+        pathlib.Path(__file__)
+        .parent.resolve()
+        .parent.resolve()
+        .parent.joinpath("README.rst")
+    )
+    readme_target = pathlib.Path(__file__).parent.joinpath("readme.rst")
+    with readme_target.open("w") as outf:
+        outf.write(readme_path.read_text())
 
 sys.path.insert(0, os.path.abspath('../..'))
 sys.setrecursionlimit(1500)

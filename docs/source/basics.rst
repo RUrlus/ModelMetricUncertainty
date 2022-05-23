@@ -30,7 +30,7 @@ The ``binary_metrics`` functions compute the 10 most commonly used metrics:
 
 Most other metrics should be computable from these.
 
-See API sections :ref:`confusion_api` and :ref:`metrics_api` for all the function signatures.
+See API section :ref:`Metrics` for all the function signatures.
 
 .. code-block:: python3
 
@@ -199,7 +199,7 @@ we compute them with :func:`mmu.auto_thresholds`.
   :width: 800
   :alt: Uncertainty on the Precision-Recall curve
 
-See :class:`mmu.PrecisionRecallUncertainty` and :class:`mmu.PrecisionRecallUncertainty` for details.
+See :class:`mmu.PrecisionRecallUncertainty` for details.
 
 Bivariate-Normal approach
 +++++++++++++++++++++++++
@@ -228,4 +228,4 @@ The bivariate threshold/point uncertainty can be computed using setting
     # PRCU is an alias of PrecisionRecallCurveUncertainty
     pr_err_curve = mmu.PRCU.from_scores(y, scores, method='bvn')
 
-See :class:`mmu.PrecisionRecallUncertainty` and :class:`mmu.PrecisionRecallCurveUncertainty` for details.
+See :class:`mmu.PrecisionRecallUncertainty` for details.

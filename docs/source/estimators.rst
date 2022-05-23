@@ -30,23 +30,13 @@ For each bin in the two dimensional grid we retain the minimum score, highest pr
 Hence, the curve uncertainty can slightly over-cover the true confidence interval.
 To help with this the curve methods provide functionality to overlay threshold uncertainty(ies) on the curve. 
 
-Threshold
-+++++++++
-
 .. autoapiclass:: mmu.PRU
-    :members:
-    :inherited-members:
 
 .. autoapiclass:: mmu.PrecisionRecallUncertainty
     :members:
     :inherited-members:
 
-Curve
-+++++
-
 .. autoapiclass:: mmu.PRCU
-    :members:
-    :inherited-members:
 
 .. autoapiclass:: mmu.PrecisionRecallCurveUncertainty
     :members:
