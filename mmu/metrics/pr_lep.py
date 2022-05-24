@@ -13,8 +13,8 @@ from mmu.lib._mmu_core import pr_bvn_error
 from mmu.lib._mmu_core import pr_bvn_error_runs
 
 
-def precision_recall_uncertainty(
-    y, yhat=None, score=None, threshold=None, alpha=0.95, return_df=False
+def precision_recall_bvn_uncertainty(
+    y, yhat=None, scores=None, threshold=None, alpha=0.95, return_df=False
 ):
     """Compute Precision, Recall and their joint uncertainty.
 
@@ -30,8 +30,8 @@ def precision_recall_uncertainty(
     yhat : np.ndarray, default=None
         the predicted labels, the same dtypes are supported as y. Can be `None`
         if `score` is not `None`, if both are provided, `score` is ignored.
-    score : np.ndarray, default=None
-        the classifier score to be evaluated against the `threshold`, i.e.
+    scores : np.ndarray, default=None
+        the classifier scores to be evaluated against the `threshold`, i.e.
         `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
         if both are provided, this parameter is ignored.
         Supported dtypes are float32 and float64.
@@ -54,7 +54,7 @@ def precision_recall_uncertainty(
         covariance matrix of precision and recall
 
     """
-    conf_mat = confusion_matrix(y, yhat, score, threshold, return_df=False)
+    conf_mat = confusion_matrix(y, yhat, scores, threshold, return_df=False)
     mtr = pr_bvn_error(conf_mat, alpha)
     cov = mtr[-4:].reshape(2, 2)
     metrics = mtr[:-4]
@@ -73,7 +73,7 @@ def precision_recall_uncertainty(
     return conf_mat, metrics, cov
 
 
-def precision_recall_uncertainty_confusion_matrix(
+def precision_recall_bvn_uncertainty_confusion_matrix(
     conf_mat, alpha=0.95, return_df=False
 ):
     """Compute Precision, Recall and their joint uncertainty.
@@ -127,7 +127,7 @@ def precision_recall_uncertainty_confusion_matrix(
     return conf_mat, metrics, cov
 
 
-def precision_recall_uncertainty_confusion_matrices(
+def precision_recall_bvn_uncertainty_confusion_matrices(
     conf_mat, alpha=0.95, return_df=False
 ):
     """Compute Precision, Recall and their joint uncertainty.
@@ -181,8 +181,8 @@ def precision_recall_uncertainty_confusion_matrices(
     return metrics, cov
 
 
-def precision_recall_uncertainty_runs(
-    y, yhat=None, score=None, threshold=None, alpha=0.95, return_df=False
+def precision_recall_bvn_uncertainty_runs(
+    y, yhat=None, scores=None, threshold=None, alpha=0.95, return_df=False
 ):
     """Compute Precision, Recall and their joint uncertainty over multiple runs.
 
@@ -197,14 +197,14 @@ def precision_recall_uncertainty_runs(
         int64, float32, float64]
     yhat : np.ndarray, default=None
         the predicted labels, the same dtypes are supported as y. Can be `None`
-        if `score` is not `None`, if both are provided, `score` is ignored.
-    score : np.ndarray, default=None
-        the classifier score to be evaluated against the `threshold`, i.e.
+        if `scores` is not `None`, if both are provided, `scores` is ignored.
+    scores : np.ndarray, default=None
+        the classifier scores to be evaluated against the `threshold`, i.e.
         `yhat` = `score` >= `threshold`. Can be `None` if `yhat` is not `None`,
         if both are provided, this parameter is ignored.
         Supported dtypes are float32 and float64.
     threshold : float, default=0.5
-        the classification threshold to which the classifier score is evaluated,
+        the classification threshold to which the classifier scores are evaluated,
         is inclusive.
     alpha : float, default=0.95
         the density in the confidence interval
@@ -222,7 +222,7 @@ def precision_recall_uncertainty_runs(
         covariance matrix of precision and recall
 
     """
-    conf_mat = confusion_matrices(y, yhat, score, threshold, return_df=False)
+    conf_mat = confusion_matrices(y, yhat, scores, threshold, return_df=False)
     mtr = pr_bvn_error_runs(conf_mat, alpha)
     cov = mtr[:, -4:]
     metrics = mtr[:, :-4]
