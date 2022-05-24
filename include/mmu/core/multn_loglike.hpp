@@ -430,6 +430,7 @@ inline void simulate_multn_uncertainty(
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,
     double* scores,
+    double* bounds,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4,
     const uint64_t seed = 0,
@@ -448,8 +449,6 @@ inline void simulate_multn_uncertainty(
     // memory to be used by constrained_fit_cmp
     std::array<double, 4> probas;
     double* p = probas.data();
-
-    std::array<double, 4> bounds;
 
     // allocate memory block to be used by multinomial
     std::array<int64_t, 4> mult;
@@ -470,7 +469,7 @@ inline void simulate_multn_uncertainty(
     // -- memory allocation --
 
     // obtain prec_start, prec_end, rec_start, rec_end
-    details::get_pr_grid_bounds(conf_mat, bounds.data(), n_sigmas, epsilon);
+    details::get_pr_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
     auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
     details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
     const double prec_start = bounds[0];
@@ -478,6 +477,8 @@ inline void simulate_multn_uncertainty(
 
     set_prof_loglike_store(conf_mat, nll_ptr);
     const int64_t n = nll_ptr->in;
+
+    std::fill(scores, scores + n_bins * n_bins, 1e4);
 
     double rec;
     double prec;
@@ -501,14 +502,14 @@ inline void simulate_multn_uncertainty_mt(
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,
     double* scores,
+    double* bounds,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4,
     const uint64_t seed = 0,
     const int n_threads = 4
 ) {
-    std::array<double, 4> bounds;
     // obtain prec_start, prec_end, rec_start, rec_end
-    details::get_pr_grid_bounds(conf_mat, bounds.data(), n_sigmas, epsilon);
+    details::get_pr_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
     auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
     details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
     const double prec_start = bounds[0];
@@ -517,6 +518,8 @@ inline void simulate_multn_uncertainty_mt(
     random::pcg_seed_seq seed_source;
     std::array<uint64_t, 2> gen_seeds;
     seed_source.generate(gen_seeds.begin(), gen_seeds.end());
+
+    std::fill(scores, scores + n_bins * n_bins, 1e4);
 
 #pragma omp parallel num_threads(n_threads) shared(conf_mat, gen_seeds, seed, prec_start, prec_delta, rec_grid)
     {

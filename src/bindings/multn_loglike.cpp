@@ -158,7 +158,7 @@ void bind_multinomial_uncertainty_over_grid_thresholds_mt(py::module& m) {
 
 void bind_simulated_multinomial_uncertainty(py::module& m) {
     m.def(
-        "simulated_multinomial_uncertainty",
+        "simulate_multn_uncertainty",
         &api::simulated_multinomial_uncertainty,
         R"pbdoc(Compute multinomial uncertainty.
 
@@ -184,8 +184,9 @@ void bind_simulated_multinomial_uncertainty(py::module& m) {
 
         Returns
         -------
-        chi2 : np.array[np.float64]
-            chi2 score of the profile log-likelihoods over the Precision-Recall grid
+        coverage : np.array[np.float64]
+            percentage of simulated simulated multinomial with a lower profile
+            log-likelihood than the observed profile log-likelihood
         bounds : np.array[np.float64]
             the lower and upper bound of the grids for precision and recall respectively
         )pbdoc",
@@ -201,7 +202,7 @@ void bind_simulated_multinomial_uncertainty(py::module& m) {
 #ifdef MMU_HAS_OPENMP_SUPPORT
 void bind_simulated_multinomial_uncertainty_mt(py::module& m) {
     m.def(
-        "simulated_multinomial_uncertainty_mt",
+        "simulate_multn_uncertainty_mt",
         &api::simulated_multinomial_uncertainty_mt,
         R"pbdoc(Compute multinomial uncertainty.
 
@@ -226,8 +227,9 @@ void bind_simulated_multinomial_uncertainty_mt(py::module& m) {
 
         Returns
         -------
-        chi2 : np.array[np.float64]
-            chi2 score of the profile log-likelihoods over the Precision-Recall grid
+        coverage : np.array[np.float64]
+            percentage of simulated simulated multinomial with a lower profile
+            log-likelihood than the observed profile log-likelihood
         bounds : np.array[np.float64]
             the lower and upper bound of the grids for precision and recall respectively
         )pbdoc",

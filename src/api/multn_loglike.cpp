@@ -102,7 +102,7 @@ f64arr multn_uncertainty_over_grid_thresholds_mt(
 }  // multinomial_uncertainty_over_grid_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-f64arr simulated_multinomial_uncertainty(
+py::tuple simulated_multinomial_uncertainty(
     const int64_t n_sims,
     const int64_t n_bins,
     const i64arr conf_mat,
@@ -114,13 +114,14 @@ f64arr simulated_multinomial_uncertainty(
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
     }
     auto scores = f64arr({n_bins, n_bins});
+    auto bounds = f64arr({2, 2});
     core::simulate_multn_uncertainty(
-        n_sims, n_bins, npy::get_data(conf_mat), npy::get_data(scores), n_sigmas, epsilon, seed, stream);
-    return scores;
+        n_sims, n_bins, npy::get_data(conf_mat), npy::get_data(scores), npy::get_data(bounds), n_sigmas, epsilon, seed, stream);
+    return py::make_tuple(scores, bounds);
 }  // multinomial_uncertainty
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-f64arr simulated_multinomial_uncertainty_mt(
+py::tuple simulated_multinomial_uncertainty_mt(
     const int64_t n_sims,
     const int64_t n_bins,
     const i64arr conf_mat,
@@ -131,10 +132,12 @@ f64arr simulated_multinomial_uncertainty_mt(
     if (!npy::is_well_behaved(conf_mat)) {
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
     }
+
+    auto bounds = f64arr({2, 2});
     auto scores = f64arr({n_bins, n_bins});
     core::simulate_multn_uncertainty_mt(
-        n_sims, n_bins, npy::get_data(conf_mat), npy::get_data(scores), n_sigmas, epsilon, seed, n_threads);
-    return scores;
+        n_sims, n_bins, npy::get_data(conf_mat), npy::get_data(scores), npy::get_data(bounds), n_sigmas, epsilon, seed, n_threads);
+    return py::make_tuple(scores, bounds);
 }  // multinomial_uncertainty
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
