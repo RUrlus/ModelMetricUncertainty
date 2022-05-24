@@ -150,6 +150,12 @@ dmypy.json
 *.blg
 *.xml
 
+# plots
+*.png
+*.jpg
+*.jpeg
+
+
 *version.py
 
 _skbuild/
