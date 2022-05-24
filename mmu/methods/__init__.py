@@ -1,4 +1,5 @@
 from mmu.methods.prpoint import PrecisionRecallUncertainty
+from mmu.methods.prpoint import PrecisionRecallSimulatedUncertainty
 from mmu.methods.prcurve import PrecisionRecallCurveUncertainty
 
 PRU = PrecisionRecallUncertainty
@@ -8,5 +9,6 @@ __all__ = [
     'PRU',
     'PRCU',
     'PrecisionRecallUncertainty',
+    'PrecisionRecallSimulatedUncertainty',
     'PrecisionRecallCurveUncertainty',
 ]
