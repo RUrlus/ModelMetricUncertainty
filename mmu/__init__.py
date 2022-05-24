@@ -2,7 +2,7 @@ import mmu.metrics as metrics
 import mmu.methods as methods
 import mmu.stats as stats
 
-from mmu.lib import MMU_MT_SUPPORT as _MMU_MT_SUPPORT
+from mmu.lib import _MMU_MT_SUPPORT
 
 from mmu.metrics import auto_thresholds
 from mmu.metrics import binary_metrics
@@ -42,6 +42,7 @@ pr_curve = precision_recall_curve
 from mmu.methods import PRU
 from mmu.methods import PRCU
 from mmu.methods import PrecisionRecallUncertainty
+from mmu.methods import PrecisionRecallSimulatedUncertainty
 from mmu.methods import PrecisionRecallCurveUncertainty
 
 from mmu.commons.utils import generate_data
@@ -71,6 +72,7 @@ __all__ = [
     'PRU',
     'PRCU',
     'PrecisionRecallUncertainty',
+    'PrecisionRecallSimulatedUncertainty',
     'PrecisionRecallCurveUncertainty',
     # modules
     'metrics',
