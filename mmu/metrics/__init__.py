@@ -17,15 +17,10 @@ from mmu.metrics.metrics import precision_recall
 from mmu.metrics.metrics import precision_recall_curve
 from mmu.metrics.utils import auto_thresholds
 
-from mmu.metrics.pr_lep import precision_recall_uncertainty
-from mmu.metrics.pr_lep import precision_recall_uncertainty_runs
-from mmu.metrics.pr_lep import precision_recall_uncertainty_confusion_matrix
-from mmu.metrics.pr_lep import precision_recall_uncertainty_confusion_matrices
-
-pr_error = precision_recall_uncertainty
-pr_error_runs = precision_recall_uncertainty_runs
-pr_error_conf_mat = precision_recall_uncertainty_confusion_matrix
-pr_error_conf_mats = precision_recall_uncertainty_confusion_matrices
+from mmu.metrics.pr_lep import precision_recall_bvn_uncertainty
+from mmu.metrics.pr_lep import precision_recall_bvn_uncertainty_runs
+from mmu.metrics.pr_lep import precision_recall_bvn_uncertainty_confusion_matrix
+from mmu.metrics.pr_lep import precision_recall_bvn_uncertainty_confusion_matrices
 
 __all__ = [
     'auto_thresholds',
@@ -46,12 +41,8 @@ __all__ = [
     'metrics_to_dataframe',
     'precision_recall',
     'precision_recall_curve',
-    'pr_error',
-    'pr_error_runs',
-    'pr_error_conf_mat',
-    'pr_error_conf_mats',
-    'precision_recall_uncertainty',
-    'precision_recall_uncertainty_runs',
-    'precision_recall_uncertainty_confusion_matrix',
-    'precision_recall_uncertainty_confusion_matrices',
+    'precision_recall_bvn_uncertainty',
+    'precision_recall_bvn_uncertainty_runs',
+    'precision_recall_bvn_uncertainty_confusion_matrix',
+    'precision_recall_bvn_uncertainty_confusion_matrices',
 ]
