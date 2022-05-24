@@ -46,7 +46,7 @@ f64arr multn_uncertainty_over_grid_thresholds_mt(
     const int64_t n_threads);
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-f64arr simulated_multinomial_uncertainty(
+py::tuple simulated_multinomial_uncertainty(
     const int64_t n_sims,
     const int64_t n_bins,
     const i64arr conf_mat,
@@ -56,7 +56,7 @@ f64arr simulated_multinomial_uncertainty(
     const uint64_t stream);
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-f64arr simulated_multinomial_uncertainty_mt(
+py::tuple simulated_multinomial_uncertainty_mt(
     const int64_t n_sims,
     const int64_t n_bins,
     const i64arr conf_mat,
