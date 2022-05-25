@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import scipy.stats as sts
 
-from mmu.commons import check_array, _convert_to_float, _convert_to_int, _convert_to_ext_types
+from mmu.commons import check_array, _convert_to_float, _convert_to_int
 from mmu.commons.checks import _check_n_threads
 from mmu.metrics.utils import auto_thresholds
 from mmu.metrics.confmat import confusion_matrices_thresholds
@@ -563,11 +563,6 @@ class PrecisionRecallCurveUncertainty:
         )
         self.n_conf_mats = self.conf_mats.shape[0]
 
-        # compute precision and recall and covariance matrices for test
-        # self.precision = mtr[:, 0]
-        # self.recall = mtr[:, 1]
-        # self.cov_mats = mtr[:, 2:]
-
         scores_bs = check_array(
             scores_bs,
             axis=obs_axis,
@@ -582,19 +577,9 @@ class PrecisionRecallCurveUncertainty:
         n_thresholds = self.thresholds.size  # type: ignore
 
         if y.ndim == 1:
-            y = np.tile(y[:, None], n_runs)
+            y = np.tile(y[:, None], n_runs).copy(order='F')
         elif y.shape[1] == 1 and y.shape[0] >= 2:
-            y = np.tile(y, n_runs)
-
-        y = check_array(
-            y,
-            axis=obs_axis,
-            target_axis=obs_axis,
-            target_order=1-obs_axis,
-            max_dim=2,
-            min_dim=2,
-            dtype_check=_convert_to_ext_types,
-        )
+            y = np.tile(y, n_runs).copy(order='F')
 
         # bootstrapped conf_mats
         train_conf_mats = _core.confusion_matrix_thresholds_runs(
@@ -606,6 +591,7 @@ class PrecisionRecallCurveUncertainty:
 
         self.train_precisions = prec_rec[:, 0].reshape(n_runs, n_thresholds).T
         self.train_recalls = prec_rec[:, 0].reshape(n_runs, n_thresholds).T
+        self.train_recalls = prec_rec[:, 1].reshape(n_runs, n_thresholds).T
 
         ilb = 0
         self.train_cov_mats = np.empty((n_thresholds, 4))
