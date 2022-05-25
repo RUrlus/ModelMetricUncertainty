@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import scipy.stats as sts
 
-from mmu.commons import check_array, _convert_to_float, _convert_to_int
+from mmu.commons import check_array, _convert_to_float, _convert_to_int, _convert_to_ext_types
 from mmu.commons.checks import _check_n_threads
 from mmu.metrics.utils import auto_thresholds
 from mmu.metrics.confmat import confusion_matrices_thresholds
@@ -19,11 +19,13 @@ import mmu.lib._mmu_core as _core
 from mmu.lib._mmu_core import (
     multinomial_uncertainty_over_grid_thresholds as mult_error_grid_thresh,
     bvn_uncertainty_over_grid_thresholds as bvn_error_grid_thresh,
+    bvn_uncertainty_over_grid_thresholds_wtrain as bvn_error_grid_thresh_wt
 )
 if _MMU_MT_SUPPORT:
     from mmu.lib._mmu_core import (
         multinomial_uncertainty_over_grid_thresholds_mt as mult_error_grid_thresh_mt,
         bvn_uncertainty_over_grid_thresholds_mt as bvn_error_grid_thresh_mt,
+        bvn_uncertainty_over_grid_thresholds_wtrain_mt as bvn_error_grid_thresh_wt_mt
     )
 
 class PrecisionRecallCurveUncertainty:
@@ -52,9 +54,6 @@ class PrecisionRecallCurveUncertainty:
     conf_mat : np.ndarray[int64]
         the confusion_matrices over the thresholds with columns [TN, FP, FN, TP].
         A DataFrame can be obtained by calling `get_conf_mat`.
-    cov_mats : np.ndarray[float64], optional
-        flattened covariance matrices for each threshold. Not computed when the
-        multinomial approach is used
     precision : np.ndarray[float64]
         the Positive Predictive Values aka positive precisions
     recall : np.ndarray[float64]
@@ -78,6 +77,29 @@ class PrecisionRecallCurveUncertainty:
     epsilon : float
         the value used to prevent the bounds from reaching precision/recall
         1.0/0.0 which would result in NaNs.
+    cov_mats : np.ndarray[float64], optional
+        flattened covariance matrices for each threshold.
+        **Only set when method is bivariate/elliptical.**
+    train_precisions : np.ndarray, optional
+        precisions of the bootstrapped training runs
+        **Only set when initialised with ``from_scores_with_train``.**
+    train_recalls : np.ndarray, optional
+        recalls of the bootstrapped training runs
+        **Only set when initialised with ``from_scores_with_train``.**
+    train_conf_mats : np.ndarray, optional
+        the confusion matrices from the multiple training runs.
+        The array is three dimensional where the i'th row is the i'th threshold
+        The m'th column is the m'th run and the slice (3d axis) the confusion
+        matrix entry.
+        **Only set when initialised with ``from_scores_with_train``.**
+    train_cov_mats : np.ndarray, optional
+        the precision, recall covariance matrices from the multiple training
+        runs over the thresholds.
+        **Only set when initialised with ``from_scores_with_train``.**
+    total_cov_mats : np.ndarray, optional
+        the precision, recall covariance matrices of the combined training and
+        test uncertainty over the thresholds.
+        **Only set when initialised with ``from_scores_with_train``.**
 
     """
 
@@ -92,6 +114,12 @@ class PrecisionRecallCurveUncertainty:
         self.n_sigmas = None
         self.epsilon = None
         self.thresholds = None
+        self.cov_mats = None
+        self.train_precisions = None
+        self.train_recalls = None
+        self.train_conf_mats = None
+        self.train_cov_mats = None
+        self.total_cov_mats = None
         self._has_cov = False
         self._moptions = {
             'mult': {'mult', 'multinomial'},
@@ -107,15 +135,9 @@ class PrecisionRecallCurveUncertainty:
         # -- validate epsilon arg
         self._parse_epsilon(epsilon)
 
-        # compute precision and recall
-        mtr = _core.pr_curve_bvn_cov(self.conf_mats)
-        self.precision = mtr[:, 0]
-        self.recall = mtr[:, 1]
-        self.cov_mats = mtr[:, 2:]
-
         # compute scores
         if _MMU_MT_SUPPORT and n_threads > 1:
-            self.chi2_scores = bvn_error_grid_thresh_mt(
+            prec_rec, self.chi2_scores = bvn_error_grid_thresh_mt(
                 n_conf_mats=self.n_conf_mats,
                 precs_grid=self.prec_grid,
                 recs_grid=self.rec_grid,
@@ -130,7 +152,7 @@ class PrecisionRecallCurveUncertainty:
                     "mmu was not compiled with multi-threading enabled,"
                     " ignoring `n_threads`"
                 )
-            self.chi2_scores = bvn_error_grid_thresh(
+            prec_rec, self.chi2_scores = bvn_error_grid_thresh(
                 n_conf_mats=self.n_conf_mats,
                 precs_grid=self.prec_grid,
                 recs_grid=self.rec_grid,
@@ -138,6 +160,11 @@ class PrecisionRecallCurveUncertainty:
                 n_sigmas=self.n_sigmas,
                 epsilon=self.epsilon,
             )
+
+        # compute precision and recall
+        self.precision = prec_rec[:, 0]
+        self.recall = prec_rec[:, 1]
+        self.cov_mats = prec_rec[:, 2:]
 
     def _compute_multn_scores(self, n_sigmas, epsilon, n_threads):
         n_threads = _check_n_threads(n_threads)
@@ -448,6 +475,175 @@ class PrecisionRecallCurveUncertainty:
         )
         self.n_conf_mats = self.conf_mats.shape[0]
         self._compute_scores(n_sigmas, epsilon, n_threads)
+        return self
+
+    @classmethod
+    def from_scores_with_train(cls,
+        y : np.ndarray,
+        scores : np.ndarray,
+        scores_bs : np.ndarray,
+        thresholds : Optional[np.ndarray] = None,
+        obs_axis : int = 0,
+        n_bins : Union[int, Tuple[int], List[int], np.ndarray, None] = 1000,
+        n_sigmas : Union[int, float] = 6.0,
+        epsilon : float = 1e-12,
+        auto_max_steps : Optional[int] = None,
+        auto_seed : Optional[int] = None,
+        n_threads : Optional[int] = None,
+    ):
+        """Compute Precision-Recall curve uncertainty from classifier scores
+        with train uncertainty.
+
+        Train uncertainty is only supported for the bivariate-normal/elliptical
+        approach. ``method`` is set to `bvn`.
+
+        Train uncertainty can be added by bootstrapping the train set, say 30,
+        times, training the model each time on the bootstrapped train set and
+        predicting on the fixed holdout set ``y_test`` each time.
+        This should result in a array of classifier scores with shape
+        (n_test_obs, n_bootstraps)
+
+        Parameters
+        ----------
+        y : np.ndarray[bool, int32, int64, float32, float64]
+            true labels for the test observations
+        scores : np.ndarray[float32, float64], default=None
+            the classifier scores to be evaluated against the `thresholds`, i.e.
+            `yhat` = `score` >= `threshold`.
+        scores_bs : np.ndarray[float32, float64]
+            the classifier scores for each of the bootstrapped models on the
+            test set ``y_test``.
+        thresholds : np.ndarray[float64], default=None
+            the inclusive classification threshold against which the classifier
+            score is evaluated. If None the classification thresholds are
+            determined such that each thresholds results in a different
+            confusion matrix. Note that the maximum number of thresholds can
+            be set using `max_steps`.
+        obs_axis : int, default=0
+            the axis containing the observations for a single run for the
+            y_train, scores_train, e.g. 0 when the labels and scores are stored
+            as columns
+        n_bins : int, array-like[int], default=1000
+            the number of bins in the precision/recall grid for which the
+            uncertainty is computed. If an int the `chi2_scores` will be a
+            `n_bins` by `n_bins` array. If list-like it must be of length two
+            where the first values determines the number of bins for
+            precision/y-axis and the second the recall/x-axis
+        n_sigmas : int, float, default=6.0
+            the number of marginal standard deviations used to determine the
+            bounds of the grid which is evaluated.
+        epsilon : float, default=1e-12
+            the value used to prevent the bounds from reaching precision/recall
+            1.0/0.0 which would result in NaNs.
+        auto_max_steps : int, default=None
+            the maximum number of thresholds for `auto_thresholds`, is ignored
+            if `thresholds` is not None.
+        auto_seed : int, default=None
+            the seed/random_state used by `auto_thresholds` when `max_steps` is
+            not None. Ignored when `thresholds` is not None.
+        n_threads : int, default=None
+            the number of threads to use when computing the scores. By default
+            we use 4 threads if OpenMP was found, otherwise the computation
+            is single threaded. As is common, -1 indicates that all threads but
+            one should be used.
+
+        """
+        self = cls()
+        self._has_cov = True
+        self.method = 'bvn_train'
+        self._parse_nbins(n_bins)
+        self._parse_n_sigmas(n_sigmas)
+        self._parse_epsilon(epsilon)
+        n_threads = _check_n_threads(n_threads)
+        self._parse_thresholds(thresholds, scores, auto_max_steps, auto_seed)
+
+        # test confusion matrices
+        self.conf_mats = confusion_matrices_thresholds(
+            y=y, scores=scores, thresholds=self.thresholds
+        )
+        self.n_conf_mats = self.conf_mats.shape[0]
+
+        # compute precision and recall and covariance matrices for test
+        # self.precision = mtr[:, 0]
+        # self.recall = mtr[:, 1]
+        # self.cov_mats = mtr[:, 2:]
+
+        scores_bs = check_array(
+            scores_bs,
+            axis=obs_axis,
+            target_axis=obs_axis,
+            target_order=1-obs_axis,
+            max_dim=2,
+            dtype_check=_convert_to_float,
+        )
+
+        n_runs = scores_bs.shape[1 - obs_axis]
+        n_obs = scores_bs.shape[obs_axis]
+        n_thresholds = self.thresholds.size  # type: ignore
+
+        if y.ndim == 1:
+            y = np.tile(y[:, None], n_runs)
+        elif y.shape[1] == 1 and y.shape[0] >= 2:
+            y = np.tile(y, n_runs)
+
+        y = check_array(
+            y,
+            axis=obs_axis,
+            target_axis=obs_axis,
+            target_order=1-obs_axis,
+            max_dim=2,
+            min_dim=2,
+            dtype_check=_convert_to_ext_types,
+        )
+
+        # bootstrapped conf_mats
+        train_conf_mats = _core.confusion_matrix_thresholds_runs(
+            n_obs, n_runs, y, scores_bs, self.thresholds
+        )
+
+        prec_rec = _core.precision_recall_2d(train_conf_mats)
+        self.train_conf_mats = train_conf_mats.reshape(n_thresholds, n_runs, 4)
+
+        self.train_precisions = prec_rec[:, 0].reshape(n_runs, n_thresholds).T
+        self.train_recalls = prec_rec[:, 0].reshape(n_runs, n_thresholds).T
+
+        ilb = 0
+        self.train_cov_mats = np.empty((n_thresholds, 4))
+        for i in range(n_thresholds):
+            iub = ilb + n_runs
+            self.train_cov_mats[i, :] = np.cov(prec_rec[ilb:iub], rowvar=True).ravel()
+            ilb = iub
+
+        # compute scores
+        if _MMU_MT_SUPPORT and n_threads > 1:
+            prec_rec, self.chi2_scores = bvn_error_grid_thresh_wt_mt(
+                n_conf_mats=self.n_conf_mats,
+                precs_grid=self.prec_grid,
+                recs_grid=self.rec_grid,
+                conf_mat=self.conf_mats,
+                train_cov=self.train_cov_mats,
+                n_sigmas=self.n_sigmas,
+                epsilon=self.epsilon,
+                n_threads=n_threads,
+            )
+        else:
+            if (n_threads > 1):
+                warnings.warn(
+                    "mmu was not compiled with multi-threading enabled,"
+                    " ignoring `n_threads`"
+                )
+            prec_rec, self.chi2_scores = bvn_error_grid_thresh_wt(
+                n_conf_mats=self.n_conf_mats,
+                precs_grid=self.prec_grid,
+                recs_grid=self.rec_grid,
+                conf_mat=self.conf_mats,
+                train_cov=self.train_cov_mats,
+                n_sigmas=self.n_sigmas,
+                epsilon=self.epsilon,
+            )
+        self.precision = prec_rec[:, 0]
+        self.recall = prec_rec[:, 1]
+        self.cov_mats = prec_rec[:, 2:]
         return self
 
     def get_conf_mats(self) -> pd.DataFrame:
