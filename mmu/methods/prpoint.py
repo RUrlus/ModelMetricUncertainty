@@ -8,7 +8,7 @@ import pandas as pd
 import scipy.stats as sts
 
 from mmu.commons import check_array
-from mmu.commons import _convert_to_int
+from mmu.commons import _convert_to_int, _convert_to_float, _convert_to_ext_types
 from mmu.commons.checks import _check_n_threads
 from mmu.metrics.confmat import confusion_matrix
 from mmu.metrics.confmat import confusion_matrix_to_dataframe
@@ -483,20 +483,48 @@ class PrecisionRecallUncertainty:
         self._has_cov = True
         self.method = 'bvn_with_train'
         self._parse_threshold(threshold)
-        self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
+
+        y = check_array(
+            y,
+            max_dim=1,
+            dtype_check=_convert_to_ext_types
+        )
+
+        scores = check_array(
+            scores,
+            max_dim=1,
+            dtype_check=_convert_to_float,
+        )
+        if scores.size != y.size:
+            raise ValueError('`scores` and `y` must have equal size.')
+
+        scores_bs = check_array(
+            scores_bs,
+            axis=obs_axis,
+            target_axis=obs_axis,
+            target_order=1-obs_axis,
+            max_dim=2,
+            dtype_check=_convert_to_float,
+        )
+
+        n_runs = scores_bs.shape[1 - obs_axis]
+        if n_runs < 3:
+            raise ValueError(
+                "Cannot compute covariance for less than three training bootstraps"
+            )
+
+        y_bs = np.tile(y[:, None], n_runs).copy(order='F')
+
+        self.conf_mat = _core.confusion_matrix_score(y, scores, self.threshold)
         self._compute_bvn_scores()
 
-        self.train_conf_mats = confusion_matrices(
-            y, scores=scores_bs, threshold=threshold, obs_axis=obs_axis
+        self.train_conf_mats = _core.confusion_matrix_score_runs(
+            y_bs, scores_bs, self.threshold, obs_axis=obs_axis
         )
-        if self.train_conf_mats.shape[0] < 2:
-            raise ValueError(
-                "Cannot compute covariance for less than two training bootstraps"
-            )
-        out = _core.pr_bvn_error_runs(self.train_conf_mats)
+        out = _core.precision_recall_2d(self.train_conf_mats)
         self.train_precisions = out[:, 0]
         self.train_recalls = out[:, 1]
-        self.train_cov_mat = np.cov(out[:, 2:], rowvar=False)
+        self.train_cov_mat = np.cov(out, rowvar=False)
         self.total_cov_mat = self.cov_mat + self.train_cov_mat  # type: ignore
 
         return self
@@ -682,7 +710,7 @@ class PrecisionRecallUncertainty:
                 )
         elif uncertainties == 'train':
             if self.train_cov_mat is not None:
-                cov_mat = self.cov_mat
+                cov_mat = self.train_cov_mat
             else:
                 raise RuntimeError(
                     "`train_cov_mat` is only compute when initialised "
@@ -818,10 +846,10 @@ class PrecisionRecallUncertainty:
     def plot(
         self,
         levels : Union[int, float, np.ndarray, None] = None,
-        uncertainties = 'test',
+        source = 'test',
         ax=None,
         cmap : str = 'Blues',
-        equal_aspect : bool = False,
+        equal_aspect : bool = True,
         limit_axis : bool = True,
         legend_loc : Optional[str] = None,
         alpha : float = 0.8,
@@ -842,8 +870,8 @@ class PrecisionRecallUncertainty:
             If float(s) it is taken to be the density to be contained in the
             confidence interval
             By default we plot 1, 2 and 3 std deviations
-        uncertainties : str, default='test'
-            which uncertainty to plot, ignored when method is not
+        source : str, default='test'
+            which source of uncertainty to plot, ignored when method is not
             Bivariate-Normal / Elliptical. 'test' indicates only the sampling
             uncertainty of the test set. 'train' only plots the sampling
             uncertainty of the train set. 'all' plots to toal uncertainty over
@@ -853,8 +881,8 @@ class PrecisionRecallUncertainty:
             Pre-existing axes for the plot
         cmap : str, default='Blues'
             matplotlib cmap name to use for CIs
-        equal_aspect : bool, default=False
-            enforce square axis
+        equal_aspect : bool, default=True
+            ensure the same scaling for x and y axis
         limit_axis : bool, default=True
             allow ax to be limited for optimal CI plot
         legend_loc : str, default=None
@@ -879,7 +907,7 @@ class PrecisionRecallUncertainty:
         if self._has_cov is True:
             return self._plot_ellipse(
                 levels=levels,
-                uncertainties=uncertainties,
+                uncertainties=source,
                 ax=ax,
                 cmap=cmap,
                 equal_aspect=equal_aspect,
@@ -1294,7 +1322,6 @@ class PrecisionRecallSimulatedUncertainty:
     def plot(
         self,
         levels : Union[int, float, np.ndarray, None] = None,
-        uncertainties = 'test',
         ax=None,
         cmap : str = 'Blues',
         equal_aspect : bool = False,
@@ -1318,13 +1345,6 @@ class PrecisionRecallSimulatedUncertainty:
             If float(s) it is taken to be the density to be contained in the
             confidence interval
             By default we plot 1, 2 and 3 std deviations
-        uncertainties : str, default='test'
-            which uncertainty to plot, ignored when method is not
-            Bivariate-Normal / Elliptical. 'test' indicates only the sampling
-            uncertainty of the test set. 'train' only plots the sampling
-            uncertainty of the train set. 'all' plots to toal uncertainty over
-            both the train and test sets. Note that 'train' and 'all' require
-            that `add_train_uncertainty` has been called.
         ax : matplotlib.axes.Axes, default=None
             Pre-existing axes for the plot
         cmap : str, default='Blues'
