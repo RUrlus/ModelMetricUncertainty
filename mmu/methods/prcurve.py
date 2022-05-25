@@ -590,14 +590,13 @@ class PrecisionRecallCurveUncertainty:
         self.train_conf_mats = train_conf_mats.reshape(n_thresholds, n_runs, 4)
 
         self.train_precisions = prec_rec[:, 0].reshape(n_runs, n_thresholds).T
-        self.train_recalls = prec_rec[:, 0].reshape(n_runs, n_thresholds).T
         self.train_recalls = prec_rec[:, 1].reshape(n_runs, n_thresholds).T
 
         ilb = 0
         self.train_cov_mats = np.empty((n_thresholds, 4))
         for i in range(n_thresholds):
             iub = ilb + n_runs
-            self.train_cov_mats[i, :] = np.cov(prec_rec[ilb:iub], rowvar=True).ravel()
+            self.train_cov_mats[i, :] = np.cov(prec_rec[ilb:iub], rowvar=False).ravel()
             ilb = iub
 
         # compute scores
@@ -630,6 +629,7 @@ class PrecisionRecallCurveUncertainty:
         self.precision = prec_rec[:, 0]
         self.recall = prec_rec[:, 1]
         self.cov_mats = prec_rec[:, 2:]
+        self.total_cov_mats = self.train_cov_mats + self.cov_mats
         return self
 
     def get_conf_mats(self) -> pd.DataFrame:
