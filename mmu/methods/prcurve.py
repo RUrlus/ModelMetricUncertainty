@@ -124,12 +124,12 @@ class PrecisionRecallCurveUncertainty:
                 epsilon=self.epsilon,
                 n_threads=n_threads,
             )
-        elif (n_threads > 1):
-            warnings.warn(
-                "mmu was not compiled with multi-threading enabled,"
-                " ignoring `n_threads`"
-            )
         else:
+            if (n_threads > 1):
+                warnings.warn(
+                    "mmu was not compiled with multi-threading enabled,"
+                    " ignoring `n_threads`"
+                )
             self.chi2_scores = bvn_error_grid_thresh(
                 n_conf_mats=self.n_conf_mats,
                 precs_grid=self.prec_grid,
