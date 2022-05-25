@@ -42,6 +42,9 @@ class PrecisionRecallUncertainty:
     for low statistic sets or for precision/recall close to 1.0/0.0.
     In these scenarios the Multinomial method should be used.
 
+    To incorporate the training uncertainty to the ``from_scores_with_train``
+    must be used which used the Bivariate/Elliptical approach.
+
     Attributes
     ----------
     conf_mat : np.ndarray[int64]
@@ -60,44 +63,46 @@ class PrecisionRecallUncertainty:
         the covariance matrix of precision and recall with layout
         [0, 0] = V[P], [0, 1] = COV[P, R], [1, 0] = COV[P, R], [1, 1] = V[R]
         A DataFrame can be obtained by calling `get_cov_mat`.
-        Only set when Elliptical method is used.
-    train_conf_mats : np.ndarray, optional
-        the confusion matrices from the multiple training runs.
-        Only set when `add_train_uncertainty` is called.
-        A DataFrame can be obtained by calling `get_train_conf_mats`
-        Only set when Elliptical method is used.
-    train_cov_mat : np.ndarray, optional
-        the precision, recall covariance matrix from the multiple training runs.
-        Only set when `add_train_uncertainty` is called.
-        A DataFrame can be obtained by calling `get_train_cov_mat`.
-        Only set when Elliptical method is used.
-    total_cov_mat : np.ndarray, optional
-        the precision, recall covariance matrix that combines the test and
-        training sampling uncertainty.
-        Only set when `add_train_uncertainty` is called.
-        A DataFrame can be obtained by calling `get_total_cov_mat`.
-        Only set when Elliptical method is used.
+        **Only set when Bivariate/Elliptical method is used.**
     chi2_scores : np.ndarray[float64], optional
         the chi2 scores for the grid with shape (`n_bins`, `n_bins`) and
         bounds precision_bounds on the y-axis, recall_bounds on the x-axis
-        Only set when Multinomial method is used.
+        **Only set when Multinomial method is used.**
     precision_bounds : np.ndarray[float64], optional
         the lower and upper bound for which precision was evaluated, equal
         to precision +- `n_sigmas` * sigma(precision)
-        Only set when Multinomial method is used.
+        **Only set when Multinomial method is used.**
     recall_bounds : np.ndarray[float64], optional
         the lower and upper bound for which recall was evaluated, equal
         to recall +- `n_sigmas` * sigma(recall)
-        Only set when Multinomial method is used.
+        **Only set when Multinomial method is used.**
     n_sigmas : int, float, optional
         the number of marginal standard deviations used to determine the
         bounds of the grid which is evaluated for each observed precision and
         recall.
-        Only set when Multinomial method is used.
+        **Only set when Multinomial method is used.**
     epsilon : float, optional
         the value used to prevent the bounds from reaching precision/recall
         1.0/0.0 which would result in NaNs.
-        Only set when Multinomial method is used.
+        **Only set when Multinomial method is used.**
+    train_precisions : np.ndarray, optional
+        precisions of the bootstrapped training runs
+        **Only set when initialised with ``from_scores_with_train``.**
+    train_recalls : np.ndarray, optional
+        recalls of the bootstrapped training runs
+        **Only set when initialised with ``from_scores_with_train``.**
+    train_conf_mats : np.ndarray, optional
+        the confusion matrices from the multiple training runs.
+        A DataFrame can be obtained by calling `get_train_conf_mats`
+        **Only set when initialised with ``from_scores_with_train``.**
+    train_cov_mat : np.ndarray, optional
+        the precision, recall covariance matrix from the multiple training runs.
+        A DataFrame can be obtained by calling `get_train_cov_mat`.
+        **Only set when initialised with ``from_scores_with_train``.**
+    total_cov_mat : np.ndarray, optional
+        the precision, recall covariance matrix that combines the test and
+        training sampling uncertainty.
+        **Only set when initialised with ``from_scores_with_train``.**
 
     """
     def __init__(self):
@@ -105,6 +110,8 @@ class PrecisionRecallUncertainty:
         self.precision = None
         self.recall = None
         self.cov_mat = None
+        self.train_precisions = None
+        self.train_recalls = None
         self.train_conf_mats = None
         self.train_cov_mat = None
         self.total_cov_mat = None
@@ -196,16 +203,17 @@ class PrecisionRecallUncertainty:
     def _compute_bvn_scores(self, *args, **kwargs):
         out = _core.pr_bvn_cov(self.conf_mat)
         self.precision = out[0]
+        self.recall = out[1]
+        self.cov_mat = out[2:].reshape(2, 2)
+
         if self.precision < 1e-12:
             warnings.warn("`precision` is close to zero, COV[P, R] is not valid")
         elif (1 - self.precision) < 1e-12:
             warnings.warn("`precision` is close to one, COV[P, R] is not valid")
-        self.recall = out[1]
         if self.recall < 1e-12:
             warnings.warn("`recall` is close to zero, COV[P, R] is not valid")
         elif (1 - self.recall) < 1e-12:
             warnings.warn("`recall` is close to one, COV[P, R] is not valid")
-        self.cov_mat = out[2:].reshape(2, 2)
 
         # check if we have enough power for binomial approximation
         # n * p * (1 - p) > 10
@@ -430,6 +438,69 @@ class PrecisionRecallUncertainty:
         self._compute_scores(n_bins, n_sigmas, epsilon, n_threads)
         return self
 
+    @classmethod
+    def from_scores_with_train(cls,
+        y : np.ndarray,
+        scores : np.ndarray,
+        scores_bs : np.ndarray,
+        threshold : float = 0.5,
+        obs_axis : int = 0
+    ):
+        """Compute joint-uncertainty on precision and recall from classifier scores
+        with train uncertainty.
+
+        Train uncertainty is only supported for the bivariate-normal/elliptical
+        approach. ``method`` is set to `bvn`.
+
+        Train uncertainty can be added by bootstrapping the train set, say 30,
+        times, training the model each time on the bootstrapped train set and
+        predicting on the fixed holdout set ``y_test`` each time.
+        This should result in a array of classifier scores with shape
+        (n_test_obs, n_bootstraps)
+
+        Parameters
+        ----------
+        y : np.ndarray
+            true labels for observations, supported dtypes are [bool, int32,
+            int64, float32, float64]
+        scores : np.ndarray, default=None
+            the classifier scores to be evaluated against the `threshold`, i.e.
+            `yhat` = `scores` >= `threshold`.
+            Supported dtypes are float32 and float64.
+        scores_bs : np.ndarray[float32, float64]
+            the classifier scores for each of the bootstrapped models on the
+            test set y.
+        threshold : float, default=0.5
+            the classification threshold to which the classifier scores are evaluated,
+            is inclusive.
+        obs_axis : int, default=0
+            the axis containing the observations for a single run for the
+            scores_train, e.g. 0 when the labels and scores are stored
+            as columns
+
+        """
+        self = cls()
+        self._has_cov = True
+        self.method = 'bvn_with_train'
+        self._parse_threshold(threshold)
+        self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
+        self._compute_bvn_scores()
+
+        self.train_conf_mats = confusion_matrices(
+            y, scores=scores_bs, threshold=threshold, obs_axis=obs_axis
+        )
+        if self.train_conf_mats.shape[0] < 2:
+            raise ValueError(
+                "Cannot compute covariance for less than two training bootstraps"
+            )
+        out = _core.pr_bvn_error_runs(self.train_conf_mats)
+        self.train_precisions = out[:, 0]
+        self.train_recalls = out[:, 1]
+        self.train_cov_mat = np.cov(out[:, 2:], rowvar=False)
+        self.total_cov_mat = self.cov_mat + self.train_cov_mat  # type: ignore
+
+        return self
+
     def _get_scaling_factor_alpha(self, alphas):
         """Compute critical value given a number alphas."""
         # Get the scale for 2 degrees of freedom confidence interval
@@ -451,68 +522,6 @@ class PrecisionRecallUncertainty:
         # confidence limits in two dimensions
         return sts.chi2.ppf(alphas, 2)
 
-    def add_train_uncertainty(
-        self,
-        y : np.ndarray,
-        yhat : Optional[np.ndarray] = None,
-        scores : Optional[np.ndarray] = None,
-        threshold : Optional[float] = None,
-        obs_axis : int = 0,
-    ):
-        """Incorporate the sampling uncertainty of the train set.
-
-        Can only be used when ``method`` is the bivariate-normal/elliptical.
-
-        Parameters
-        ----------
-        y : np.ndarray[bool, int32, int64, float32, float64]
-            true labels for observations
-        yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
-            the predicted labels, the same dtypes are supported as y. Can be `None`
-            if `scores` is not `None`, if both are provided, `scores` is ignored.
-        scores : np.ndarray[float32, float64], default=None
-            the classifier scores to be evaluated against the `threshold`, i.e.
-            `yhat` = `scores` >= `threshold`. Can be `None` if `yhat` is not `None`,
-            if both are provided, this parameter is ignored.
-        threshold : float, default=None
-            the classification threshold to which the classifier scores are evaluated,
-            is inclusive. Must be set when class was instantiated with
-            ``from_classifier`` or ``from_predictions`` and ``yhat`` is None, otherwhise ignored.
-        obs_axis : int, default=0
-            the axis containing the observations for a single run, e.g. 0 when the
-            labels and scores are stored as columns
-
-        Raises
-        ------
-        NotImplementedError
-            when method is not Bivariate-Normal/Elliptical
-
-        """
-        if not self._has_cov:
-            raise NotImplementedError(
-                "``add_train_uncertainty`` cannot be called when method is not"
-                " Bivariate-Normal/Elliptical."
-            )
-        if self.cov_mat is None:
-            raise RuntimeError(
-                "the class needs to be initialised with from_*"
-                " before adding train uncertainty."
-            )
-
-        if self.threshold is not None:
-            threshold = self.threshold
-        elif threshold is None:
-            raise ValueError("``threshold`` must not be None if was not set before.")
-
-        self.train_conf_mats = confusion_matrices(
-            y, yhat, scores, threshold, obs_axis
-        )
-        out = _core.pr_bvn_error_runs(self.train_conf_mats)
-        self.train_precision = out[:, 0]
-        self.train_recall = out[:, 1]
-        self.train_cov_mat = np.cov(out[:, 2:], rowvar=False)
-        self.total_cov_mat = self.cov_mat + self.train_cov_mat
-
     def get_train_conf_mats(self) -> pd.DataFrame:
         """Obtain confusion matrices as a DataFrame.
 
@@ -527,21 +536,12 @@ class PrecisionRecallUncertainty:
             when method is not Bivariate-Normal/Elliptical
 
         """
-        if not self._has_cov:
+        if self.train_conf_mats is None:
             raise NotImplementedError(
-                "`train_conf_mats` are not computed when method is not"
-                " Bivariate-Normal/Elliptical."
+                "`train_conf_mats` are only compute when initialised "
+                " with ``from_scores_with_train``"
             )
         return confusion_matrices_to_dataframe(self.train_conf_mats)
-
-    def _get_cov_mat(self, cov_mat):
-        if not self._has_cov:
-            raise NotImplementedError(
-                "`cov_mat` is not computed when method is not"
-                " Bivariate-Normal/Elliptical."
-            )
-        cov_cols = ['precision', 'recall']
-        return pd.DataFrame(cov_mat, index=cov_cols, columns=cov_cols)
 
     def get_cov_mat(self) -> pd.DataFrame:
         """Obtain covariance matrix of the test set.
@@ -557,7 +557,13 @@ class PrecisionRecallUncertainty:
             when method is not Bivariate-Normal/Elliptical
 
         """
-        return self._get_cov_mat(self.cov_mat)
+        if not self._has_cov:
+            raise NotImplementedError(
+                "`cov_mat` is not computed when method is not"
+                " Bivariate-Normal/Elliptical."
+            )
+        cov_cols = ['precision', 'recall']
+        return pd.DataFrame(self.cov_mat, index=cov_cols, columns=cov_cols)
 
     def get_train_cov_mat(self) -> pd.DataFrame:
         """Obtain covariance matrix of the train set.
@@ -573,7 +579,13 @@ class PrecisionRecallUncertainty:
             when method is not Bivariate-Normal/Elliptical
 
         """
-        return self._get_cov_mat(self.train_cov_mat)
+        if self.train_cov_mat is None:
+            raise NotImplementedError(
+                "`train_cov_mat` is only compute when initialised "
+                " with ``from_scores_with_train``"
+            )
+        cov_cols = ['precision', 'recall']
+        return pd.DataFrame(self.train_cov_mat, index=cov_cols, columns=cov_cols)
 
     def get_total_cov_mat(self) -> pd.DataFrame:
         """Obtain covariance matrix of the train and test set combined.
@@ -589,7 +601,13 @@ class PrecisionRecallUncertainty:
             when method is not Bivariate-Normal/Elliptical
 
         """
-        return self._get_cov_mat(self.total_cov_mat)
+        if self.total_cov_mat is None:
+            raise NotImplementedError(
+                "`total_cov_mat` is only compute when initialised "
+                " with ``from_scores_with_train``"
+            )
+        cov_cols = ['precision', 'recall']
+        return pd.DataFrame(self.total_cov_mat, index=cov_cols, columns=cov_cols)
 
     def get_conf_mat(self) -> pd.DataFrame:
         """Obtain confusion matrix as a DataFrame.
@@ -630,8 +648,8 @@ class PrecisionRecallUncertainty:
                 self._add_point_to_plot(point, kwargs)
         else:
             raise TypeError(
-                "`point_uncertainty` must be a subclass of PointUncertainty"
-                " or a list of PointUncertainty's"
+                "`point_uncertainty` must be of type PrecisionRecallUncertainty"
+                " , PrecisionRecallSimulatedUncertainty or a list of those"
             )
 
     def _plot_ellipse(
@@ -659,16 +677,16 @@ class PrecisionRecallUncertainty:
                 cov_mat =  self.total_cov_mat
             else:
                 raise RuntimeError(
-                    "`add_train_uncertainty` must have been called when"
-                    " `uncertainties`=='all'"
+                    "`toal_cov_mat` is only compute when initialised "
+                    " with ``from_scores_with_train``"
                 )
         elif uncertainties == 'train':
             if self.train_cov_mat is not None:
                 cov_mat = self.cov_mat
             else:
                 raise RuntimeError(
-                    "`add_train_uncertainty` must have been called when"
-                    " `uncertainties`=='train'"
+                    "`train_cov_mat` is only compute when initialised "
+                    " with ``from_scores_with_train``"
                 )
         else:
             raise ValueError(
@@ -830,7 +848,7 @@ class PrecisionRecallUncertainty:
             uncertainty of the test set. 'train' only plots the sampling
             uncertainty of the train set. 'all' plots to toal uncertainty over
             both the train and test sets. Note that 'train' and 'all' require
-            that `add_train_uncertainty` has been called.
+            that the class was initialised with ``from_scores_with_train``.
         ax : matplotlib.axes.Axes, default=None
             Pre-existing axes for the plot
         cmap : str, default='Blues'
