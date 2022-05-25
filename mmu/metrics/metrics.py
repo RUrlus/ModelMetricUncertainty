@@ -524,13 +524,10 @@ def binary_metrics_runs_thresholds(
         and the third the run
 
     """
-    y = check_array(
-        y,
-        axis=obs_axis,
-        target_axis=obs_axis,
-        target_order=1-obs_axis,
-        max_dim=2,
-        dtype_check=_convert_to_ext_types,
+    thresholds = check_array(
+        thresholds,
+        max_dim=1,
+        dtype_check=_convert_to_float,
     )
 
     scores = check_array(
@@ -542,17 +539,22 @@ def binary_metrics_runs_thresholds(
         dtype_check=_convert_to_float,
     )
 
-    thresholds = check_array(
-        thresholds,
-        max_dim=1,
-        dtype_check=_convert_to_float,
-    )
-
     n_runs = scores.shape[1 - obs_axis]
     max_obs = scores.shape[obs_axis]
 
-    if y.shape[1] < 2:
-        y = np.tile(y, (y.shape[0], n_runs))
+    if y.ndim == 1:
+        y = np.tile(y[:, None], n_runs)
+    elif y.shape[1] == 1 and y.shape[0] >= 2:
+        y = np.tile(y, n_runs)
+
+    y = check_array(
+        y,
+        axis=obs_axis,
+        target_axis=obs_axis,
+        target_order=1-obs_axis,
+        max_dim=2,
+        dtype_check=_convert_to_ext_types,
+    )
 
     n_thresholds = thresholds.size
     if n_obs is None:
