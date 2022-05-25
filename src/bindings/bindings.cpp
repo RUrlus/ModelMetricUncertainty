@@ -50,6 +50,9 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
 #endif  // MMU_HAS_OPENMP_SUPPORT
     // multn_loglike
     bind_multinomial_uncertainty(m);
+#ifdef MMU_HAS_OPENMP_SUPPORT
+    bind_multinomial_uncertainty_mt(m);
+#endif  // MMU_HAS_OPENMP_SUPPORT
     bind_multinomial_uncertainty_over_grid(m);
     bind_multinomial_uncertainty_over_grid_thresholds(m);
 #ifdef MMU_HAS_OPENMP_SUPPORT

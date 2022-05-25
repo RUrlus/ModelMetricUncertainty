@@ -22,6 +22,35 @@ multinomial_uncertainty(const int64_t n_bins, const i64arr conf_mat, const doubl
     return py::make_tuple(result, bounds);
 }  // multinomial_uncertainty
 
+#ifdef MMU_HAS_OPENMP_SUPPORT
+py::tuple
+multinomial_uncertainty_mt(
+    const int64_t n_bins,
+    const i64arr conf_mat,
+    const double n_sigmas,
+    const double epsilon,
+    const int n_threads) {
+    if (!npy::is_well_behaved(conf_mat)) {
+        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    }
+    auto result = f64arr({n_bins, n_bins});
+    auto bounds = f64arr({2, 2});
+    double* res_ptr = npy::get_data(result);
+    double* bnds_ptr = npy::get_data(bounds);
+    int64_t* cm_ptr = npy::get_data(conf_mat);
+    core::multn_uncertainty_mt(
+        n_bins,
+        cm_ptr,
+        res_ptr,
+        bnds_ptr,
+        n_sigmas,
+        epsilon,
+        n_threads
+    );
+    return py::make_tuple(result, bounds);
+}
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
 f64arr multinomial_uncertainty_over_grid(
     const f64arr prec_grid,
     const f64arr rec_grid,

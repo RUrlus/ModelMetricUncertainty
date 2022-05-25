@@ -20,6 +20,15 @@ namespace api {
 py::tuple
 multinomial_uncertainty(const int64_t n_bins, const i64arr conf_mat, const double n_sigmas, const double epsilon);
 
+#ifdef MMU_HAS_OPENMP_SUPPORT
+py::tuple multinomial_uncertainty_mt(
+    const int64_t n_bins,
+    const i64arr conf_mat,
+    const double n_sigmas,
+    const double epsilon,
+    const int n_threads);
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
 f64arr multinomial_uncertainty_over_grid(
     const f64arr prec_grid,
     const f64arr rec_grid,

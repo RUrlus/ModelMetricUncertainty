@@ -223,6 +223,48 @@ inline void multn_uncertainty(
     }
 }  // multn_uncertainty
 
+#ifdef MMU_HAS_OPENMP_SUPPORT
+inline void multn_uncertainty_mt(
+    const int64_t n_bins,
+    const int64_t* __restrict conf_mat,
+    double* result,
+    double* bounds,
+    const double n_sigmas = 6.0,
+    const double epsilon = 1e-4,
+    const int n_threads = 4) {
+
+    // obtain prec_start, prec_end, rec_start, rec_end
+    details::get_pr_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
+    auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
+    details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
+    const double prec_start = bounds[0];
+    const double prec_delta = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
+
+    auto nll_store = prof_loglike_t();
+    prof_loglike_t* nll_ptr = &nll_store;
+    set_prof_loglike_store(conf_mat, nll_ptr);
+#pragma omp parallel num_threads(n_threads) shared(rec_grid, nll_ptr, result)
+    {
+        // -- memory allocation --
+        // memory to be used by constrained_fit_cmp
+        std::array<double, 4> probas;
+        double* p = probas.data();
+        // -- memory allocation --
+
+        int64_t idx;
+        double prec;
+#pragma omp for
+        for (int64_t i = 0; i < n_bins; i++) {
+            prec = prec_start + (i * prec_delta);
+            idx = i * n_bins;
+            for (int64_t j = 0; j < n_bins; j++) {
+                result[idx + j] = prof_loglike(prec, rec_grid[j], nll_ptr, p);
+            }
+        }
+    }  // omp parallel
+}  // multn_uncertainty_mt
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
 inline void multn_uncertainty_over_grid(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
