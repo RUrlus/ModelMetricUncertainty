@@ -252,11 +252,7 @@ def confusion_matrices_thresholds(y, scores, thresholds, return_df=False):
 
     if scores.size != y.size:
         raise ValueError('`scores` and `y` must have equal length.')
-    thresholds = check_array(
-        thresholds,
-        max_dim=1,
-        dtype=['float32', 'float64']
-    )
+
     conf_mat = _core.confusion_matrix_thresholds(y, scores, thresholds)
 
     if return_df:
