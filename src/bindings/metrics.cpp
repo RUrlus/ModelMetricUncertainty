@@ -65,7 +65,7 @@ void bind_precision_recall_2d(py::module& m) {
 void bind_precision_recall_flattened(py::module& m) {
     m.def(
         "precision_recall_flattened",
-        &api::binary_metrics_flattened,
+        &api::precision_recall_flattened,
         R"pbdoc(Compute precision and recall.
 
         Computes the following metrics:
