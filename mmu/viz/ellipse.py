@@ -65,15 +65,14 @@ def _plot_pr_ellipse(
     prec_rad, rec_rad, angle = _get_radii_and_angle(cov_mat)
 
     n_levels = scales.size
-    for i in range(n_levels):
+    for c, s in zip(colors[::-1], scales[::-1]):
         ellipse = Ellipse(
             (recall, precision),
-            width=scales[i] * rec_rad,
-            height=scales[i] * prec_rad,
+            width=s * rec_rad,
+            height=s * prec_rad,
             angle=angle,
             alpha=alpha,
-            color=colors[i],
-            zorder=n_levels - i
+            color=c,
         )
         ax.add_patch(ellipse)  # type: ignore
 
