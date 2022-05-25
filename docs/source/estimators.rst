@@ -41,3 +41,11 @@ To help with this the curve methods provide functionality to overlay threshold u
 .. autoapiclass:: mmu.PrecisionRecallCurveUncertainty
     :members:
     :inherited-members:
+
+In some very specific cases you may want to compute the uncertainty through simulation of the profile likelihoods rather than through the Chi2 distribution.
+Note though that the simulation is very compute intensive, each grid point is simulated ``n_simulations`` times.
+Hence, you will perform ``n_bins`` * ``n_bins`` * ``n_simulations`` simulations in total.
+
+.. autoapiclass:: mmu.PrecisionRecallSimulatedUncertainty
+    :members:
+    :inherited-members:
