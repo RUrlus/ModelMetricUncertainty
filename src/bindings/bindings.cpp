@@ -46,21 +46,20 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
 
     bind_bvn_uncertainty_over_grid(m);
     bind_bvn_uncertainty_over_grid_thresholds(m);
-#ifdef MMU_HAS_OPENMP_SUPPORT
-    bind_bvn_uncertainty_over_grid_thresholds_mt(m);
-#endif  // MMU_HAS_OPENMP_SUPPORT
+    bind_bvn_uncertainty_over_grid_thresholds_wtrain(m);
     // multn_loglike
     bind_multinomial_uncertainty(m);
-#ifdef MMU_HAS_OPENMP_SUPPORT
-    bind_multinomial_uncertainty_mt(m);
-#endif  // MMU_HAS_OPENMP_SUPPORT
     bind_multinomial_uncertainty_over_grid(m);
     bind_multinomial_uncertainty_over_grid_thresholds(m);
-#ifdef MMU_HAS_OPENMP_SUPPORT
-    bind_multinomial_uncertainty_over_grid_thresholds_mt(m);
-#endif  // MMU_HAS_OPENMP_SUPPORT
     bind_simulated_multinomial_uncertainty(m);
+
 #ifdef MMU_HAS_OPENMP_SUPPORT
+    // lep_bvn
+    bind_bvn_uncertainty_over_grid_thresholds_mt(m);
+    bind_bvn_uncertainty_over_grid_thresholds_wtrain_mt(m);
+    // multn_loglike
+    bind_multinomial_uncertainty_mt(m);
+    bind_multinomial_uncertainty_over_grid_thresholds_mt(m);
     bind_simulated_multinomial_uncertainty_mt(m);
 #endif  // MMU_HAS_OPENMP_SUPPORT
 

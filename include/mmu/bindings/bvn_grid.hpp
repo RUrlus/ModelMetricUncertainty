@@ -17,6 +17,8 @@ namespace bindings {
 void bind_bvn_uncertainty_over_grid(py::module& m);
 void bind_bvn_uncertainty_over_grid_thresholds(py::module& m);
 void bind_bvn_uncertainty_over_grid_thresholds_mt(py::module& m);
+void bind_bvn_uncertainty_over_grid_thresholds_wtrain(py::module& m);
+void bind_bvn_uncertainty_over_grid_thresholds_wtrain_mt(py::module& m);
 
 }  // namespace bindings
 }  // namespace mmu
