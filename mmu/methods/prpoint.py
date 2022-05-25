@@ -140,7 +140,7 @@ class PrecisionRecallUncertainty:
                 ", 'bivariate', 'bvn'"
             )
 
-    def _compute_multn_scores(self, n_bins, n_sigmas, epsilon):
+    def _compute_multn_scores(self, n_bins, n_sigmas, epsilon, n_threads):
         # -- validate n_bins arg
         if n_bins is None:
             self.n_bins = 100
@@ -166,13 +166,29 @@ class PrecisionRecallUncertainty:
         self.epsilon = epsilon
 
         self.precision, self.recall = _core.precision_recall(self.conf_mat)
+
         # compute scores
-        self.chi2_scores, bounds = _core.multinomial_uncertainty(
-            n_bins=self.n_bins,
-            conf_mat=self.conf_mat,
-            n_sigmas=self.n_sigmas,
-            epsilon=self.epsilon
-        )
+        n_threads = _check_n_threads(n_threads)
+        if _MMU_MT_SUPPORT and n_threads > 1:
+            self.chi2_scores, bounds = _core.multinomial_uncertainty_mt(
+                n_bins=self.n_bins,
+                conf_mat=self.conf_mat,
+                n_sigmas=self.n_sigmas,
+                epsilon=self.epsilon,
+                n_threads=n_threads
+            )
+        else:
+            if (n_threads > 1):
+                warnings.warn(
+                    "mmu was not compiled with multi-threading enabled,"
+                    " ignoring `n_threads`"
+                )
+            self.chi2_scores, bounds = _core.multinomial_uncertainty(
+                n_bins=self.n_bins,
+                conf_mat=self.conf_mat,
+                n_sigmas=self.n_sigmas,
+                epsilon=self.epsilon
+            )
         self.precision_bounds = bounds[0, :].copy()
         self.recall_bounds = bounds[1, :].copy()
         self._bounds = bounds.flatten()
@@ -190,9 +206,9 @@ class PrecisionRecallUncertainty:
         elif (1 - self.recall) < 1e-12:
             warnings.warn("`recall` is close to one, COV[P, R] is not valid")
         self.cov_mat = out[2:].reshape(2, 2)
-        # n * p * (1 - p) > 10
 
         # check if we have enough power for binomial approximation
+        # n * p * (1 - p) > 10
         fcmat = self.conf_mat.flatten()  # type: ignore
         # p = TP / P + N
         p = fcmat[3] / fcmat.sum()
@@ -213,7 +229,8 @@ class PrecisionRecallUncertainty:
         method : str = 'multinomial',
         n_bins : int = 100,
         n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12
+        epsilon : float = 1e-12,
+        n_threads: Optional[int] = None
     ):
         """Compute joint-uncertainty on precision and recall.
 
@@ -246,13 +263,17 @@ class PrecisionRecallUncertainty:
             the value used to prevent the bounds from reaching precision/recall
             1.0/0.0 which would result in NaNs.
             Ignored when method is not the Multinomial approach.
+        n_threads : int, default=None
+            number of threads to use in the computation of multinomial.
+            If mmu installed from a wheel it won't have multithreading support.
+            If it was compiled with OpenMP support the default is 4, otherwise 1.
 
         """
         self = cls()
         self._parse_method(method)
         self._parse_threshold(threshold)
         self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
-        self._compute_scores(n_bins, n_sigmas, epsilon)
+        self._compute_scores(n_bins, n_sigmas, epsilon, n_threads)
         return self
 
     @classmethod
@@ -262,7 +283,8 @@ class PrecisionRecallUncertainty:
         method : str = 'multinomial',
         n_bins : int = 100,
         n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12
+        epsilon : float = 1e-12,
+        n_threads: Optional[int] = None
     ):
         """Compute joint-uncertainty on precision and recall.
 
@@ -289,12 +311,16 @@ class PrecisionRecallUncertainty:
             the value used to prevent the bounds from reaching precision/recall
             1.0/0.0 which would result in NaNs.
             Ignored when method is not the Multinomial approach.
+        n_threads : int, default=None
+            number of threads to use in the computation of multinomial.
+            If mmu installed from a wheel it won't have multithreading support.
+            If it was compiled with OpenMP support the default is 4, otherwise 1.
 
         """
         self = cls()
         self._parse_method(method)
         self.conf_mat = confusion_matrix(y=y, yhat=yhat)
-        self._compute_scores(n_bins, n_sigmas, epsilon)
+        self._compute_scores(n_bins, n_sigmas, epsilon, n_threads)
         return self
 
     @classmethod
@@ -303,7 +329,8 @@ class PrecisionRecallUncertainty:
         method : str = 'multinomial',
         n_bins : int = 100,
         n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12
+        epsilon : float = 1e-12,
+        n_threads: Optional[int] = None
     ):
         """Compute joint-uncertainty on precision and recall.
 
@@ -330,6 +357,10 @@ class PrecisionRecallUncertainty:
             the value used to prevent the bounds from reaching precision/recall
             1.0/0.0 which would result in NaNs.
             Ignored when method is not the Multinomial approach.
+        n_threads : int, default=None
+            number of threads to use in the computation of multinomial.
+            If mmu installed from a wheel it won't have multithreading support.
+            If it was compiled with OpenMP support the default is 4, otherwise 1.
 
         """
         self = cls()
@@ -337,7 +368,7 @@ class PrecisionRecallUncertainty:
         if conf_mat.shape == (2, 2):
             conf_mat = conf_mat.ravel()
         self.conf_mat = check_array(conf_mat, max_dim=1, dtype_check=_convert_to_int)
-        self._compute_scores(n_bins, n_sigmas, epsilon)
+        self._compute_scores(n_bins, n_sigmas, epsilon, n_threads)
         return self
 
     @classmethod
@@ -349,7 +380,8 @@ class PrecisionRecallUncertainty:
         method : str = 'multinomial',
         n_bins : int = 100,
         n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12
+        epsilon : float = 1e-12,
+        n_threads: Optional[int] = None
     ):
         """Compute joint-uncertainty on precision and recall.
 
@@ -382,6 +414,10 @@ class PrecisionRecallUncertainty:
             the value used to prevent the bounds from reaching precision/recall
             1.0/0.0 which would result in NaNs.
             Ignored when method is not the Multinomial approach.
+        n_threads : int, default=None
+            number of threads to use in the computation of multinomial.
+            If mmu installed from a wheel it won't have multithreading support.
+            If it was compiled with OpenMP support the default is 4, otherwise 1.
 
         """
         self = cls()
@@ -391,7 +427,7 @@ class PrecisionRecallUncertainty:
             raise TypeError("`clf` must have a method `predict_proba`")
         scores = clf.predict_proba(X)[:, 1]
         self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
-        self._compute_scores(n_bins, n_sigmas, epsilon)
+        self._compute_scores(n_bins, n_sigmas, epsilon, n_threads)
         return self
 
     def _get_scaling_factor_alpha(self, alphas):
