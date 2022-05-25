@@ -19,6 +19,7 @@ void bind_confusion_matrix_runs(py::module& m);
 void bind_confusion_matrix_score_runs(py::module& m);
 void bind_confusion_matrix_thresholds(py::module& m);
 void bind_confusion_matrix_runs_thresholds(py::module& m);
+void bind_confusion_matrix_thresholds_runs(py::module& m);
 
 }  // namespace bindings
 }  // namespace mmu

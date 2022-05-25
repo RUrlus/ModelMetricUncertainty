@@ -24,6 +24,7 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_confusion_matrix_score_runs(m);
     bind_confusion_matrix_thresholds(m);
     bind_confusion_matrix_runs_thresholds(m);
+    bind_confusion_matrix_thresholds_runs(m);
     // metrics
     bind_precision_recall(m);
     bind_precision_recall_2d(m);
