@@ -82,7 +82,7 @@ def metrics_to_dataframe(metrics, metric_names=None):
     return pd.DataFrame(metrics, columns=metric_names)
 
 
-def binary_metrics(y, yhat=None, scores=None, threshold=None, fill=0.0, return_df=False):
+def binary_metrics(y, yhat=None, scores=None, threshold=None, fill=1.0, return_df=False):
     r"""Compute binary classification metrics.
 
     `bmetrics` is an alias for this function.
@@ -115,7 +115,7 @@ def binary_metrics(y, yhat=None, scores=None, threshold=None, fill=0.0, return_d
     threshold : float, default=0.5
         the classification threshold to which the classifier scores is evaluated,
         is inclusive.
-    fill : float, default=0.0
+    fill : float, default=1.0
         value to fill when a metric is not defined, e.g. divide by zero.
     return_df : bool, default=False
         return confusion matrix as pd.DataFrame
@@ -172,7 +172,7 @@ def binary_metrics(y, yhat=None, scores=None, threshold=None, fill=0.0, return_d
     return conf_mat, metrics
 
 
-def binary_metrics_confusion_matrix(conf_mat, fill=0.0, return_df=False):
+def binary_metrics_confusion_matrix(conf_mat, fill=1.0, return_df=False):
     """Compute binary classification metrics.
 
     `bmetrics_conf_mat` is an alias for this function.
@@ -195,7 +195,7 @@ def binary_metrics_confusion_matrix(conf_mat, fill=0.0, return_df=False):
     ----------
     conf_mat : np.ndarray[int32, int64],
         confusion_matrix as returned by mmu.confusion_matrix
-    fill : float, default=0.0
+    fill : float, default=1.0
         value to fill when a metric is not defined, e.g. divide by zero.
     return_df : bool, default=False
         return the metrics confusion matrix and metrics as a DataFrame
@@ -225,7 +225,7 @@ def binary_metrics_confusion_matrix(conf_mat, fill=0.0, return_df=False):
     return metrics
 
 
-def binary_metrics_confusion_matrices(conf_mat, fill=0.0, return_df=False):
+def binary_metrics_confusion_matrices(conf_mat, fill=1.0, return_df=False):
     """Compute binary classification metrics.
 
     `bmetrics_conf_mats` is an alias for this function.
@@ -249,7 +249,7 @@ def binary_metrics_confusion_matrices(conf_mat, fill=0.0, return_df=False):
     conf_mat : np.ndarray[int32, int64],
         confusion_matrix as returned by mmu.confusion_matrices, should have
         shape (N, 4) and be C-Contiguous
-    fill : float, default=0.0
+    fill : float, default=1.0
         value to fill when a metric is not defined, e.g. divide by zero.
     return_df : bool, default=False
         return the metrics confusion matrix and metrics as a DataFrame
@@ -277,7 +277,7 @@ def binary_metrics_confusion_matrices(conf_mat, fill=0.0, return_df=False):
 
 
 def binary_metrics_thresholds(
-    y, scores, thresholds, fill=0.0, return_df=False
+    y, scores, thresholds, fill=1.0, return_df=False
 ):
     """Compute binary classification metrics over multiple thresholds.
 
@@ -311,7 +311,7 @@ def binary_metrics_thresholds(
     thresholds : np.ndarray[float32, float64]
         the classification thresholds for which the classifier scores is evaluated,
         is inclusive.
-    fill : float, default=0.0
+    fill : float, default=1.0
         value to fill when a metric is not defined, e.g. divide by zero.
     return_df : bool, default=False
         return the metrics confusion matrix and metrics as a DataFrame
@@ -361,7 +361,7 @@ def binary_metrics_thresholds(
 
 
 def binary_metrics_runs(
-    y, yhat=None, scores=None, threshold=None, obs_axis=0, fill=0.0, return_df=False
+    y, yhat=None, scores=None, threshold=None, obs_axis=0, fill=1.0, return_df=False
 ):
     """Compute binary classification metrics over multiple runs.
 
@@ -401,7 +401,7 @@ def binary_metrics_runs(
     obs_axis : int, default=0
         the axis containing the observations for a single run, e.g. 0 when the
         labels and scoress are stored as columns
-    fill : float, default=0.0
+    fill : float, default=1.0
         value to fill when a metric is not defined, e.g. divide by zero.
     return_df : bool, default=False
         return the metrics confusion matrix and metrics as a DataFrame
@@ -472,7 +472,7 @@ def binary_metrics_runs(
 
 
 def binary_metrics_runs_thresholds(
-    y, scores, thresholds, n_obs=None, fill=0.0, obs_axis=0):
+    y, scores, thresholds, n_obs=None, fill=1.0, obs_axis=0):
     """Compute binary classification metrics over runs and thresholds.
 
     `bmetrics_runs_thresh` is an alias for this function.
@@ -507,7 +507,7 @@ def binary_metrics_runs_thresholds(
     n_obs : np.array[int64], default=None
         the number of observations per run, if None the same number of
         observations are assumed exist for each run.
-    fill : double
+    fill : double, default=1.0
         value to fill when a metric is not defined, e.g. divide by zero.
     obs_axis : {0, 1}, default=0
         0 if the observations for a single run is a column (e.g. from
@@ -597,7 +597,7 @@ def binary_metrics_runs_thresholds(
     return cm, mtr
 
 
-def precision_recall(y, yhat=None, scores=None, threshold=None, fill=0.0, return_df=False):
+def precision_recall(y, yhat=None, scores=None, threshold=None, fill=1.0, return_df=False):
     r"""Compute precision and recall.
 
     Parameters
@@ -614,7 +614,7 @@ def precision_recall(y, yhat=None, scores=None, threshold=None, fill=0.0, return
     threshold : float, default=0.5
         the classification threshold to which the classifier scores is evaluated,
         is inclusive.
-    fill : float, default=0.0
+    fill : float, default=1.0
         value to fill when a metric is not defined, e.g. divide by zero.
     return_df : bool, default=False
         return confusion matrix as pd.DataFrame
@@ -671,7 +671,7 @@ def precision_recall(y, yhat=None, scores=None, threshold=None, fill=0.0, return
     return conf_mat, prec_rec
 
 
-def precision_recall_curve(y, scores, thresholds=None, fill=0.0, return_df=False):
+def precision_recall_curve(y, scores, thresholds=None, fill=1.0, return_df=False):
     """Compute precision and recall over the thresholds.
 
     `pr_curve` is an alias for this function.
@@ -686,7 +686,7 @@ def precision_recall_curve(y, scores, thresholds=None, fill=0.0, return_df=False
     threshold : np.ndarray[float32, float64]
         the classification thresholds to which the classifier scores is evaluated,
         is inclusive.
-    fill : float, default=0.0
+    fill : float, default=1.0
         value to fill when a metric is not defined, e.g. divide by zero.
     return_df : bool, default=False
         return confusion matrix as pd.DataFrame

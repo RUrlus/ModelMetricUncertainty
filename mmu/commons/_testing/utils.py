@@ -73,7 +73,7 @@ def generate_test_labels(
 
 
 def compute_reference_metrics(y, yhat=None, proba=None, threshold=None,
-        fill=0.):
+        fill=1.):
     """Compute the set of metrics based on sklearn's implementation.
 
     Parameters
