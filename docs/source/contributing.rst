@@ -15,7 +15,7 @@ The package can be installed for local development with:
     
     git clone https://github.com/RUrlus/ModelMetricUncertainty.git
     cd modelmetricuncertainty
-    pip install -e ..
+    pip install -e .
 
 Note that the C++ extension is (re-)compiled during local installation.
 If you don't have a compiler installed and are not working on the extension the best solution is to download the wheels from PyPi.
