@@ -22,6 +22,8 @@ Model-Metric-Uncertainty (MMU)
 
 `Documentation <https://mmu.readthedocs.io/en/latest/>`_
 
+**MMU is currently in alpha state and not yet ready for production usage**
+
 Functionality
 -------------
 
