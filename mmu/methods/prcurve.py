@@ -87,10 +87,10 @@ class PrecisionRecallCurveUncertainty:
         flattened covariance matrices for each threshold.
         **Only set when method is bivariate/elliptical.**
     train_precisions : np.ndarray, optional
-        precisions of the bootstrapped training runs
+        precisions of the bootstrapped training runs, with shape (n_thresholds, n_runs)
         **Only set when initialised with ``from_scores_with_train``.**
     train_recalls : np.ndarray, optional
-        recalls of the bootstrapped training runs
+        recalls of the bootstrapped training runs, with shape (n_thresholds, n_runs)
         **Only set when initialised with ``from_scores_with_train``.**
     train_conf_mats : np.ndarray, optional
         the confusion matrices from the multiple training runs.
@@ -594,22 +594,25 @@ class PrecisionRecallCurveUncertainty:
         )
 
         # bootstrapped conf_mats
+        # the array is C contiguous and has runs over the runs and than the
+        # thresholds, i.e. the first N * 4 elements constitute the
+        # confusion matrices of the first N runs
         train_conf_mats = _core.confusion_matrix_thresholds_runs(
-            n_obs, n_runs, y, scores_bs, self.thresholds
+            n_obs, n_runs, y_bs, scores_bs, self.thresholds
         )
 
-        prec_rec = _core.precision_recall_2d(train_conf_mats)
+        prec_rec = (
+            _core.precision_recall_2d(train_conf_mats)
+            .reshape(n_thresholds, n_runs, 2)
+        )
         self.train_conf_mats = train_conf_mats.reshape(n_thresholds, n_runs, 4)
 
-        self.train_precisions = prec_rec[:, 0].reshape(n_runs, n_thresholds).T
-        self.train_recalls = prec_rec[:, 1].reshape(n_runs, n_thresholds).T
+        self.train_precisions = prec_rec[:, :, 0]
+        self.train_recalls = prec_rec[:, :, 1]
 
-        ilb = 0
         self.train_cov_mats = np.empty((n_thresholds, 4))
         for i in range(n_thresholds):
-            iub = ilb + n_runs
-            self.train_cov_mats[i, :] = np.cov(prec_rec[ilb:iub], rowvar=False).ravel()
-            ilb = iub
+            self.train_cov_mats[i, :] = np.cov(prec_rec[i], rowvar=False).ravel()
 
         # compute scores
         if _MMU_MT_SUPPORT and n_threads > 1:
