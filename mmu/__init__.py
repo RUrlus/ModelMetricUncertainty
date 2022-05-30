@@ -1,6 +1,5 @@
 import mmu.metrics as metrics
 import mmu.methods as methods
-import mmu.stats as stats
 
 from mmu.lib import _MMU_MT_SUPPORT
 
@@ -77,5 +76,4 @@ __all__ = [
     # modules
     'metrics',
     'methods',
-    'stats',
 ]
