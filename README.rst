@@ -17,6 +17,9 @@ Model-Metric-Uncertainty (MMU)
 .. image:: https://img.shields.io/github/license/RUrlus/modelmetricuncertainty
     :target: https://github.com/RUrlus/carma/blob/stable/LICENSE
     :alt: License
+.. image:: http://img.shields.io/pypi/v/mmu.svg
+    :target: https://pypi.python.org/pypi/exampy
+    :alt: PyPi
 
 **Model-Metric-Uncertainty (MMU) is a library for the evaluation of model performance and estimation of the uncertainty on these metrics.**
 
