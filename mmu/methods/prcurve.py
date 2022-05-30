@@ -6,7 +6,12 @@ import numpy as np
 import pandas as pd
 import scipy.stats as sts
 
-from mmu.commons import check_array, _convert_to_float, _convert_to_int
+from mmu.commons import (
+    check_array,
+    _convert_to_float,
+    _convert_to_int,
+    _convert_to_ext_types
+)
 from mmu.commons.checks import _check_n_threads
 from mmu.metrics.utils import auto_thresholds
 from mmu.metrics.confmat import confusion_matrices_thresholds
@@ -27,6 +32,7 @@ if _MMU_MT_SUPPORT:
         bvn_uncertainty_over_grid_thresholds_mt as bvn_error_grid_thresh_mt,
         bvn_uncertainty_over_grid_thresholds_wtrain_mt as bvn_error_grid_thresh_wt_mt
     )
+
 
 class PrecisionRecallCurveUncertainty:
     """Compute joint uncertainty Precision-Recall curve.
@@ -576,10 +582,16 @@ class PrecisionRecallCurveUncertainty:
         n_obs = scores_bs.shape[obs_axis]
         n_thresholds = self.thresholds.size  # type: ignore
 
-        if y.ndim == 1:
-            y = np.tile(y[:, None], n_runs).copy(order='F')
-        elif y.shape[1] == 1 and y.shape[0] >= 2:
-            y = np.tile(y, n_runs).copy(order='F')
+        # copy y such that it has the same shape and order as scores_bs
+        y_bs = check_array(
+            np.tile(y.ravel(), n_runs).reshape(n_runs, y.size).T,
+            axis=0,
+            target_axis=obs_axis,
+            target_order=1-obs_axis,
+            max_dim=2,
+            dtype_check=_convert_to_ext_types,
+            check_finite=False
+        )
 
         # bootstrapped conf_mats
         train_conf_mats = _core.confusion_matrix_thresholds_runs(
