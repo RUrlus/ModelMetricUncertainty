@@ -594,7 +594,7 @@ class PrecisionRecallCurveUncertainty:
         )
 
         # bootstrapped conf_mats
-        # the array is C contiguous and has runs over the runs and than the
+        # the array is C contiguous and has the runs and than the
         # thresholds, i.e. the first N * 4 elements constitute the
         # confusion matrices of the first N runs
         train_conf_mats = _core.confusion_matrix_thresholds_runs(
@@ -612,7 +612,7 @@ class PrecisionRecallCurveUncertainty:
 
         self.train_cov_mats = np.empty((n_thresholds, 4))
         for i in range(n_thresholds):
-            self.train_cov_mats[i, :] = np.cov(prec_rec[i], rowvar=False).ravel()
+            self.train_cov_mats[i, :] = np.cov(prec_rec[i], rowvar=False, ddof=1).ravel()
 
         # compute scores
         if _MMU_MT_SUPPORT and n_threads > 1:
