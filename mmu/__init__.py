@@ -46,6 +46,8 @@ from mmu.methods import PrecisionRecallCurveUncertainty
 
 from mmu.commons.utils import generate_data
 
+from mmu.version import full_version as __version__
+
 __all__ = [
     '_MMU_MT_SUPPORT',
     # funcs
