@@ -513,13 +513,24 @@ class PrecisionRecallUncertainty:
                 "Cannot compute covariance for less than three training bootstraps"
             )
 
-        y_bs = np.tile(y[:, None], n_runs).copy(order='F')
+        y_bs = check_array(
+            np.tile(y, n_runs).reshape(n_runs, y.size).T,
+            axis=0,
+            target_axis=obs_axis,
+            target_order=1-obs_axis,
+            max_dim=2,
+            dtype_check=_convert_to_ext_types,
+            check_finite=False
+        )
 
         self.conf_mat = _core.confusion_matrix_score(y, scores, self.threshold)
         self._compute_bvn_scores()
 
         self.train_conf_mats = _core.confusion_matrix_score_runs(
-            y_bs, scores_bs, self.threshold, obs_axis=obs_axis
+            y_bs,
+            scores_bs,
+            self.threshold,
+            obs_axis=obs_axis
         )
         out = _core.precision_recall_2d(self.train_conf_mats)
         self.train_precisions = out[:, 0]
