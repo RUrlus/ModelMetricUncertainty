@@ -39,10 +39,6 @@ elif RC is not None:
 else:
     IS_RELEASE = True
 
-# read the contents of readme file
-with open("README.rst", encoding="utf-8") as f:
-    long_description = f.read()
-
 def write_version_py(filename: str = 'mmu/version.py') -> None:
     """Write package version to version.py.
 
