@@ -535,7 +535,7 @@ class PrecisionRecallUncertainty:
         out = _core.precision_recall_2d(self.train_conf_mats)
         self.train_precisions = out[:, 0]
         self.train_recalls = out[:, 1]
-        self.train_cov_mat = np.cov(out, rowvar=False)
+        self.train_cov_mat = np.cov(out, rowvar=False, ddof=1)
         self.total_cov_mat = self.cov_mat + self.train_cov_mat  # type: ignore
 
         return self
