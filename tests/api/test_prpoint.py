@@ -1,3 +1,4 @@
+import os
 import itertools
 import numpy as np
 import pytest
@@ -38,6 +39,7 @@ PROBA_DTYPES = [
     np.float32,
     np.float64,
 ]
+
 
 
 def test_PRMU_from_scores():
@@ -203,6 +205,66 @@ def test_PRMU_exceptions():
             y=y, scores=proba, threshold=0.5, n_sigmas=[1., ]
         )
 
+
+def test_PRMU_ref_chi2():
+    X, y = make_classification(
+        n_samples=1000, n_classes=2, random_state=1949933174
+    )
+
+    # split into train/test sets
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.5, random_state=3437779408
+    )
+    # fit a model
+    model = LogisticRegression(solver='lbfgs')
+    model.fit(X_train, y_train)
+
+    # predict probabilities, for the positive outcome only
+    y_score = model.predict_proba(X_test)[:, 1]
+
+    pr_err = mmu.PRU.from_scores(
+        y_test,
+        scores=y_score,
+        threshold=0.5,
+    )
+
+    ref_path = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)),
+        'multn_chi2_scores.npy'
+    )
+    ref_chi2_scores = np.load(ref_path)
+    assert np.allclose(pr_err.chi2_scores, ref_chi2_scores)
+
+
+def test_PREU_ref_cov():
+    """Test PREU.from_scores"""
+    # generate 2 class dataset
+    X, y = make_classification(
+        n_samples=1000, n_classes=2, random_state=1949933174
+    )
+
+    # split into train/test sets
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.5, random_state=3437779408
+    )
+    # fit a model
+    model = LogisticRegression(solver='lbfgs')
+    model.fit(X_train, y_train)
+
+    # predict probabilities, for the positive outcome only
+    y_score = model.predict_proba(X_test)[:, 1]
+
+    pr_err = mmu.PRU.from_scores(
+        y_test,
+        scores=y_score,
+        threshold=0.5,
+        method='bvn'
+    )
+
+    ref_cov_mat = np.asarray([0.00064625, 0.00011629, 0.00011629, 0.00057463])
+    assert np.isclose(ref_cov_mat, pr_err.cov_mat.flatten(), rtol=7e-3).all()
+
+
 def test_PREU_from_scores():
     """Test PREU.from_scores"""
     np.random.seed(43)
@@ -324,3 +386,27 @@ def test_PREU_from_classifier():
         assert np.array_equal(pr_err.conf_mat, sk_conf_mat), (
             f"test failed for threshold: {threshold}"
         )
+
+
+def test_PRU_from_scores_with_train():
+    """Test PREU.from_classifier"""
+    ref_path = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)),
+        'train_reference_sets.npz'
+    )
+    ll = np.load(ref_path)
+    y_test = ll.get('y_test')
+    y_score = ll.get('y_score')
+    scores_bs = ll.get('scores_bs')
+
+    pr_err = mmu.PRU.from_scores_with_train(
+        y_test,
+        scores=y_score,
+        scores_bs=scores_bs,
+        threshold=0.5,
+        obs_axis=0
+    )
+    ref_set_test = [0.0006159 , 0.00010284, 0.00010284, 0.00057342]
+    ref_set_train = [2.30241132e-04, -8.41839128e-05, -8.41839128e-05,  3.88862912e-04]
+    assert np.allclose(pr_err.cov_mat.flatten(), ref_set_test, rtol=5e3)
+    assert np.allclose(pr_err.train_cov_mat.flatten(), ref_set_train)
