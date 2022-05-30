@@ -40,6 +40,7 @@ def _check_array(
     min_dim=1,
     max_dim=2,
     copy=False,
+    check_finite=True,
 ):
     """Specialisation of check_array for Numpy arrays."""
     convert = copy
@@ -59,7 +60,7 @@ def _check_array(
             f'Array must have at least {min_dim} dimensions.'
         )
 
-    if not _core.all_finite(arr):
+    if check_finite and (not _core.all_finite(arr)):
         raise ValueError('Non-finite values encountered')
 
     # check if array has assumed layout row, column wise
@@ -97,6 +98,7 @@ def check_array(
     max_dim=2,
     dtype_check=_convert_to_ext_types,
     copy=False,
+    check_finite=True,
     **kwargs
 ):
     """Check if array has the appropiate properties.
@@ -145,6 +147,7 @@ def check_array(
             max_dim=max_dim,
             dtype_check=dtype_check,
             copy=copy,
+            check_finite=check_finite
         )
     # slow path handles more types
 
