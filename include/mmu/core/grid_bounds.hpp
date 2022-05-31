@@ -1,8 +1,8 @@
-/* pr_grid.hpp -- Utility functions used in multn_loglike and bvn_grid
- * Copyright 2021 Ralph Urlus
+/* grid_bounds.hpp -- Utility functions used in pr_multn_loglike and pr_bvn_grid
+ * Copyright 2022 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_CORE_PR_GRID_HPP_
-#define INCLUDE_MMU_CORE_PR_GRID_HPP_
+#ifndef INCLUDE_MMU_CORE_GRID_BOUNDS_HPP_
+#define INCLUDE_MMU_CORE_GRID_BOUNDS_HPP_
 
 #include <algorithm>
 #include <array>
@@ -37,11 +37,13 @@ inline void linspace(const double start, double const end, const size_t steps, d
     }
     return;
 }
+}  // namespace details
 
+namespace pr {
 /* Determine grid for precision and recall based on their marginal std
  * deviations assuming a Multivariate Normal
  */
-inline void get_pr_grid_bounds(
+inline void get_grid_bounds(
     const int64_t* __restrict conf_mat,
     double* bounds,
     const double n_sigmas = 6.0,
@@ -50,7 +52,7 @@ inline void get_pr_grid_bounds(
     const double max_rec_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
     // computes prec, prec_sigma, rec, rec_sigma accounting for edge cases
     std::array<double, 4> prec_rec;
-    pr_bvn_sigma(conf_mat, prec_rec.data());
+    bvn_sigma(conf_mat, prec_rec.data());
 
     const double ns_prec_sigma = n_sigmas * prec_rec[1];
     const double ns_rec_sigma = n_sigmas * prec_rec[3];
@@ -59,9 +61,9 @@ inline void get_pr_grid_bounds(
     bounds[1] = std::min(prec_rec[0] + ns_prec_sigma, 1 - max_prec_clip);
     bounds[2] = std::max(prec_rec[2] - ns_rec_sigma, epsilon);
     bounds[3] = std::min(prec_rec[2] + ns_rec_sigma, 1. - max_rec_clip);
-}  // get_pr_grid_bounds
+}  // get_grid_bounds
 
-class PrGridBounds {
+class GridBounds {
     const int64_t n_prec_bins;
     const int64_t n_rec_bins;
     const double n_sigmas;
@@ -78,13 +80,13 @@ class PrGridBounds {
     const double* __restrict recs;
     std::array<double, 4> prec_rec;
 
-   public:
+ public:
     int64_t prec_idx_min = 0;
     int64_t prec_idx_max = 0;
     int64_t rec_idx_min = 0;
     int64_t rec_idx_max = 0;
 
-    PrGridBounds(
+    GridBounds(
         const int64_t n_prec_bins,
         const int64_t n_rec_bins,
         const double n_sigmas,
@@ -102,7 +104,7 @@ class PrGridBounds {
         max_prec_clip = conf_mat[1] == 0 ? 0.0 : epsilon;
         max_rec_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
         // computes prec, prec_sigma, rec, rec_sigma accounting for edge cases
-        pr_bvn_sigma(conf_mat, prec_rec.data());
+        bvn_sigma(conf_mat, prec_rec.data());
 
         ns_prec_sigma = n_sigmas * prec_rec[1];
         prec_max = std::min(prec_rec[0] + ns_prec_sigma, 1 - max_prec_clip);
@@ -150,7 +152,7 @@ class PrGridBounds {
     }
 };
 
-inline void get_pr_grid_bounds(
+inline void get_grid_bounds(
     const int64_t prec_bins,
     const int64_t rec_bins,
     const int64_t* __restrict conf_mat,
@@ -163,7 +165,7 @@ inline void get_pr_grid_bounds(
     const double max_rec_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
     // computes prec, prec_sigma, rec, rec_sigma accounting for edge cases
     std::array<double, 4> prec_rec;
-    pr_bvn_sigma(conf_mat, prec_rec.data());
+    bvn_sigma(conf_mat, prec_rec.data());
 
     const double ns_prec_sigma = n_sigmas * prec_rec[1];
     const double prec_max = std::min(prec_rec[0] + ns_prec_sigma, 1 - max_prec_clip);
@@ -206,10 +208,10 @@ inline void get_pr_grid_bounds(
         }
     }
     result[3] = rec_idx_max <= rec_bins ? rec_idx_max : rec_bins;
-}  // get_pr_grid_bounds
+}  // get_grid_bounds
 
-}  // namespace details
+}  // namespace pr
 }  // namespace core
 }  // namespace mmu
 
-#endif  // INCLUDE_MMU_CORE_PR_GRID_HPP_
+#endif  // INCLUDE_MMU_CORE_GRID_BOUNDS_HPP_

@@ -1,17 +1,18 @@
-/* multn_loglike.cpp -- Python bindings of multinomial log-likelihood uncertainty
- * Copyright 2021 Ralph Urlus
+/* pr_bvn_grid.cpp -- Implementation of Python API of bvn uncertainty over grid precision recall grid
+ * Copyright 2022 Ralph Urlus
  */
-#include <mmu/bindings/bvn_grid.hpp>
+#include <mmu/bindings/pr_bvn_grid.hpp>
 
 namespace py = pybind11;
 
 namespace mmu {
 namespace bindings {
+namespace pr {
 
-void bind_bvn_uncertainty_over_grid(py::module& m) {
+void bind_bvn_grid_error(py::module& m) {
     m.def(
-        "bvn_uncertainty_over_grid",
-        &api::bvn_uncertainty_over_grid,
+        "pr_bvn_grid_error",
+        &api::pr::bvn_grid_error,
         R"pbdoc(Compute sum of squared Z scores for a confusion matrix and PR grid.
 
         Parameters
@@ -44,10 +45,10 @@ void bind_bvn_uncertainty_over_grid(py::module& m) {
         py::arg("epsilon") = 1e-4);
 }
 
-void bind_bvn_uncertainty_over_grid_thresholds(py::module& m) {
+void bind_bvn_grid_curve_error(py::module& m) {
     m.def(
-        "bvn_uncertainty_over_grid_thresholds",
-        &api::bvn_uncertainty_over_grid_thresholds,
+        "pr_bvn_grid_curve_error",
+        &api::pr::bvn_grid_curve_error,
         R"pbdoc(Compute minimum sum of squared Z scores for each confusion matrix and grid.
 
         Parameters
@@ -85,10 +86,10 @@ void bind_bvn_uncertainty_over_grid_thresholds(py::module& m) {
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-void bind_bvn_uncertainty_over_grid_thresholds_mt(py::module& m) {
+void bind_bvn_grid_curve_error_mt(py::module& m) {
     m.def(
-        "bvn_uncertainty_over_grid_thresholds_mt",
-        &api::bvn_uncertainty_over_grid_thresholds_mt,
+        "pr_bvn_grid_curve_error_mt",
+        &api::pr::bvn_grid_curve_error_mt,
         R"pbdoc(Compute minimum sum of squared Z scores for each confusion matrix and grid.
 
         Parameters
@@ -131,10 +132,10 @@ void bind_bvn_uncertainty_over_grid_thresholds_mt(py::module& m) {
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-void bind_bvn_uncertainty_over_grid_thresholds_wtrain(py::module& m) {
+void bind_bvn_grid_curve_error_wtrain(py::module& m) {
     m.def(
-        "bvn_uncertainty_over_grid_thresholds_wtrain",
-        &api::bvn_uncertainty_over_grid_thresholds_wtrain,
+        "pr_bvn_grid_curve_error_wtrain",
+        &api::pr::bvn_grid_curve_error_wtrain,
         R"pbdoc(Compute minimum sum of squared Z scores for each confusion matrix and grid.
 
         Parameters
@@ -176,10 +177,10 @@ void bind_bvn_uncertainty_over_grid_thresholds_wtrain(py::module& m) {
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-void bind_bvn_uncertainty_over_grid_thresholds_wtrain_mt(py::module& m) {
+void bind_bvn_grid_curve_error_wtrain_mt(py::module& m) {
     m.def(
-        "bvn_uncertainty_over_grid_thresholds_wtrain_mt",
-        &api::bvn_uncertainty_over_grid_thresholds_wtrain_mt,
+        "pr_bvn_grid_curve_error_wtrain_mt",
+        &api::pr::bvn_grid_curve_error_wtrain_mt,
         R"pbdoc(Compute minimum sum of squared Z scores for each confusion matrix and grid.
 
         Parameters
@@ -225,5 +226,6 @@ void bind_bvn_uncertainty_over_grid_thresholds_wtrain_mt(py::module& m) {
         py::arg("n_threads") = 4);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
+}  // namespace pr
 }  // namespace bindings
 }  // namespace mmu

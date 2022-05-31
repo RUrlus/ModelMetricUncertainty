@@ -1,18 +1,19 @@
-/* multn_loglike.cpp -- Python bindings of multinomial log-likelihood uncertainty
- * Copyright 2021 Ralph Urlus
+/* pr_multn_loglike.cpp -- Python bindings of multinomial log-likelihood uncertainty
+ * Copyright 2022 Ralph Urlus
  */
-#include <mmu/bindings/multn_loglike.hpp>
+#include <mmu/bindings/pr_multn_loglike.hpp>
 
 namespace py = pybind11;
 
 namespace mmu {
 namespace bindings {
+namespace pr {
 
-void bind_multinomial_uncertainty(py::module& m) {
+void bind_multn_error(py::module& m) {
     m.def(
-        "multinomial_uncertainty",
-        &api::multinomial_uncertainty,
-        R"pbdoc(Compute multinomial uncertainty.
+        "pr_multn_error",
+        &api::pr::multn_error,
+        R"pbdoc(Compute joint multinomial uncertainty on precision-recall.
 
         Parameters
         ----------
@@ -40,11 +41,11 @@ void bind_multinomial_uncertainty(py::module& m) {
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-void bind_multinomial_uncertainty_mt(py::module& m) {
+void bind_multn_error_mt(py::module& m) {
     m.def(
-        "multinomial_uncertainty_mt",
-        &api::multinomial_uncertainty_mt,
-        R"pbdoc(Compute multinomial uncertainty.
+        "pr_multn_error_mt",
+        &api::pr::multn_error_mt,
+        R"pbdoc(Compute joint multinomial uncertainty on precision-recall.
 
         Parameters
         ----------
@@ -75,10 +76,10 @@ void bind_multinomial_uncertainty_mt(py::module& m) {
 }
 #endif // MMU_HAS_OPENMP_SUPPORT
 
-void bind_multinomial_uncertainty_over_grid(py::module& m) {
+void bind_multn_grid_error(py::module& m) {
     m.def(
-        "multinomial_uncertainty_over_grid",
-        &api::multinomial_uncertainty_over_grid,
+        "pr_multn_grid_error",
+        &api::pr::multn_grid_error,
         R"pbdoc(Compute minimum profile loglike scores for a confusion matrix and PR grid.
 
         Parameters
@@ -109,10 +110,10 @@ void bind_multinomial_uncertainty_over_grid(py::module& m) {
         py::arg("epsilon") = 1e-4);
 }
 
-void bind_multinomial_uncertainty_over_grid_thresholds(py::module& m) {
+void bind_multn_grid_curve_error(py::module& m) {
     m.def(
-        "multinomial_uncertainty_over_grid_thresholds",
-        &api::multinomial_uncertainty_over_grid_thresholds,
+        "pr_multn_grid_curve_error",
+        &api::pr::multn_grid_curve_error,
         R"pbdoc(Compute minimum profile loglike scores for each confusion matrix and grid.
 
         Parameters
@@ -148,10 +149,10 @@ void bind_multinomial_uncertainty_over_grid_thresholds(py::module& m) {
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-void bind_multinomial_uncertainty_over_grid_thresholds_mt(py::module& m) {
+void bind_multn_grid_curve_error_mt(py::module& m) {
     m.def(
-        "multinomial_uncertainty_over_grid_thresholds_mt",
-        &api::multn_uncertainty_over_grid_thresholds_mt,
+        "pr_multn_grid_curve_error_mt",
+        &api::pr::multn_grid_curve_error_mt,
         R"pbdoc(Compute minimum profile loglike scores for each confusion matrix and grid.
 
         Parameters
@@ -192,11 +193,11 @@ void bind_multinomial_uncertainty_over_grid_thresholds_mt(py::module& m) {
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-void bind_simulated_multinomial_uncertainty(py::module& m) {
+void bind_multn_sim_error(py::module& m) {
     m.def(
-        "simulate_multn_uncertainty",
-        &api::simulated_multinomial_uncertainty,
-        R"pbdoc(Compute multinomial uncertainty.
+        "pr_multn_sim_error",
+        &api::pr::multn_sim_error,
+        R"pbdoc(Compute multinomial uncertainty on precision-recall through simulation.
 
         Parameters
         ----------
@@ -236,11 +237,11 @@ void bind_simulated_multinomial_uncertainty(py::module& m) {
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-void bind_simulated_multinomial_uncertainty_mt(py::module& m) {
+void bind_multn_sim_error_mt(py::module& m) {
     m.def(
-        "simulate_multn_uncertainty_mt",
-        &api::simulated_multinomial_uncertainty_mt,
-        R"pbdoc(Compute multinomial uncertainty.
+        "pr_multn_sim_error_mt",
+        &api::pr::multn_sim_error_mt,
+        R"pbdoc(Compute multinomial uncertainty on precision-recall through simulation.
 
         Parameters
         ----------
@@ -278,5 +279,6 @@ void bind_simulated_multinomial_uncertainty_mt(py::module& m) {
         py::arg("n_threads") = 4);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
+}  // namespace pr
 }  // namespace bindings
 }  // namespace mmu

@@ -1,5 +1,5 @@
 /* common.hpp -- Utility functions and macros used in multiple headers.
- * Copyright 2021 Ralph Urlus
+ * Copyright 2022 Ralph Urlus
  */
 #ifndef INCLUDE_MMU_CORE_COMMON_HPP_
 #define INCLUDE_MMU_CORE_COMMON_HPP_

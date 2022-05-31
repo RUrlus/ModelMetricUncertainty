@@ -1,13 +1,13 @@
 /* bindings.cpp -- Python bindings for MMU
- * Copyright 2021 Ralph Urlus
+ * Copyright 2022 Ralph Urlus
  */
 #include <pybind11/pybind11.h>
 
 #include <mmu/bindings/confusion_matrix.hpp>
 #include <mmu/bindings/metrics.hpp>
-#include <mmu/bindings/multn_loglike.hpp>
 #include <mmu/bindings/bvn_error.hpp>
-#include <mmu/bindings/bvn_grid.hpp>
+#include <mmu/bindings/pr_bvn_grid.hpp>
+#include <mmu/bindings/pr_multn_loglike.hpp>
 #include <mmu/bindings/utils.hpp>
 #include <mmu/core/common.hpp>
 
@@ -36,31 +36,32 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_all_finite(m);
     bind_is_well_behaved_finite(m);
     // lep_bvn
-    bind_pr_bvn_error(m);
-    bind_pr_bvn_error_runs(m);
-    bind_pr_curve_bvn_error(m);
 
-    bind_pr_bvn_cov(m);
-    bind_pr_bvn_cov_runs(m);
-    bind_pr_curve_bvn_cov(m);
+    pr::bind_bvn_error(m);
+    pr::bind_bvn_error_runs(m);
+    pr::bind_curve_bvn_error(m);
 
-    bind_bvn_uncertainty_over_grid(m);
-    bind_bvn_uncertainty_over_grid_thresholds(m);
-    bind_bvn_uncertainty_over_grid_thresholds_wtrain(m);
+    pr::bind_bvn_cov(m);
+    pr::bind_bvn_cov_runs(m);
+    pr::bind_curve_bvn_cov(m);
+
+    pr::bind_bvn_grid_error(m);
+    pr::bind_bvn_grid_curve_error(m);
+    pr::bind_bvn_grid_curve_error_wtrain(m);
     // multn_loglike
-    bind_multinomial_uncertainty(m);
-    bind_multinomial_uncertainty_over_grid(m);
-    bind_multinomial_uncertainty_over_grid_thresholds(m);
-    bind_simulated_multinomial_uncertainty(m);
+    pr::bind_multn_error(m);
+    pr::bind_multn_grid_error(m);
+    pr::bind_multn_grid_curve_error(m);
+    pr::bind_multn_sim_error(m);
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
     // lep_bvn
-    bind_bvn_uncertainty_over_grid_thresholds_mt(m);
-    bind_bvn_uncertainty_over_grid_thresholds_wtrain_mt(m);
+    pr::bind_bvn_grid_curve_error_mt(m);
+    pr::bind_bvn_grid_curve_error_wtrain_mt(m);
     // multn_loglike
-    bind_multinomial_uncertainty_mt(m);
-    bind_multinomial_uncertainty_over_grid_thresholds_mt(m);
-    bind_simulated_multinomial_uncertainty_mt(m);
+    pr::bind_multn_error_mt(m);
+    pr::bind_multn_grid_curve_error_mt(m);
+    pr::bind_multn_sim_error_mt(m);
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
 #ifndef OS_WIN

@@ -1,5 +1,5 @@
 /* erfinv.hpp -- Implementation of inverse error function.
- * Copyright 2021 Ralph Urlus
+ * Copyright 2022 Ralph Urlus
  *
  * Based on:
  * Wichura, M. J. (1988). Algorithm AS 241: The Percentage Points of the Normal Distribution. Journal of the Royal

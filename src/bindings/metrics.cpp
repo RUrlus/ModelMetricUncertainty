@@ -1,6 +1,6 @@
 /* metrics_bindings.cpp -- Python bindings for metrics.hpp
  *
- * Copyright 2021 Ralph Urlus
+ * Copyright 2022 Ralph Urlus
  */
 #include <mmu/api/metrics.hpp>
 #include <mmu/bindings/metrics.hpp>

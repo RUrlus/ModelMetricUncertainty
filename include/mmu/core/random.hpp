@@ -1,5 +1,5 @@
 /* random.hpp -- Implementation of API for random number generators
- * Copyright 2021 Ralph Urlus
+ * Copyright 2022 Ralph Urlus
  */
 #ifndef INCLUDE_MMU_CORE_RANDOM_HPP_
 #define INCLUDE_MMU_CORE_RANDOM_HPP_
