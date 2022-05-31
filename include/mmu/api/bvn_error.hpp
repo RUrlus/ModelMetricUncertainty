@@ -1,6 +1,5 @@
-/* bvn_error.hpp -- Implementation of variance and CI of Normal distributions
- * over the Poisson errors of the Confusion Matrix
- * Copyright 2021 Ralph Urlus
+/* bvn_error.hpp -- Numpy array wrappers around core/bvn_error
+ * Copyright 2022 Ralph Urlus
  */
 #ifndef INCLUDE_MMU_API_BVN_ERROR_HPP_
 #define INCLUDE_MMU_API_BVN_ERROR_HPP_
@@ -23,15 +22,17 @@ namespace py = pybind11;
 
 namespace mmu {
 namespace api {
+namespace pr {
 
-f64arr pr_bvn_error(const i64arr& conf_mat, double alpha);
-f64arr pr_bvn_error_runs(const i64arr& conf_mat, double alpha);
-f64arr pr_curve_bvn_error(const i64arr& conf_mat, double alpha);
+f64arr bvn_error(const i64arr& conf_mat, double alpha);
+f64arr bvn_error_runs(const i64arr& conf_mat, double alpha);
+f64arr curve_bvn_error(const i64arr& conf_mat, double alpha);
 
-f64arr pr_bvn_cov(const i64arr& conf_mat);
-f64arr pr_bvn_cov_runs(const i64arr& conf_mat);
-f64arr pr_curve_bvn_cov(const i64arr& conf_mat);
+f64arr bvn_cov(const i64arr& conf_mat);
+f64arr bvn_cov_runs(const i64arr& conf_mat);
+f64arr curve_bvn_cov(const i64arr& conf_mat);
 
+}  // namespace pr
 }  // namespace api
 }  // namespace mmu
 

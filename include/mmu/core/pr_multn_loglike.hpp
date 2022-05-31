@@ -1,8 +1,8 @@
-/* multn_loglike.hpp -- Implementation Multinomial uncertainty using Wilk's theorem
- * Copyright 2021 Ralph Urlus
+/* pr_multn_loglike.hpp -- Implementation Multinomial uncertainty over Precision-Recall using Wilk's theorem
+ * Copyright 2022 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_CORE_MULTN_LOGLIKE_HPP_
-#define INCLUDE_MMU_CORE_MULTN_LOGLIKE_HPP_
+#ifndef INCLUDE_MMU_CORE_PR_MULTN_LOGLIKE_HPP_
+#define INCLUDE_MMU_CORE_PR_MULTN_LOGLIKE_HPP_
 
 #if defined(MMU_HAS_OPENMP_SUPPORT)
 #include <omp.h>
@@ -19,7 +19,7 @@
 #include <mmu/core/common.hpp>
 #include <mmu/core/metrics.hpp>
 #include <mmu/core/bvn_error.hpp>
-#include <mmu/core/pr_grid.hpp>
+#include <mmu/core/grid_bounds.hpp>
 #include <mmu/core/random.hpp>
 
 /* conf_mat layout:
@@ -50,6 +50,7 @@ inline double xlogy(T x, T y) {
 }
 }  // namespace details
 
+namespace pr {
 /* Compute the most conservative probabilities for a given confusion matrix constrained by precision and recall.
  *
  * Parameters
@@ -188,7 +189,7 @@ prof_loglike(const double prec, const double rec, const double n, const int64_t*
     return nll_h0 - nll_h1;
 }  // prof_loglike
 
-inline void multn_uncertainty(
+inline void multn_error(
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,
     double* result,
@@ -202,7 +203,7 @@ inline void multn_uncertainty(
     // -- memory allocation --
 
     // obtain prec_start, prec_end, rec_start, rec_end
-    details::get_pr_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
+    get_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
     auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
     details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
     const double prec_start = bounds[0];
@@ -221,10 +222,10 @@ inline void multn_uncertainty(
             idx++;
         }
     }
-}  // multn_uncertainty
+}  // multn_error
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-inline void multn_uncertainty_mt(
+inline void multn_error_mt(
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,
     double* result,
@@ -234,7 +235,7 @@ inline void multn_uncertainty_mt(
     const int n_threads = 4) {
 
     // obtain prec_start, prec_end, rec_start, rec_end
-    details::get_pr_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
+    get_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
     auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
     details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
     const double prec_start = bounds[0];
@@ -262,10 +263,10 @@ inline void multn_uncertainty_mt(
             }
         }
     }  // omp parallel
-}  // multn_uncertainty_mt
+}  // multn_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-inline void multn_uncertainty_over_grid(
+inline void multn_grid_error(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const double* prec_grid,
@@ -290,7 +291,7 @@ inline void multn_uncertainty_over_grid(
 
     // obtain the indexes over which to loop
     // sets prec_idx_min, prec_idx_max, rec_idx_min, rec_idx_max
-    details::get_pr_grid_bounds(n_prec_bins, n_rec_bins, conf_mat, prec_grid, rec_grid, idx_bounds, n_sigmas, epsilon);
+    get_grid_bounds(n_prec_bins, n_rec_bins, conf_mat, prec_grid, rec_grid, idx_bounds, n_sigmas, epsilon);
     const int64_t prec_idx_min = idx_bounds[0];
     const int64_t prec_idx_max = idx_bounds[1];
     const int64_t rec_idx_min = idx_bounds[2];
@@ -314,9 +315,9 @@ inline void multn_uncertainty_over_grid(
             }
         }
     }
-}  // multn_uncertainty_over_grid
+}  // multn_grid_error
 
-inline void multn_uncertainty_over_grid_thresholds(
+inline void multn_grid_curve_error(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const int64_t n_conf_mats,
@@ -337,7 +338,7 @@ inline void multn_uncertainty_over_grid_thresholds(
     auto nll_store = prof_loglike_t();
     prof_loglike_t* nll_ptr = &nll_store;
 
-    auto bounds = details::PrGridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
+    auto bounds = GridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
 
     double prec;
     double score;
@@ -362,10 +363,10 @@ inline void multn_uncertainty_over_grid_thresholds(
         // increment ptr
         conf_mat += 4;
     }
-}  // multn_uncertainty_over_grid_thresholds
+}  // multn_grid_curve_error
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-inline void multn_uncertainty_over_grid_thresholds_mt(
+inline void multn_grid_curve_error_mt(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const int64_t n_conf_mats,
@@ -394,7 +395,7 @@ inline void multn_uncertainty_over_grid_thresholds_mt(
         auto nll_store = prof_loglike_t();
         prof_loglike_t* nll_ptr = &nll_store;
 
-        auto bounds = details::PrGridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
+        auto bounds = GridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
 
         double prec;
         double score;
@@ -442,7 +443,7 @@ inline void multn_uncertainty_over_grid_thresholds_mt(
         }
         scores[i] = min_score;
     }
-}  // multn_uncertainty_over_grid_thresholds_mt
+}  // multn_grid_curve_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
 inline double prof_loglike_simulation_cov(
@@ -467,7 +468,7 @@ inline double prof_loglike_simulation_cov(
     return static_cast<double>(checks) / n_sims;
 }  // prof_loglike_simulation_cov
 
-inline void simulate_multn_uncertainty(
+inline void multn_sim_error(
     const int64_t n_sims,
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,
@@ -511,7 +512,7 @@ inline void simulate_multn_uncertainty(
     // -- memory allocation --
 
     // obtain prec_start, prec_end, rec_start, rec_end
-    details::get_pr_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
+    get_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
     auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
     details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
     const double prec_start = bounds[0];
@@ -536,10 +537,10 @@ inline void simulate_multn_uncertainty(
             idx++;
         }
     }
-}  // simulate_multn_uncertainty
+}  // multn_sim_error
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-inline void simulate_multn_uncertainty_mt(
+inline void multn_sim_error_mt(
     const int64_t n_sims,
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,
@@ -551,7 +552,7 @@ inline void simulate_multn_uncertainty_mt(
     const int n_threads = 4
 ) {
     // obtain prec_start, prec_end, rec_start, rec_end
-    details::get_pr_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
+    get_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
     auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
     details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
     const double prec_start = bounds[0];
@@ -617,10 +618,11 @@ inline void simulate_multn_uncertainty_mt(
             }
         }
     } // omp parallel
-}  // simulate_multn_uncertainty_mt
+}  // multn_sim_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
+}  // namespace pr
 }  // namespace core
 }  // namespace mmu
 
-#endif  // INCLUDE_MMU_CORE_MULTN_LOGLIKE_HPP_
+#endif  // INCLUDE_MMU_CORE_PR_MULTN_LOGLIKE_HPP_

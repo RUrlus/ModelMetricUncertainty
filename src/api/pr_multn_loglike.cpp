@@ -1,15 +1,15 @@
-/* multn_loglike.cpp -- Implementation of Python API of multinomial log-likelihood uncertainty
- * Copyright 2021 Ralph Urlus
+/* pr_multn_loglike.cpp -- Implementation of Python API of multinomial log-likelihood uncertainty
+ * Copyright 2022 Ralph Urlus
  */
-#include <mmu/api/multn_loglike.hpp>  // for py::array
+#include <mmu/api/pr_multn_loglike.hpp>  // for py::array
 
 namespace py = pybind11;
 
 namespace mmu {
 namespace api {
+namespace pr {
 
-py::tuple
-multinomial_uncertainty(const int64_t n_bins, const i64arr conf_mat, const double n_sigmas, const double epsilon) {
+py::tuple multn_error(const int64_t n_bins, const i64arr conf_mat, const double n_sigmas, const double epsilon) {
     if (!npy::is_well_behaved(conf_mat)) {
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
     }
@@ -18,13 +18,12 @@ multinomial_uncertainty(const int64_t n_bins, const i64arr conf_mat, const doubl
     double* res_ptr = npy::get_data(result);
     double* bnds_ptr = npy::get_data(bounds);
     int64_t* cm_ptr = npy::get_data(conf_mat);
-    core::multn_uncertainty(n_bins, cm_ptr, res_ptr, bnds_ptr, n_sigmas, epsilon);
+    core::pr::multn_error(n_bins, cm_ptr, res_ptr, bnds_ptr, n_sigmas, epsilon);
     return py::make_tuple(result, bounds);
-}  // multinomial_uncertainty
+}  // multn_error
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-py::tuple
-multinomial_uncertainty_mt(
+py::tuple multn_error_mt(
     const int64_t n_bins,
     const i64arr conf_mat,
     const double n_sigmas,
@@ -38,7 +37,7 @@ multinomial_uncertainty_mt(
     double* res_ptr = npy::get_data(result);
     double* bnds_ptr = npy::get_data(bounds);
     int64_t* cm_ptr = npy::get_data(conf_mat);
-    core::multn_uncertainty_mt(
+    core::pr::multn_error_mt(
         n_bins,
         cm_ptr,
         res_ptr,
@@ -48,10 +47,10 @@ multinomial_uncertainty_mt(
         n_threads
     );
     return py::make_tuple(result, bounds);
-}
+}  // multn_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-f64arr multinomial_uncertainty_over_grid(
+f64arr multn_grid_error(
     const f64arr prec_grid,
     const f64arr rec_grid,
     const i64arr conf_mat,
@@ -63,7 +62,7 @@ f64arr multinomial_uncertainty_over_grid(
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();
     auto scores = f64arr({prec_bins, rec_bins});
-    core::multn_uncertainty_over_grid(
+    core::pr::multn_grid_error(
         prec_bins,
         rec_bins,
         npy::get_data(prec_grid),
@@ -73,9 +72,9 @@ f64arr multinomial_uncertainty_over_grid(
         n_sigmas,
         epsilon);
     return scores;
-}  // multinomial_uncertainty_over_grid
+}  // multn_grid_error
 
-f64arr multinomial_uncertainty_over_grid_thresholds(
+f64arr multn_grid_curve_error(
     const int64_t n_conf_mats,
     const f64arr prec_grid,
     const f64arr rec_grid,
@@ -88,7 +87,7 @@ f64arr multinomial_uncertainty_over_grid_thresholds(
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();
     auto scores = f64arr({prec_bins, rec_bins});
-    core::multn_uncertainty_over_grid_thresholds(
+    core::pr::multn_grid_curve_error(
         prec_bins,
         rec_bins,
         n_conf_mats,
@@ -99,10 +98,10 @@ f64arr multinomial_uncertainty_over_grid_thresholds(
         n_sigmas,
         epsilon);
     return scores;
-}  // multinomial_uncertainty_over_grid
+}  // multn_grid_curve_error
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-f64arr multn_uncertainty_over_grid_thresholds_mt(
+f64arr multn_grid_curve_error_mt(
     const int64_t n_conf_mats,
     const f64arr prec_grid,
     const f64arr rec_grid,
@@ -116,7 +115,7 @@ f64arr multn_uncertainty_over_grid_thresholds_mt(
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();
     auto scores = f64arr({prec_bins, rec_bins});
-    core::multn_uncertainty_over_grid_thresholds_mt(
+    core::pr::multn_grid_curve_error_mt(
         prec_bins,
         rec_bins,
         n_conf_mats,
@@ -128,10 +127,10 @@ f64arr multn_uncertainty_over_grid_thresholds_mt(
         epsilon,
         n_threads);
     return scores;
-}  // multinomial_uncertainty_over_grid_mt
+}  // multn_grid_curve_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-py::tuple simulated_multinomial_uncertainty(
+py::tuple multn_sim_error(
     const int64_t n_sims,
     const int64_t n_bins,
     const i64arr conf_mat,
@@ -144,13 +143,13 @@ py::tuple simulated_multinomial_uncertainty(
     }
     auto scores = f64arr({n_bins, n_bins});
     auto bounds = f64arr({2, 2});
-    core::simulate_multn_uncertainty(
+    core::pr::multn_sim_error(
         n_sims, n_bins, npy::get_data(conf_mat), npy::get_data(scores), npy::get_data(bounds), n_sigmas, epsilon, seed, stream);
     return py::make_tuple(scores, bounds);
-}  // multinomial_uncertainty
+}  // multn_sim_error
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-py::tuple simulated_multinomial_uncertainty_mt(
+py::tuple multn_sim_error_mt(
     const int64_t n_sims,
     const int64_t n_bins,
     const i64arr conf_mat,
@@ -164,11 +163,12 @@ py::tuple simulated_multinomial_uncertainty_mt(
 
     auto bounds = f64arr({2, 2});
     auto scores = f64arr({n_bins, n_bins});
-    core::simulate_multn_uncertainty_mt(
+    core::pr::multn_sim_error_mt(
         n_sims, n_bins, npy::get_data(conf_mat), npy::get_data(scores), npy::get_data(bounds), n_sigmas, epsilon, seed, n_threads);
     return py::make_tuple(scores, bounds);
-}  // multinomial_uncertainty
+}  // multn_sim_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
+}  // namespace pr
 }  // namespace api
 }  // namespace mmu

@@ -1,5 +1,5 @@
-/* metrics.hpp -- Implementation of binary classification metrics
- * Copyright 2021 Ralph Urlus
+/* utils.hpp -- Utility function around type checking of py::array_t
+ * Copyright 2022 Ralph Urlus
  */
 #ifndef INCLUDE_MMU_API_UTILS_HPP_
 #define INCLUDE_MMU_API_UTILS_HPP_

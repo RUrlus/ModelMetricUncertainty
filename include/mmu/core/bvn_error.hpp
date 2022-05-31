@@ -1,6 +1,6 @@
-/* bvn_error.hpp -- Implementation of variance and CI of Multivariate Normal distributions
+/* bvn_error.hpp -- Implementation of variance and CI of Bivariate Normal distributions
  * over the Poisson errors of the Confusion Matrix
- * Copyright 2021 Ralph Urlus
+ * Copyright 2022 Ralph Urlus
  */
 #ifndef INCLUDE_MMU_CORE_BVN_ERROR_HPP_
 #define INCLUDE_MMU_CORE_BVN_ERROR_HPP_
@@ -44,8 +44,9 @@ inline double norm_ppf(const T mu, const T sigma, const T p) {
  *    6 - variance of recall
  *    7 - covariance precision, recall
  */
+namespace pr {
 template <typename T, isInt<T> = true>
-inline void pr_bvn_cov(T* __restrict const conf_mat, double* __restrict const metrics) {
+inline void bvn_cov(T* __restrict const conf_mat, double* __restrict const metrics) {
     /*
      *                  pred
      *                0     1
@@ -108,7 +109,7 @@ inline void pr_bvn_cov(T* __restrict const conf_mat, double* __restrict const me
     } else {
         metrics[3] = metrics[4] = 0.0;
     }
-}  // pr_bvn_error
+}  // bvn_error
 
 /* This function computes the uncertainty on the precision-recall curve
  * using linear error propagation over the Poisson error.
@@ -127,7 +128,7 @@ inline void pr_bvn_cov(T* __restrict const conf_mat, double* __restrict const me
  *    9 - covariance precision, recall
  */
 template <typename T, isInt<T> = true>
-inline void pr_bvn_error(T* __restrict const conf_mat, double* __restrict const metrics, double alpha) {
+inline void bvn_error(T* __restrict const conf_mat, double* __restrict const metrics, double alpha) {
     /*
      *                  pred
      *                0     1
@@ -200,10 +201,10 @@ inline void pr_bvn_error(T* __restrict const conf_mat, double* __restrict const 
     // covariance
     metrics[7] = metrics[8]
         = (static_cast<double>(itp * conf_mat[1] * conf_mat[2]) / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2)));
-}  // pr_bvn_error
+}  // bvn_error
 
 template <typename T, isInt<T> = true>
-inline void pr_bvn_sigma(T* __restrict const conf_mat, double* __restrict const metrics) {
+inline void bvn_sigma(T* __restrict const conf_mat, double* __restrict const metrics) {
     /*
      *                  pred
      *                0     1
@@ -273,8 +274,9 @@ inline void pr_bvn_sigma(T* __restrict const conf_mat, double* __restrict const 
     metrics[1] = prec_sigma;
     metrics[2] = rec;
     metrics[3] = rec_sigma;
-}  // pr_bvn_error
+}  // bvn_error
 
+}  // namespace pr
 }  // namespace core
 }  // namespace mmu
 

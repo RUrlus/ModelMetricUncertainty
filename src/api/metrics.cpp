@@ -1,5 +1,5 @@
 /* metrics.cpp -- Implementation of binary classification metrics
- * Copyright 2021 Ralph Urlus
+ * Copyright 2022 Ralph Urlus
  */
 #include <mmu/api/metrics.hpp>
 

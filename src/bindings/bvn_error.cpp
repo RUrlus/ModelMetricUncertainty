@@ -1,5 +1,5 @@
-/* lep_bvn.cpp -- Python bindings for lep_bvn
- * Copyright 2021 Ralph Urlus
+/* bvn_error.cpp -- Python bindings for core/bvn_error
+ * Copyright 2022 Ralph Urlus
  */
 #include <mmu/api/bvn_error.hpp>
 #include <mmu/bindings/bvn_error.hpp>
@@ -8,11 +8,12 @@ namespace py = pybind11;
 
 namespace mmu {
 namespace bindings {
+namespace pr {
 
-void bind_pr_bvn_error(py::module& m) {
+void bind_bvn_error(py::module& m) {
     m.def(
         "pr_bvn_error",
-        &api::pr_bvn_error,
+        &api::pr::bvn_error,
         R"pbdoc(Compute Precision, Recall and their, joint, uncertainty.
 
         --- Parameters ---
@@ -39,10 +40,10 @@ void bind_pr_bvn_error(py::module& m) {
         py::arg("alpha"));
 }
 
-void bind_pr_bvn_error_runs(py::module& m) {
+void bind_bvn_error_runs(py::module& m) {
     m.def(
         "pr_bvn_error_runs",
-        &api::pr_bvn_error_runs,
+        &api::pr::bvn_error_runs,
         R"pbdoc(Compute Precision, Recall and their, joint, uncertainty.
 
         --- Parameters ---
@@ -69,10 +70,10 @@ void bind_pr_bvn_error_runs(py::module& m) {
         py::arg("alpha"));
 }
 
-void bind_pr_curve_bvn_error(py::module& m) {
+void bind_curve_bvn_error(py::module& m) {
     m.def(
         "pr_curve_bvn_error",
-        &api::pr_curve_bvn_error,
+        &api::pr::curve_bvn_error,
         R"pbdoc(Compute Precision-Recall curve and their, joint, uncertainty.
 
         --- Parameters ---
@@ -99,10 +100,10 @@ void bind_pr_curve_bvn_error(py::module& m) {
         py::arg("alpha"));
 }
 
-void bind_pr_bvn_cov(py::module& m) {
+void bind_bvn_cov(py::module& m) {
     m.def(
         "pr_bvn_cov",
-        &api::pr_bvn_cov,
+        &api::pr::bvn_cov,
         R"pbdoc(Compute Precision, Recall and their covariance matrix.
 
         --- Parameters ---
@@ -122,10 +123,10 @@ void bind_pr_bvn_cov(py::module& m) {
         py::arg("conf_mat"));
 }
 
-void bind_pr_bvn_cov_runs(py::module& m) {
+void bind_bvn_cov_runs(py::module& m) {
     m.def(
         "pr_bvn_cov_runs",
-        &api::pr_bvn_cov_runs,
+        &api::pr::bvn_cov_runs,
         R"pbdoc(Compute Precision, Recall and their covariance.
 
         --- Parameters ---
@@ -145,10 +146,10 @@ void bind_pr_bvn_cov_runs(py::module& m) {
         py::arg("conf_mat"));
 }
 
-void bind_pr_curve_bvn_cov(py::module& m) {
+void bind_curve_bvn_cov(py::module& m) {
     m.def(
         "pr_curve_bvn_cov",
-        &api::pr_curve_bvn_cov,
+        &api::pr::curve_bvn_cov,
         R"pbdoc(Compute Precision-Recall curve and their covariance.
 
         --- Parameters ---
@@ -168,5 +169,6 @@ void bind_pr_curve_bvn_cov(py::module& m) {
         py::arg("conf_mat"));
 }
 
+}  // namespace pr
 }  // namespace bindings
 }  // namespace mmu

@@ -18,10 +18,10 @@ pybind11_add_module(${MODNAME}
         ${MMU_BINDINGS_PATH}/metrics.cpp
         ${MMU_API_PATH}/bvn_error.cpp
         ${MMU_BINDINGS_PATH}/bvn_error.cpp
-        ${MMU_API_PATH}/bvn_grid.cpp
-        ${MMU_BINDINGS_PATH}/bvn_grid.cpp
-        ${MMU_API_PATH}/multn_loglike.cpp
-        ${MMU_BINDINGS_PATH}/multn_loglike.cpp
+        ${MMU_API_PATH}/pr_bvn_grid.cpp
+        ${MMU_BINDINGS_PATH}/pr_bvn_grid.cpp
+        ${MMU_API_PATH}/pr_multn_loglike.cpp
+        ${MMU_BINDINGS_PATH}/pr_multn_loglike.cpp
 )
 
 TARGET_LINK_LIBRARIES(${MODNAME} PUBLIC mmu::mmu)

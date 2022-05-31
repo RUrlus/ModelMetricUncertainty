@@ -1,4 +1,4 @@
-/* bvn_grid.hpp -- Implementation of Bivariate Normal uncertainty over the grid
+/* pr_bvn_grid.hpp -- Implementation of Bivariate Normal uncertainty over the grid
  * Copyright 2022 Ralph Urlus
  *
  *  /Slide 4 at
@@ -24,8 +24,8 @@
  *  Z_{1}^{2} + Z_{2}^{2} \sim \chi^{2}(2)
  *
  */
-#ifndef INCLUDE_MMU_CORE_BVN_GRID_HPP_
-#define INCLUDE_MMU_CORE_BVN_GRID_HPP_
+#ifndef INCLUDE_MMU_CORE_PR_BVN_GRID_HPP_
+#define INCLUDE_MMU_CORE_PR_BVN_GRID_HPP_
 
 #if defined(MMU_HAS_OPENMP_SUPPORT)
 #include <omp.h>
@@ -42,7 +42,7 @@
 #include <mmu/core/common.hpp>
 #include <mmu/core/metrics.hpp>
 #include <mmu/core/bvn_error.hpp>
-#include <mmu/core/pr_grid.hpp>
+#include <mmu/core/grid_bounds.hpp>
 #include <mmu/core/random.hpp>
 
 /* conf_mat layout:
@@ -54,8 +54,9 @@
 
 namespace mmu {
 namespace core {
+namespace pr {
 
-inline void bvn_uncertainty_over_grid(
+inline void bvn_grid_error(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const double* prec_grid,
@@ -74,13 +75,13 @@ inline void bvn_uncertainty_over_grid(
 
     // obtain the indexes over which to loop
     // sets prec_idx_min, prec_idx_max, rec_idx_min, rec_idx_max
-    details::get_pr_grid_bounds(n_prec_bins, n_rec_bins, conf_mat, prec_grid, rec_grid, idx_bounds, n_sigmas, epsilon);
+    get_grid_bounds(n_prec_bins, n_rec_bins, conf_mat, prec_grid, rec_grid, idx_bounds, n_sigmas, epsilon);
     const int64_t prec_idx_min = idx_bounds[0];
     const int64_t prec_idx_max = idx_bounds[1];
     const int64_t rec_idx_min = idx_bounds[2];
     const int64_t rec_idx_max = idx_bounds[3];
 
-    pr_bvn_cov(conf_mat, prec_rec_cov);
+    bvn_cov(conf_mat, prec_rec_cov);
     const double prec_mu = prec_rec_cov[0];
     const double rec_mu = prec_rec_cov[1];
     const double prec_simga = std::sqrt(prec_rec_cov[2]);
@@ -118,9 +119,9 @@ inline void bvn_uncertainty_over_grid(
             }
         }
     }
-}  // bvn_uncertainty_over_grid
+}  // bvn_grid_error
 
-inline void bvn_uncertainty_over_grid_thresholds(
+inline void bvn_grid_curve_error(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const int64_t n_conf_mats,
@@ -140,7 +141,7 @@ inline void bvn_uncertainty_over_grid_thresholds(
     auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
     double z_tmp;
 
-    auto bounds = details::PrGridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
+    auto bounds = GridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
 
     int64_t idx;
     int64_t odx;
@@ -160,7 +161,7 @@ inline void bvn_uncertainty_over_grid_thresholds(
         bounds.compute_bounds(conf_mat);
 
         // compute covariance matrix and mean
-        pr_bvn_cov(conf_mat, prec_rec_cov);
+        bvn_cov(conf_mat, prec_rec_cov);
         prec_mu = prec_rec_cov[0];
         rec_mu = prec_rec_cov[1];
         prec_simga = std::sqrt(prec_rec_cov[2]);
@@ -205,10 +206,10 @@ inline void bvn_uncertainty_over_grid_thresholds(
         conf_mat += 4;
         prec_rec_cov += 6;
     }
-}  // bvn_uncertainty_over_grid_thresholds
+}  // bvn_grid_curve_error
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-inline void bvn_uncertainty_over_grid_thresholds_mt(
+inline void bvn_grid_curve_error_mt(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const int64_t n_conf_mats,
@@ -237,7 +238,7 @@ inline void bvn_uncertainty_over_grid_thresholds_mt(
         auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
         double z_tmp;
 
-        auto bounds = details::PrGridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
+        auto bounds = GridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
 
         int64_t idx;
         int64_t odx;
@@ -262,7 +263,7 @@ inline void bvn_uncertainty_over_grid_thresholds_mt(
             bounds.compute_bounds(lcm);
 
             // compute covariance matrix and mean
-            pr_bvn_cov(lcm, prc_ptr);
+            bvn_cov(lcm, prc_ptr);
             prec_mu = prc_ptr[0];
             rec_mu = prc_ptr[1];
             prec_simga = std::sqrt(prc_ptr[2]);
@@ -324,10 +325,10 @@ inline void bvn_uncertainty_over_grid_thresholds_mt(
         }
         scores[i] = min_score;
     }
-}  // bvn_uncertainty_over_grid_thresholds_mt
+}  // bvn_grid_curve_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-inline void bvn_uncertainty_over_grid_thresholds_wtrain(
+inline void bvn_grid_curve_error_wtrain(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const int64_t n_conf_mats,
@@ -348,7 +349,7 @@ inline void bvn_uncertainty_over_grid_thresholds_wtrain(
     auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
     double z_tmp;
 
-    auto bounds = details::PrGridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
+    auto bounds = GridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
 
     int64_t idx;
     int64_t odx;
@@ -368,7 +369,7 @@ inline void bvn_uncertainty_over_grid_thresholds_wtrain(
         bounds.compute_bounds(conf_mat);
 
         // compute covariance matrix and mean
-        pr_bvn_cov(conf_mat, prec_rec_cov);
+        bvn_cov(conf_mat, prec_rec_cov);
         prec_mu = prec_rec_cov[0];
         rec_mu = prec_rec_cov[1];
         prec_simga = std::sqrt(prec_rec_cov[2] + train_cov[0]);
@@ -415,10 +416,10 @@ inline void bvn_uncertainty_over_grid_thresholds_wtrain(
         train_cov += 4;
         prec_rec_cov += 6;
     }
-}  // bvn_uncertainty_over_grid_thresholds_wtrain
+}  // bvn_grid_curve_error_wtrain
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-inline void bvn_uncertainty_over_grid_thresholds_wtrain_mt(
+inline void bvn_grid_curve_error_wtrain_mt(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const int64_t n_conf_mats,
@@ -448,7 +449,7 @@ inline void bvn_uncertainty_over_grid_thresholds_wtrain_mt(
         auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
         double z_tmp;
 
-        auto bounds = details::PrGridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
+        auto bounds = GridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
 
         int64_t idx;
         int64_t odx;
@@ -476,7 +477,7 @@ inline void bvn_uncertainty_over_grid_thresholds_wtrain_mt(
             bounds.compute_bounds(lcm);
 
             // compute covariance matrix and mean
-            pr_bvn_cov(lcm, prc_ptr);
+            bvn_cov(lcm, prc_ptr);
             prec_mu = prc_ptr[0];
             rec_mu = prc_ptr[1];
             prec_simga = std::sqrt(prc_ptr[2] + tcov[0]);
@@ -538,10 +539,11 @@ inline void bvn_uncertainty_over_grid_thresholds_wtrain_mt(
         }
         scores[i] = min_score;
     }
-}  // bvn_uncertainty_over_grid_thresholds_wtrain_mt
+}  // bvn_grid_curve_error_wtrain_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
+}  // namespace pr
 }  // namespace core
 }  // namespace mmu
 
-#endif  // INCLUDE_MMU_CORE_BVN_GRID_HPP_
+#endif  // INCLUDE_MMU_CORE_PR_BVN_GRID_HPP_

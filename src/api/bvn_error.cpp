@@ -1,6 +1,5 @@
-/* error_prop.hpp -- Implementation of varianceand CI of Normal distributions
- * over the Poisson errors of the Confusion Matrix
- * Copyright 2021 Ralph Urlus
+/* bvn_error.cpp -- Numpy array wrappers around core/bvn_error
+ * Copyright 2022 Ralph Urlus
  */
 #include <mmu/api/bvn_error.hpp>
 
@@ -8,6 +7,7 @@ namespace py = pybind11;
 
 namespace mmu {
 namespace api {
+namespace pr {
 
 /* Compute the Precision-Recall and their uncertainty.
  *
@@ -28,7 +28,7 @@ namespace api {
  *     8. V[recall]
  *     9. COV[precision, recall]
  */
-f64arr pr_bvn_error(const i64arr& conf_mat, double alpha) {
+f64arr bvn_error(const i64arr& conf_mat, double alpha) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
         throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
@@ -44,7 +44,7 @@ f64arr pr_bvn_error(const i64arr& conf_mat, double alpha) {
     double* const metrics_ptr = npy::get_data(metrics);
 
     // compute metrics
-    core::pr_bvn_error(cm_ptr, metrics_ptr, alpha);
+    core::pr::bvn_error(cm_ptr, metrics_ptr, alpha);
     return metrics;
 }
 
@@ -67,7 +67,7 @@ f64arr pr_bvn_error(const i64arr& conf_mat, double alpha) {
  *     8. V[recall]
  *     9. COV[precision, recall]
  */
-f64arr pr_bvn_error_runs(const i64arr& conf_mat, double alpha) {
+f64arr bvn_error_runs(const i64arr& conf_mat, double alpha) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
         throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
@@ -87,7 +87,7 @@ f64arr pr_bvn_error_runs(const i64arr& conf_mat, double alpha) {
 // compute metrics
 #pragma omp parallel for shared(cm_ptr, metrics_ptr)
     for (int64_t i = 0; i < n_runs; i++) {
-        core::pr_bvn_error(cm_ptr + (i * 4), metrics_ptr + (i * 10), alpha);
+        core::pr::bvn_error(cm_ptr + (i * 4), metrics_ptr + (i * 10), alpha);
     }
     return metrics;
 }
@@ -111,7 +111,7 @@ f64arr pr_bvn_error_runs(const i64arr& conf_mat, double alpha) {
  *     8. V[recall]
  *     9. COV[precision, recall]
  */
-f64arr pr_curve_bvn_error(const i64arr& conf_mat, double alpha) {
+f64arr curve_bvn_error(const i64arr& conf_mat, double alpha) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
         throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
@@ -129,7 +129,7 @@ f64arr pr_curve_bvn_error(const i64arr& conf_mat, double alpha) {
 
 #pragma omp parallel for shared(cm_ptr, metrics_ptr)
     for (int64_t i = 0; i < n_mats; i++) {
-        core::pr_bvn_error(cm_ptr + (i * 4), metrics_ptr + (i * 10), alpha);
+        core::pr::bvn_error(cm_ptr + (i * 4), metrics_ptr + (i * 10), alpha);
     }
     return metrics;
 }
@@ -148,7 +148,7 @@ f64arr pr_curve_bvn_error(const i64arr& conf_mat, double alpha) {
  *     4. V[recall]
  *     5. COV[precision, recall]
  */
-f64arr pr_bvn_cov(const i64arr& conf_mat) {
+f64arr bvn_cov(const i64arr& conf_mat) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
         throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
@@ -164,7 +164,7 @@ f64arr pr_bvn_cov(const i64arr& conf_mat) {
     double* const metrics_ptr = npy::get_data(metrics);
 
     // compute metrics
-    core::pr_bvn_cov(cm_ptr, metrics_ptr);
+    core::pr::bvn_cov(cm_ptr, metrics_ptr);
     return metrics;
 }
 
@@ -183,7 +183,7 @@ f64arr pr_bvn_cov(const i64arr& conf_mat) {
  *     4. V[recall]
  *     5. COV[precision, recall]
  */
-f64arr pr_bvn_cov_runs(const i64arr& conf_mat) {
+f64arr bvn_cov_runs(const i64arr& conf_mat) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
         throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
@@ -203,7 +203,7 @@ f64arr pr_bvn_cov_runs(const i64arr& conf_mat) {
 // compute metrics
 #pragma omp parallel for shared(cm_ptr, metrics_ptr)
     for (int64_t i = 0; i < n_runs; i++) {
-        core::pr_bvn_cov(cm_ptr + (i * 4), metrics_ptr + (i * 6));
+        core::pr::bvn_cov(cm_ptr + (i * 4), metrics_ptr + (i * 6));
     }
     return metrics;
 }
@@ -223,7 +223,7 @@ f64arr pr_bvn_cov_runs(const i64arr& conf_mat) {
  *     4. V[recall]
  *     5. COV[precision, recall]
  */
-f64arr pr_curve_bvn_cov(const i64arr& conf_mat) {
+f64arr curve_bvn_cov(const i64arr& conf_mat) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
         throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
@@ -241,10 +241,11 @@ f64arr pr_curve_bvn_cov(const i64arr& conf_mat) {
 
 #pragma omp parallel for shared(cm_ptr, metrics_ptr)
     for (int64_t i = 0; i < n_mats; i++) {
-        core::pr_bvn_cov(cm_ptr + (i * 4), metrics_ptr + (i * 6));
+        core::pr::bvn_cov(cm_ptr + (i * 4), metrics_ptr + (i * 6));
     }
     return metrics;
 }
 
+}  // namespace pr
 }  // namespace api
 }  // namespace mmu
