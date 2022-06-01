@@ -13,7 +13,6 @@ from mmu.commons.checks import _check_n_threads
 from mmu.metrics.confmat import confusion_matrix
 from mmu.metrics.confmat import confusion_matrix_to_dataframe
 from mmu.metrics.confmat import confusion_matrices_to_dataframe
-from mmu.metrics.confmat import confusion_matrices
 from mmu.viz.ellipse import _plot_pr_ellipse
 from mmu.viz.contours import _plot_pr_contours
 
@@ -177,7 +176,7 @@ class PrecisionRecallUncertainty:
         # compute scores
         n_threads = _check_n_threads(n_threads)
         if _MMU_MT_SUPPORT and n_threads > 1:
-            self.chi2_scores, bounds = _core.multinomial_uncertainty_mt(
+            self.chi2_scores, bounds = _core.pr_multn_error_mt(
                 n_bins=self.n_bins,
                 conf_mat=self.conf_mat,
                 n_sigmas=self.n_sigmas,
@@ -190,7 +189,7 @@ class PrecisionRecallUncertainty:
                     "mmu was not compiled with multi-threading enabled,"
                     " ignoring `n_threads`"
                 )
-            self.chi2_scores, bounds = _core.multinomial_uncertainty(
+            self.chi2_scores, bounds = _core.pr_multn_error(
                 n_bins=self.n_bins,
                 conf_mat=self.conf_mat,
                 n_sigmas=self.n_sigmas,
@@ -1048,7 +1047,7 @@ class PrecisionRecallSimulatedUncertainty:
         self.precision, self.recall = _core.precision_recall(self.conf_mat)
         # compute scores
         if _MMU_MT_SUPPORT and n_threads > 1:
-            self.coverage, bounds = _core.simulate_multn_uncertainty_mt(
+            self.coverage, bounds = _core.pr_multn_sim_error_mt(
                 n_sims=n_simulations,
                 n_bins=self.n_bins,
                 conf_mat=self.conf_mat,
@@ -1062,7 +1061,7 @@ class PrecisionRecallSimulatedUncertainty:
                     "mmu was not compiled with multi-threading enabled,"
                     " ignoring `n_threads`"
                 )
-            self.coverage, bounds = _core.simulate_multn_uncertainty(
+            self.coverage, bounds = _core.pr_multn_sim_error_mt(
                 n_sims=n_simulations,
                 n_bins=self.n_bins,
                 conf_mat=self.conf_mat,
