@@ -22,15 +22,15 @@ from mmu.methods.prpoint import PrecisionRecallUncertainty
 
 import mmu.lib._mmu_core as _core
 from mmu.lib._mmu_core import (
-    multinomial_uncertainty_over_grid_thresholds as mult_error_grid_thresh,
-    bvn_uncertainty_over_grid_thresholds as bvn_error_grid_thresh,
-    bvn_uncertainty_over_grid_thresholds_wtrain as bvn_error_grid_thresh_wt
+    pr_multn_grid_curve_error,
+    pr_bvn_grid_curve_error,
+    pr_bvn_grid_curve_error_wtrain
 )
 if _MMU_MT_SUPPORT:
     from mmu.lib._mmu_core import (
-        multinomial_uncertainty_over_grid_thresholds_mt as mult_error_grid_thresh_mt,
-        bvn_uncertainty_over_grid_thresholds_mt as bvn_error_grid_thresh_mt,
-        bvn_uncertainty_over_grid_thresholds_wtrain_mt as bvn_error_grid_thresh_wt_mt
+        pr_multn_grid_curve_error_mt,
+        pr_bvn_grid_curve_error_mt,
+        pr_bvn_grid_curve_error_wtrain_mt
     )
 
 
@@ -143,7 +143,7 @@ class PrecisionRecallCurveUncertainty:
 
         # compute scores
         if _MMU_MT_SUPPORT and n_threads > 1:
-            prec_rec, self.chi2_scores = bvn_error_grid_thresh_mt(
+            prec_rec, self.chi2_scores = pr_bvn_grid_curve_error_mt(
                 n_conf_mats=self.n_conf_mats,
                 precs_grid=self.prec_grid,
                 recs_grid=self.rec_grid,
@@ -158,7 +158,7 @@ class PrecisionRecallCurveUncertainty:
                     "mmu was not compiled with multi-threading enabled,"
                     " ignoring `n_threads`"
                 )
-            prec_rec, self.chi2_scores = bvn_error_grid_thresh(
+            prec_rec, self.chi2_scores = pr_bvn_grid_curve_error(
                 n_conf_mats=self.n_conf_mats,
                 precs_grid=self.prec_grid,
                 recs_grid=self.rec_grid,
@@ -187,7 +187,7 @@ class PrecisionRecallCurveUncertainty:
         self.recall = mtr[:, 1].copy()
         # compute scores
         if _MMU_MT_SUPPORT and n_threads > 1:
-            self.chi2_scores = mult_error_grid_thresh_mt(
+            self.chi2_scores = pr_multn_grid_curve_error_mt(
                 n_conf_mats=self.n_conf_mats,
                 precs_grid=self.prec_grid,
                 recs_grid=self.rec_grid,
@@ -202,7 +202,7 @@ class PrecisionRecallCurveUncertainty:
                     "mmu was not compiled with multi-threading enabled,"
                     " ignoring `n_threads`"
                 )
-            self.chi2_scores = mult_error_grid_thresh(
+            self.chi2_scores = pr_multn_grid_curve_error(
                 n_conf_mats=self.n_conf_mats,
                 precs_grid=self.prec_grid,
                 recs_grid=self.rec_grid,
@@ -616,7 +616,7 @@ class PrecisionRecallCurveUncertainty:
 
         # compute scores
         if _MMU_MT_SUPPORT and n_threads > 1:
-            prec_rec, self.chi2_scores = bvn_error_grid_thresh_wt_mt(
+            prec_rec, self.chi2_scores = pr_bvn_grid_curve_error_wtrain_mt(
                 n_conf_mats=self.n_conf_mats,
                 precs_grid=self.prec_grid,
                 recs_grid=self.rec_grid,
@@ -632,7 +632,7 @@ class PrecisionRecallCurveUncertainty:
                     "mmu was not compiled with multi-threading enabled,"
                     " ignoring `n_threads`"
                 )
-            prec_rec, self.chi2_scores = bvn_error_grid_thresh_wt(
+            prec_rec, self.chi2_scores = pr_bvn_grid_curve_error_wtrain(
                 n_conf_mats=self.n_conf_mats,
                 precs_grid=self.prec_grid,
                 recs_grid=self.rec_grid,
