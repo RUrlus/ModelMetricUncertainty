@@ -102,9 +102,6 @@ constrained_fit_cmp(const double prec, const double rec, const double n3, const 
     const double rec_ratio = (1.0 - rec) / rec;
     const double prec_ratio = (1.0 - prec) / prec;
     probas[3] = (n3 / n4) * (1. / (1. + prec_ratio + rec_ratio));
-    const double rec_ratio = 1.0 / rec;
-    const double prec_ratio = prec;
-    probas[3] = (n3 / n4) * (1. / (prec_ratio + rec_ratio -1));
     probas[2] = rec_ratio * probas[3];
     probas[1] = prec_ratio * probas[3];
     // guard against floating point noise resulting in negative probabilities
