@@ -189,6 +189,84 @@ prof_loglike(const double prec, const double rec, const double n, const int64_t*
     return nll_h0 - nll_h1;
 }  // prof_loglike
 
+inline double multn_chi2_score(
+    const double prec,
+    const double rec,
+    const int64_t* __restrict conf_mat,
+    const double epsilon = 1e-4) {
+    // -- memory allocation --
+    // memory to be used by constrained_fit_cmp
+    std::array<double, 4> probas;
+    double* p = probas.data();
+    // -- memory allocation --
+    const auto n = static_cast<double>(conf_mat[0] + conf_mat[1] + conf_mat[2] + conf_mat[3]);
+    const double max_val = 1.0 - epsilon;
+    const double bound_prec = std::max(std::min(prec, max_val), epsilon);
+    const double bound_rec = std::max(std::min(rec, max_val), epsilon);
+    return prof_loglike(bound_prec, bound_rec, n, conf_mat, p);
+}  // multn_chi2_score
+
+inline void multn_chi2_scores(
+    const int64_t n_points,
+    const double* precs,
+    const double* recs,
+    const int64_t* __restrict conf_mat,
+    double* scores,
+    const double epsilon = 1e-4) {
+    // -- memory allocation --
+    // memory to be used by constrained_fit_cmp
+    std::array<double, 4> probas;
+    double* p = probas.data();
+
+    auto nll_store = prof_loglike_t();
+    prof_loglike_t* nll_ptr = &nll_store;
+    set_prof_loglike_store(conf_mat, nll_ptr);
+    // -- memory allocation --
+
+    const double max_val = 1.0 - epsilon;
+    double bound_prec;
+    double bound_rec;
+    for (int64_t i = 0; i < n_points; ++i) {
+        bound_prec = std::max(std::min(precs[i], max_val), epsilon);
+        bound_rec = std::max(std::min(recs[i], max_val), epsilon);
+        scores[i] = prof_loglike(bound_prec, bound_rec, nll_ptr, p);
+    }
+} // multn_chi2_scores
+
+#ifdef MMU_HAS_OPENMP_SUPPORT
+inline void multn_chi2_scores_mt(
+    const int64_t n_points,
+    const double* precs,
+    const double* recs,
+    const int64_t* __restrict conf_mat,
+    double* scores,
+    const double epsilon = 1e-4) {
+
+    // -- memory allocation --
+    // memory to be used by constrained_fit_cmp
+    std::array<double, 4> probas;
+    double* p = probas.data();
+
+    auto nll_store = prof_loglike_t();
+    prof_loglike_t* nll_ptr = &nll_store;
+    set_prof_loglike_store(conf_mat, nll_ptr);
+    // -- memory allocation --
+    const double max_val = 1.0 - epsilon;
+
+#pragma omp parallel shared(precs, recs, nll_ptr, scores)
+    {
+    double bound_prec;
+    double bound_rec;
+#pragma omp for
+    for (int64_t i = 0; i < n_points; ++i) {
+        bound_prec = std::max(std::min(precs[i], max_val), epsilon);
+        bound_rec = std::max(std::min(recs[i], max_val), epsilon);
+        scores[i] = prof_loglike(bound_prec, bound_rec, nll_ptr, p);
+    }
+    }  // omp parallel
+}  // multn_chi2_scores_mt
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
 inline void multn_error(
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,

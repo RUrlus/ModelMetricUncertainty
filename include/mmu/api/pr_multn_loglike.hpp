@@ -30,6 +30,24 @@ py::tuple multn_error_mt(
     const int n_threads);
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
+double multn_chi2_score(
+    const double prec,
+    const double rec,
+    const i64arr& conf_mat,
+    const double epsilon);
+
+f64arr multn_chi2_scores(
+    const f64arr& precs,
+    const f64arr& recs,
+    const i64arr& conf_mat,
+    const double epsilon);
+
+f64arr multn_chi2_scores_mt(
+    const f64arr& precs,
+    const f64arr& recs,
+    const i64arr& conf_mat,
+    const double epsilon);
+
 f64arr multn_grid_error(
     const f64arr prec_grid,
     const f64arr rec_grid,

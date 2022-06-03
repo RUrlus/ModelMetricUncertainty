@@ -23,6 +23,10 @@ void bind_multn_grid_curve_error_mt(py::module& m);
 void bind_multn_sim_error(py::module& m);
 void bind_multn_sim_error_mt(py::module& m);
 
+void bind_multn_chi2_score(py::module& m);
+void bind_multn_chi2_scores(py::module& m);
+void bind_multn_chi2_scores_mt(py::module& m);
+
 }  // namespace pr
 }  // namespace bindings
 }  // namespace mmu
