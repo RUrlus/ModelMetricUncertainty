@@ -19,9 +19,9 @@ namespace api {
 namespace pr {
 
 py::tuple bvn_grid_error(
-    const f64arr prec_grid,
-    const f64arr rec_grid,
-    const i64arr conf_mat,
+    const f64arr& prec_grid,
+    const f64arr& rec_grid,
+    const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon);
 
@@ -45,18 +45,18 @@ f64arr bvn_chi2_scores_mt(
 
 py::tuple bvn_grid_curve_error(
     const int64_t n_conf_mats,
-    const f64arr prec_grid,
-    const f64arr rec_grid,
-    const i64arr conf_mat,
+    const f64arr& prec_grid,
+    const f64arr& rec_grid,
+    const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon);
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
 py::tuple bvn_grid_curve_error_mt(
     const int64_t n_conf_mats,
-    const f64arr prec_grid,
-    const f64arr rec_grid,
-    const i64arr conf_mat,
+    const f64arr& prec_grid,
+    const f64arr& rec_grid,
+    const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon,
     const int64_t n_threads);
@@ -64,20 +64,20 @@ py::tuple bvn_grid_curve_error_mt(
 
 py::tuple bvn_grid_curve_error_wtrain(
     const int64_t n_conf_mats,
-    const f64arr prec_grid,
-    const f64arr rec_grid,
-    const i64arr conf_mat,
-    const f64arr train_cov,
+    const f64arr& prec_grid,
+    const f64arr& rec_grid,
+    const i64arr& conf_mat,
+    const f64arr& train_cov,
     const double n_sigmas,
     const double epsilon);
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
 py::tuple bvn_grid_curve_error_wtrain_mt(
     const int64_t n_conf_mats,
-    const f64arr prec_grid,
-    const f64arr rec_grid,
-    const i64arr conf_mat,
-    const f64arr train_cov,
+    const f64arr& prec_grid,
+    const f64arr& rec_grid,
+    const i64arr& conf_mat,
+    const f64arr& train_cov,
     const double n_sigmas,
     const double epsilon,
     const int64_t n_threads);
