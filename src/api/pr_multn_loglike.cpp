@@ -9,7 +9,7 @@ namespace mmu {
 namespace api {
 namespace pr {
 
-py::tuple multn_error(const int64_t n_bins, const i64arr conf_mat, const double n_sigmas, const double epsilon) {
+py::tuple multn_error(const int64_t n_bins, const i64arr& conf_mat, const double n_sigmas, const double epsilon) {
     if (!npy::is_well_behaved(conf_mat)) {
         throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
     }
@@ -25,7 +25,7 @@ py::tuple multn_error(const int64_t n_bins, const i64arr conf_mat, const double 
 #ifdef MMU_HAS_OPENMP_SUPPORT
 py::tuple multn_error_mt(
     const int64_t n_bins,
-    const i64arr conf_mat,
+    const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon,
     const int n_threads) {
@@ -110,9 +110,9 @@ f64arr multn_chi2_scores_mt(
 
 
 f64arr multn_grid_error(
-    const f64arr prec_grid,
-    const f64arr rec_grid,
-    const i64arr conf_mat,
+    const f64arr& prec_grid,
+    const f64arr& rec_grid,
+    const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon) {
     if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid)) || (!npy::is_well_behaved(conf_mat))) {
@@ -135,9 +135,9 @@ f64arr multn_grid_error(
 
 f64arr multn_grid_curve_error(
     const int64_t n_conf_mats,
-    const f64arr prec_grid,
-    const f64arr rec_grid,
-    const i64arr conf_mat,
+    const f64arr& prec_grid,
+    const f64arr& rec_grid,
+    const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon) {
     if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid)) || (!npy::is_well_behaved(conf_mat))) {
@@ -162,9 +162,9 @@ f64arr multn_grid_curve_error(
 #ifdef MMU_HAS_OPENMP_SUPPORT
 f64arr multn_grid_curve_error_mt(
     const int64_t n_conf_mats,
-    const f64arr prec_grid,
-    const f64arr rec_grid,
-    const i64arr conf_mat,
+    const f64arr& prec_grid,
+    const f64arr& rec_grid,
+    const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon,
     const int64_t n_threads) {
@@ -192,7 +192,7 @@ f64arr multn_grid_curve_error_mt(
 py::tuple multn_sim_error(
     const int64_t n_sims,
     const int64_t n_bins,
-    const i64arr conf_mat,
+    const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon,
     const uint64_t seed,
@@ -211,7 +211,7 @@ py::tuple multn_sim_error(
 py::tuple multn_sim_error_mt(
     const int64_t n_sims,
     const int64_t n_bins,
-    const i64arr conf_mat,
+    const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon,
     const uint64_t seed,
