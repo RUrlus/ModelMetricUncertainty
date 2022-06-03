@@ -647,6 +647,99 @@ class PrecisionRecallUncertainty:
         cov_cols = ['precision', 'recall']
         return pd.DataFrame(self.total_cov_mat, index=cov_cols, columns=cov_cols)
 
+    def compute_score_for(self,
+        prec : Union[float, np.ndarray],
+        rec : Union[float, np.ndarray],
+        epsilon : float = 1e-12
+    ) -> float:
+        """Compute score for a given precision(s) and recall(s).
+        If method is `bvn` the sum of squared Z scores is computed, if method
+        is 'mult' the profile loglikelihood is computed. Both follow are chi2
+        distribution with 2 degrees of freedom.
+
+        Parameters
+        ----------
+        prec : float, np.ndarray[float64, float32]
+            the precision(s) to evaluate
+        rec : float, np.ndarray[float64, float32]
+            the recall(s) to evaluate
+        epsilon : float, default=1e-12
+            the value used to prevent the bounds from reaching precision/recall
+            1.0/0.0 which would result in NaNs.
+            Ignored when method is not the Multinomial approach.
+
+        Returns
+        -------
+        chi2_score : float, np.ndarray[float64]
+            the chi2_score(s) for the given precision(s) and recall(s)
+
+        """
+        if self.conf_mat is None:
+            raise RuntimeError("the class needs to be initialised with from_*")
+        if not isinstance(epsilon, float):
+            raise TypeError("`epsilon` must be a float")
+        elif not (1e-15 <= epsilon <= 0.1):
+            raise ValueError("`epsilon` must be  in [1e-15, 0.1]")
+
+        if (
+            isinstance(prec, float)
+            and (0.0 <= prec <= 1.0)
+            and isinstance(rec, float)
+            and (0.0 <= rec <= 1.0)
+        ):
+            if self._has_cov:
+                return _core.pr_bvn_chi2_score(prec, rec, self.conf_mat, epsilon)
+            return _core.pr_multn_chi2_score(prec, rec, self.conf_mat, epsilon)
+        elif (
+            isinstance(prec, np.ndarray)
+            and isinstance(rec, np.ndarray)
+        ):
+            prec = check_array(prec, max_dim=1, dtype_check=_convert_to_float)
+            rec = check_array(rec, max_dim=1, dtype_check=_convert_to_float)
+            if self._has_cov:
+                if _MMU_MT_SUPPORT:
+                    return _core.pr_bvn_chi2_scores_mt(prec, rec, self.conf_mat, epsilon)
+                return _core.pr_bvn_chi2_scores(prec, rec, self.conf_mat, epsilon)
+            if _MMU_MT_SUPPORT:
+                return _core.pr_multn_chi2_scores_mt(prec, rec, self.conf_mat, epsilon)
+            return _core.pr_multn_chi2_scores(prec, rec, self.conf_mat, epsilon)
+        else:
+            raise ValueError(
+                "``prec`` and ``rec`` must bot be floats or np.ndarray's of"
+                " floats in [0, 1]"
+            )
+
+    def compute_pvalue_for(self,
+        prec : Union[float, np.ndarray],
+        rec : Union[float, np.ndarray],
+        epsilon : float = 1e-12
+    ) -> float:
+        """Compute p-value(s) for a given precision(s) and recall(s).
+        If method is `bvn` the sum of squared Z scores is computed, if method
+        is 'mult' the profile loglikelihood is computed. Both follow are chi2
+        distribution with 2 degrees of freedom.
+
+        Parameters
+        ----------
+        prec : float, np.ndarray[float64, float32]
+            the precision(s) to evaluate
+        rec : float, np.ndarray[float64, float32]
+            the recall(s) to evaluate
+        level : int, float
+        epsilon : float, default=1e-12
+            the value used to prevent the bounds from reaching precision/recall
+            1.0/0.0 which would result in NaNs.
+            Ignored when method is not the Multinomial approach.
+
+        Returns
+        -------
+        chi2_score : float, np.ndarray[float64]
+            the chi2_score(s) for the given precision(s) and recall(s)
+
+        """
+        chi2_score = self.compute_score_for(prec, rec, epsilon)
+        return sts.chi2.sf(chi2_score, 2)
+
     def get_conf_mat(self) -> pd.DataFrame:
         """Obtain confusion matrix as a DataFrame.
 
