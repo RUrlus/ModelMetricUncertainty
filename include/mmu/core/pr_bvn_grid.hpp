@@ -89,14 +89,12 @@ inline void bvn_grid_error(
     const double rho = prec_rec_cov[3] / (prec_simga * rec_simga);
     const double rho_rhs = std::sqrt(1 - std::pow(rho, 2));
 
-    auto z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
     auto z1_sq = std::unique_ptr<double[]>(new double[n_rec_bins]);
     auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
     double z_tmp;
     for (int64_t i = rec_idx_min; i < rec_idx_max; i++) {
         // compute Z1
         z_tmp = (rec_grid[i] - rec_mu) / rec_simga;
-        z1[i] = z_tmp;
         rho_z1[i] = rho * z_tmp;
         z1_sq[i] = std::pow(z_tmp, 2);
     }
@@ -136,7 +134,6 @@ inline void bvn_grid_curve_error(
     std::fill(scores, scores + n_prec_bins * n_rec_bins, 1e4);
 
     // -- memory allocation --
-    auto z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
     auto z1_sq = std::unique_ptr<double[]>(new double[n_rec_bins]);
     auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
     double z_tmp;
@@ -184,7 +181,6 @@ inline void bvn_grid_curve_error(
         for (int64_t i = bounds.rec_idx_min; i < bounds.rec_idx_max; i++) {
             // compute Z1
             z_tmp = (rec_grid[i] - rec_mu) / rec_simga;
-            z1[i] = z_tmp;
             rho_z1[i] = rho * z_tmp;
             z1_sq[i] = std::pow(z_tmp, 2);
         }
@@ -233,7 +229,6 @@ inline void bvn_grid_curve_error_mt(
         double* thread_block = thread_scores.get() + (omp_get_thread_num() * n_elem);
 
         // -- memory allocation --
-        auto z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
         auto z1_sq = std::unique_ptr<double[]>(new double[n_rec_bins]);
         auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
         double z_tmp;
@@ -282,7 +277,6 @@ inline void bvn_grid_curve_error_mt(
             for (int64_t i = bounds.rec_idx_min; i < bounds.rec_idx_max; i++) {
                 // compute Z1
                 z_tmp = (rec_grid[i] - rec_mu) / rec_simga;
-                z1[i] = z_tmp;
                 rho_z1[i] = rho * z_tmp;
                 z1_sq[i] = std::pow(z_tmp, 2);
             }
@@ -344,7 +338,6 @@ inline void bvn_grid_curve_error_wtrain(
     std::fill(scores, scores + n_prec_bins * n_rec_bins, 1e4);
 
     // -- memory allocation --
-    auto z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
     auto z1_sq = std::unique_ptr<double[]>(new double[n_rec_bins]);
     auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
     double z_tmp;
@@ -393,7 +386,6 @@ inline void bvn_grid_curve_error_wtrain(
         for (int64_t i = bounds.rec_idx_min; i < bounds.rec_idx_max; i++) {
             // compute Z1
             z_tmp = (rec_grid[i] - rec_mu) / rec_simga;
-            z1[i] = z_tmp;
             rho_z1[i] = rho * z_tmp;
             z1_sq[i] = std::pow(z_tmp, 2);
         }
@@ -444,7 +436,6 @@ inline void bvn_grid_curve_error_wtrain_mt(
         double* thread_block = thread_scores.get() + (omp_get_thread_num() * n_elem);
 
         // -- memory allocation --
-        auto z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
         auto z1_sq = std::unique_ptr<double[]>(new double[n_rec_bins]);
         auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
         double z_tmp;
@@ -496,7 +487,6 @@ inline void bvn_grid_curve_error_wtrain_mt(
             for (int64_t i = bounds.rec_idx_min; i < bounds.rec_idx_max; i++) {
                 // compute Z1
                 z_tmp = (rec_grid[i] - rec_mu) / rec_simga;
-                z1[i] = z_tmp;
                 rho_z1[i] = rho * z_tmp;
                 z1_sq[i] = std::pow(z_tmp, 2);
             }
