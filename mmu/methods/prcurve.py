@@ -683,7 +683,6 @@ class PrecisionRecallCurveUncertainty:
         cov_df['thresholds'] = self.thresholds
         return cov_df
 
-
     def _get_critical_values_std(self, n_std):
         """Compute the critical values for a chi2 with 2df using the continuity
         correction."""
@@ -706,6 +705,8 @@ class PrecisionRecallCurveUncertainty:
                 point_kwargs['cmap'] = 'Reds'
             if 'ax' in point_kwargs:
                 point_kwargs.pop('ax')
+            if 'equal_aspect' not in point_kwargs:
+                point_kwargs['equal_aspect'] = False
         elif point_kwargs is None:
             point_kwargs = {'cmap': 'Reds'}
         else:
