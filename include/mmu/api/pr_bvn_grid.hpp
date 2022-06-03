@@ -25,6 +25,24 @@ py::tuple bvn_grid_error(
     const double n_sigmas,
     const double epsilon);
 
+double bvn_chi2_score(
+    const double prec,
+    const double rec,
+    const i64arr& conf_mat,
+    const double epsilon);
+
+f64arr bvn_chi2_scores(
+    const f64arr& precs,
+    const f64arr& recs,
+    const i64arr& conf_mat,
+    const double epsilon);
+
+f64arr bvn_chi2_scores_mt(
+    const f64arr& precs,
+    const f64arr& recs,
+    const i64arr& conf_mat,
+    const double epsilon);
+
 py::tuple bvn_grid_curve_error(
     const int64_t n_conf_mats,
     const f64arr prec_grid,

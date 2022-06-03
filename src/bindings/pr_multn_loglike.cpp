@@ -279,6 +279,95 @@ void bind_multn_sim_error_mt(py::module& m) {
         py::arg("n_threads") = 4);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
+
+void bind_multn_chi2_score(py::module& m) {
+    m.def(
+        "pr_multn_chi2_score",
+        &api::pr::multn_chi2_score,
+        R"pbdoc(
+            Compute profile loglike score for a confusion matrix and precision and recall.
+
+        Parameters
+        ----------
+        prec : float
+            positive precision
+        rec : float
+            positive recall
+        conf_mat : np.ndarray[int64]
+            the confusion matrix with flattened order: TN, FP, FN, TP
+        epsilon : double, default=1e-4
+            epsilon used to clip recall or precision at the 0, 1 boundaries
+
+        Returns
+        -------
+        score : float
+            profile log likelihood score
+        )pbdoc",
+        py::arg("prec"),
+        py::arg("rec"),
+        py::arg("conf_mat"),
+        py::arg("epsilon") = 1e-4);
+}
+
+void bind_multn_chi2_scores(py::module& m) {
+    m.def(
+        "pr_multn_chi2_scores",
+        &api::pr::multn_chi2_scores,
+        R"pbdoc(Compute profile loglike scores for a confusion matrix and given precision and recalls.
+
+        Parameters
+        ----------
+        precs : np.ndarray[float64]
+            the positive precisions to evaluate
+        precs : np.ndarray[float64]
+            the positive recall to evaluate
+        conf_mat : np.ndarray[int64]
+            the confusion matrix with flattened order: TN, FP, FN, TP
+        epsilon : double, default=1e-4
+            epsilon used to clip recall or precision at the 0, 1 boundaries
+
+        Returns
+        -------
+        scores : np.ndarray[float64]
+            array with the profile log likelihood scores for the given precisions and recalls.
+        )pbdoc",
+        py::arg("precs"),
+        py::arg("recs"),
+        py::arg("conf_mat"),
+        py::arg("epsilon") = 1e-4);
+}
+
+
+#ifdef MMU_HAS_OPENMP_SUPPORT
+void bind_multn_chi2_scores_mt(py::module& m) {
+    m.def(
+        "pr_multn_chi2_scores_mt",
+        &api::pr::multn_chi2_scores_mt,
+        R"pbdoc(Compute profile loglike scores for a confusion matrix and given precision and recalls.
+
+        Parameters
+        ----------
+        precs : np.ndarray[float64]
+            the positive precisions to evaluate
+        precs : np.ndarray[float64]
+            the positive recall to evaluate
+        conf_mat : np.ndarray[int64]
+            the confusion matrix with flattened order: TN, FP, FN, TP
+        epsilon : double, default=1e-4
+            epsilon used to clip recall or precision at the 0, 1 boundaries
+
+        Returns
+        -------
+        scores : np.ndarray[float64]
+            array with the profile log likelihood scores for the given precisions and recalls.
+        )pbdoc",
+        py::arg("precs"),
+        py::arg("recs"),
+        py::arg("conf_mat"),
+        py::arg("epsilon") = 1e-4);
+}
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
 }  // namespace pr
 }  // namespace bindings
 }  // namespace mmu
