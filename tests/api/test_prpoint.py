@@ -2,6 +2,7 @@ import os
 import itertools
 import numpy as np
 import pytest
+import scipy.stats as sts
 import sklearn.metrics as skm
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
@@ -236,6 +237,94 @@ def test_PRMU_ref_chi2():
     assert np.allclose(pr_err.chi2_scores, ref_chi2_scores)
 
 
+def test_PRMU_compute_score_for():
+    X, y = make_classification(
+        n_samples=1000, n_classes=2, random_state=1949933174
+    )
+
+    # split into train/test sets
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.5, random_state=3437779408
+    )
+    # fit a model
+    model = LogisticRegression(solver='lbfgs')
+    model.fit(X_train, y_train)
+
+    # predict probabilities, for the positive outcome only
+    y_score = model.predict_proba(X_test)[:, 1]
+
+    pr_err = mmu.PRU.from_scores(
+        y_test,
+        scores=y_score,
+        threshold=0.5,
+    )
+    # check the the profile loglikelihood with itself is zero
+    assert (
+        pr_err.compute_score_for(pr_err.precision, pr_err.recall)
+        < 1e-12
+    )
+
+    ref_path = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)),
+        'multn_chi2_scores.npy'
+    )
+    ref_chi2_scores = np.load(ref_path)
+    ref_prec = 0.7852763945527024
+    ref_rec = 0.8305165343173831
+    ref_score = pr_err.compute_score_for(ref_prec, ref_rec)
+    assert np.isclose(ref_score, ref_chi2_scores.min())
+
+    prec = np.linspace(0, 1, 100)
+    rec = prec[::-1].copy()
+    scores = pr_err.compute_score_for(prec, rec)
+    assert scores.size == prec.size
+    assert np.isnan(scores).sum() == 0
+
+
+def test_PRMU_compute_pvalue_for():
+    X, y = make_classification(
+        n_samples=1000, n_classes=2, random_state=1949933174
+    )
+
+    # split into train/test sets
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.5, random_state=3437779408
+    )
+    # fit a model
+    model = LogisticRegression(solver='lbfgs')
+    model.fit(X_train, y_train)
+
+    # predict probabilities, for the positive outcome only
+    y_score = model.predict_proba(X_test)[:, 1]
+
+    pr_err = mmu.PRU.from_scores(
+        y_test,
+        scores=y_score,
+        threshold=0.5,
+    )
+    # check the the profile loglikelihood with itself is zero
+    assert (
+        abs(pr_err.compute_pvalue_for(pr_err.precision, pr_err.recall) - 1)
+        < 1e-12
+    )
+
+    ref_path = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)),
+        'multn_chi2_scores.npy'
+    )
+    ref_chi2_scores = np.load(ref_path)
+    ref_prec = 0.7852763945527024
+    ref_rec = 0.8305165343173831
+    ref_score = pr_err.compute_pvalue_for(ref_prec, ref_rec)
+    assert np.isclose(ref_score, sts.chi2.sf(ref_chi2_scores.min(), 2))
+
+    prec = np.linspace(0, 1, 100)
+    rec = prec[::-1].copy()
+    scores = pr_err.compute_score_for(prec, rec)
+    assert scores.size == prec.size
+    assert np.isnan(scores).sum() == 0
+
+
 def test_PREU_ref_cov():
     """Test PREU.from_scores"""
     # generate 2 class dataset
@@ -386,6 +475,76 @@ def test_PREU_from_classifier():
         assert np.array_equal(pr_err.conf_mat, sk_conf_mat), (
             f"test failed for threshold: {threshold}"
         )
+
+
+def test_PREU_compute_score_for():
+    X, y = make_classification(
+        n_samples=1000, n_classes=2, random_state=1949933174
+    )
+
+    # split into train/test sets
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.5, random_state=3437779408
+    )
+    # fit a model
+    model = LogisticRegression(solver='lbfgs')
+    model.fit(X_train, y_train)
+
+    # predict probabilities, for the positive outcome only
+    y_score = model.predict_proba(X_test)[:, 1]
+
+    pr_err = mmu.PRU.from_scores(
+        y_test,
+        scores=y_score,
+        threshold=0.5,
+        method='bvn'
+    )
+    # check the the profile loglikelihood with itself is zero
+    assert (
+        pr_err.compute_score_for(pr_err.precision, pr_err.recall)
+        < 1e-12
+    )
+
+    prec = np.linspace(0, 1, 100)
+    rec = prec[::-1].copy()
+    scores = pr_err.compute_score_for(prec, rec)
+    assert scores.size == prec.size
+    assert np.isnan(scores).sum() == 0
+
+
+def test_PREU_compute_pvalue_for():
+    X, y = make_classification(
+        n_samples=1000, n_classes=2, random_state=1949933174
+    )
+
+    # split into train/test sets
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.5, random_state=3437779408
+    )
+    # fit a model
+    model = LogisticRegression(solver='lbfgs')
+    model.fit(X_train, y_train)
+
+    # predict probabilities, for the positive outcome only
+    y_score = model.predict_proba(X_test)[:, 1]
+
+    pr_err = mmu.PRU.from_scores(
+        y_test,
+        scores=y_score,
+        threshold=0.5,
+        method='bvn'
+    )
+    # check the the profile loglikelihood with itself is zero
+    assert (
+        abs(pr_err.compute_pvalue_for(pr_err.precision, pr_err.recall) - 1)
+        < 1e-12
+    )
+
+    prec = np.linspace(0, 1, 100)
+    rec = prec[::-1].copy()
+    scores = pr_err.compute_score_for(prec, rec)
+    assert scores.size == prec.size
+    assert np.isnan(scores).sum() == 0
 
 
 def test_PRU_from_scores_with_train():
