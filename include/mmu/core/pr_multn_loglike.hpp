@@ -52,6 +52,7 @@ inline double xlogy(T x, T y) {
 
 namespace pr {
 /* Compute the most conservative probabilities for a given confusion matrix constrained by precision and recall.
+ * For single function call.
  *
  * Parameters
  * ----------
@@ -87,6 +88,7 @@ inline void constrained_fit_cmp(
 }  // constrained_fit_cmp
 
 /* Compute the most conservative probabilities for a given confusion matrix constrained by precision and recall.
+ * Called in loops.
  *
  * Parameters
  * ----------
@@ -144,6 +146,7 @@ inline void set_prof_loglike_store(const int64_t* __restrict conf_mat, prof_logl
 }
 
 /* Compute -2logp of multinomial distribution given a precision and recall.
+ * Called in loops.
  *
  * Step 1: fit with all parameters free
  * Step 2: fit multinomial with fixed recall and precision
@@ -161,6 +164,7 @@ inline double prof_loglike(const double prec, const double rec, prof_loglike_t* 
 }  // prof_loglike
 
 /* Compute -2logp of multinomial distribution given a precision and recall.
+ * For single function call.
  *
  * Step 1: fit with all parameters free
  * Step 2: fit multinomial with fixed recall and precision
