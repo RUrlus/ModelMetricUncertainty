@@ -219,7 +219,6 @@ The bivariate threshold/point uncertainty can be computed using setting
     import mmu
     
     # we use generated data for this example
-    # note that scores and y now have shape (1000, 30)
     scores, yhat, y = mmu.generate_data(n_samples=1000)
 
     # mmu.PRU is an alias
@@ -228,4 +227,41 @@ The bivariate threshold/point uncertainty can be computed using setting
     # PRCU is an alias of PrecisionRecallCurveUncertainty
     pr_err_curve = mmu.PRCU.from_scores(y, scores, method='bvn')
 
+See :class:`mmu.PrecisionRecallUncertainty` for details.
+
+Comparing two precision-recall scores
++++++++++++++++++++++++++++++++++++++
+
+If you want to compare two models for a given threshold you can evaluate the chi2 score of one relative to the other.
+For both methods we can compute the Chi2 score for a precision, recall using the ``compute_score_for``:
+
+.. code-block:: python3
+
+    import mmu
+    
+    # we use generated data for this example
+    scores, yhat, y = mmu.generate_data(n_samples=1000)
+    scores_alt, yhat_alt, y_alt = mmu.generate_data(n_samples=1000)
+
+    # mmu.PRU is an alias
+    pr_err = mmu.PrecisionRecallUncertainty.from_scores(y, scores, 0.85)
+    pr_err_alt = mmu.PRU.from_scores(y_alt, scores_alt, 0.85)
+    chi2_score = pr_err.compute_score_for(pr_err_alt.precision, pr_err_alt.recall)
+
+This score can than be used for further statistical tests or one can compute the p-value directly using:
+
+.. code-block:: python3
+
+    import mmu
+    
+    # we use generated data for this example
+    scores, yhat, y = mmu.generate_data(n_samples=1000)
+    scores_alt, yhat_alt, y_alt = mmu.generate_data(n_samples=1000)
+
+    # mmu.PRU is an alias
+    pr_err = mmu.PrecisionRecallUncertainty.from_scores(y, scores, 0.85)
+    pr_err_alt = mmu.PRU.from_scores(y_alt, scores_alt, 0.85)
+    p-value = pr_err.compute_pvalue_for(pr_err_alt.precision, pr_err_alt.recall)
+
+``compute_score_for`` and ``compute_pvalue_for`` can be used to compute scores/p-values for a single precision, recall or arrays of precisions and recalls.
 See :class:`mmu.PrecisionRecallUncertainty` for details.

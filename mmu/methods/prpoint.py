@@ -654,7 +654,7 @@ class PrecisionRecallUncertainty:
     ) -> float:
         """Compute score for a given precision(s) and recall(s).
         If method is `bvn` the sum of squared Z scores is computed, if method
-        is 'mult' the profile loglikelihood is computed. Both follow are chi2
+        is 'mult' the profile loglikelihood is computed. Both follow a chi2
         distribution with 2 degrees of freedom.
 
         Parameters
@@ -666,12 +666,11 @@ class PrecisionRecallUncertainty:
         epsilon : float, default=1e-12
             the value used to prevent the bounds from reaching precision/recall
             1.0/0.0 which would result in NaNs.
-            Ignored when method is not the Multinomial approach.
 
         Returns
         -------
         chi2_score : float, np.ndarray[float64]
-            the chi2_score(s) for the given precision(s) and recall(s)
+            the chi2_score(s) for the given precision(s) and recall(s).
 
         """
         if self.conf_mat is None:
