@@ -6,6 +6,7 @@ on:
     types:
       - published
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - stable
   push:
@@ -36,8 +37,8 @@ jobs:
       with:
         path: dist/*.tar.gz
 
-
   build_wheels:
+    if: github.event.pull_request.draft == false
     name: Wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
