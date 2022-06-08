@@ -66,10 +66,22 @@ def generate_test_labels(
         proba, yhat, y
 
     """
-    proba = np.random.beta(5, 3, size=N).astype(proba_dtype)
-    yhat = np.rint(proba).astype(yhat_dtype)
-    y = np.random.binomial(1, np.mean(proba), N).astype(y_dtype)
-    return (proba, yhat, y)
+    rng = np.random.default_rng()
+
+    # class balance of 0.425 with the below beta parameters results in
+    # approximately balanced data
+    pos_size = np.floor(N * 0.425).astype(np.int64)
+
+    scores = np.empty(N)
+    scores[:pos_size] = rng.beta(12, 1.5, size=pos_size)
+    scores[pos_size:] = rng.beta(5.5, 20, size=N - pos_size)
+
+    # shuffle scores
+    rng.shuffle(scores)
+
+    y = rng.binomial(1, scores, N).astype(y_dtype)  # type: ignore
+    yhat = np.rint(scores).astype(yhat_dtype)
+    return (scores, yhat, y)
 
 
 def compute_reference_metrics(y, yhat=None, proba=None, threshold=None,

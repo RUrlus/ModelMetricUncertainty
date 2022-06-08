@@ -34,12 +34,24 @@ def generate_data(
 
     """
     rng = np.random.default_rng(random_state)
+
     t_samples = n_samples * n_sets
-    score = rng.beta(5, 3, size=t_samples).astype(score_dtype)  # type: ignore
-    yhat = np.rint(score).astype(yhat_dtype)
-    y = rng.binomial(1, score, t_samples).astype(y_dtype)  # type: ignore
+
+    # class balance of 0.425 with the below beta parameters results in
+    # approximately balanced data
+    pos_size = np.floor(t_samples * 0.425).astype(np.int64)
+
+    scores = np.empty(t_samples)
+    scores[:pos_size] = rng.beta(12, 1.5, size=pos_size)
+    scores[pos_size:] = rng.beta(5.5, 20, size=t_samples - pos_size)
+
+    # shuffle scores
+    rng.shuffle(scores)
+
+    y = rng.binomial(1, scores, t_samples).astype(y_dtype)  # type: ignore
+    yhat = np.rint(scores).astype(yhat_dtype)
     return (
-        score.reshape(n_samples, n_sets, order='F'),
+        scores.reshape(n_samples, n_sets, order='F'),
         yhat.reshape(n_samples, n_sets, order='F'),
         y.reshape(n_samples, n_sets, order='F'),
     )
