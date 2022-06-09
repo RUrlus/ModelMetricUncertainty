@@ -41,6 +41,17 @@ typedef pcg_extras::seed_seq_from<std::random_device> pcg_seed_seq;
 
 }  // namespace random
 
+namespace details {
+
+/* clamp value between lo and hi */
+template <typename T>
+inline const T& clamp(const T& v, const T& lo, const T& hi) {
+    return v < lo ? lo : v > hi ? hi : v;
+}
+
+}  // namespace details
+
+
 template <typename T>
 inline void zero_array(T* ptr, size_t n_elem) {
     // zero the memory

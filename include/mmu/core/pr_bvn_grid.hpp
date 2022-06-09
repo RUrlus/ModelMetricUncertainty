@@ -65,8 +65,6 @@ inline double bvn_chi2_score(
     std::array<double, 6> prec_rec_cov;
     // -- memory allocation --
     const double max_val = 1 - epsilon;
-    const double bound_prec = std::max(std::min(prec, max_val), epsilon);
-    const double bound_rec = std::max(std::min(rec, max_val), epsilon);
 
     bvn_cov(conf_mat, prec_rec_cov.data());
     const double prec_mu = prec_rec_cov[0];
@@ -77,13 +75,10 @@ inline double bvn_chi2_score(
     const double rho_rhs = std::sqrt(1 - std::pow(rho, 2));
 
         // compute Z1
-    double z1 = (bound_rec - rec_mu) / rec_simga;
-    double rho_z1 = rho * z1;
-    double z1_sq = std::pow(z1, 2);
-
-    double prec_score = (bound_prec - prec_mu) / prec_simga;
-    double z2 = (prec_score - rho_z1) / rho_rhs;
-    return z1_sq + std::pow(z2, 2);
+    const double z1 = (details::clamp(rec, epsilon, max_val) - rec_mu) / rec_simga;
+    const double prec_score = (details::clamp(prec, epsilon, max_val) - prec_mu) / prec_simga;
+    const double z2 = (prec_score - rho * z1) / rho_rhs;
+    return std::pow(z1, 2) + std::pow(z2, 2);
 }  // bvn_chi2_score
 
 inline void bvn_chi2_scores(
@@ -112,16 +107,12 @@ inline void bvn_chi2_scores(
     double z1_sq;
     double prec_score;
     double z2;
-    double bound_prec;
-    double bound_rec;
     for (int64_t i = 0; i < n_points; ++i) {
-        bound_prec = std::max(std::min(precs[i], max_val), epsilon);
-        bound_rec = std::max(std::min(recs[i], max_val), epsilon);
-        z1 = (bound_rec - rec_mu) / rec_simga;
+        z1 = (details::clamp(recs[i], epsilon, max_val) - rec_mu) / rec_simga;
         rho_z1 = rho * z1;
         z1_sq = std::pow(z1, 2);
 
-        prec_score = (bound_prec - prec_mu) / prec_simga;
+        prec_score = (details::clamp(precs[i], epsilon, max_val) - prec_mu) / prec_simga;
         z2 = (prec_score - rho_z1) / rho_rhs;
         scores[i] = z1_sq + std::pow(z2, 2);
     }
@@ -148,8 +139,6 @@ inline void bvn_chi2_scores_mt(
 
 #pragma omp parallel shared(precs, recs, prec_mu, rec_mu, prec_simga, rec_simga, rho, rho_rhs, scores)
     {
-        double bound_prec;
-        double bound_rec;
         double z1;
         double rho_z1;
         double z1_sq;
@@ -157,14 +146,12 @@ inline void bvn_chi2_scores_mt(
         double z2;
 #pragma omp for
         for (int64_t i = 0; i < n_points; ++i) {
-            bound_prec = std::max(std::min(precs[i], max_val), epsilon);
-            bound_rec = std::max(std::min(recs[i], max_val), epsilon);
 
-            z1 = (bound_rec - rec_mu) / rec_simga;
+            z1 = (details::clamp(recs[i], epsilon, max_val) - rec_mu) / rec_simga;
             rho_z1 = rho * z1;
             z1_sq = std::pow(z1, 2);
 
-            prec_score = (bound_prec - prec_mu) / prec_simga;
+            prec_score = (details::clamp(precs[i], epsilon, max_val) - prec_mu) / prec_simga;
             z2 = (prec_score - rho_z1) / rho_rhs;
             scores[i] = z1_sq + std::pow(z2, 2);
         }

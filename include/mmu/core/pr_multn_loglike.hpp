@@ -201,9 +201,13 @@ inline double multn_chi2_score(
     // -- memory allocation --
     const auto n = static_cast<double>(conf_mat[0] + conf_mat[1] + conf_mat[2] + conf_mat[3]);
     const double max_val = 1.0 - epsilon;
-    const double bound_prec = std::max(std::min(prec, max_val), epsilon);
-    const double bound_rec = std::max(std::min(rec, max_val), epsilon);
-    return prof_loglike(bound_prec, bound_rec, n, conf_mat, p);
+    return prof_loglike(
+        details::clamp(prec, epsilon, max_val),
+        details::clamp(rec, epsilon, max_val),
+        n,
+        conf_mat,
+        p
+    );
 }  // multn_chi2_score
 
 inline void multn_chi2_scores(
@@ -224,12 +228,13 @@ inline void multn_chi2_scores(
     // -- memory allocation --
 
     const double max_val = 1.0 - epsilon;
-    double bound_prec;
-    double bound_rec;
     for (int64_t i = 0; i < n_points; ++i) {
-        bound_prec = std::max(std::min(precs[i], max_val), epsilon);
-        bound_rec = std::max(std::min(recs[i], max_val), epsilon);
-        scores[i] = prof_loglike(bound_prec, bound_rec, nll_ptr, p);
+        scores[i] = prof_loglike(
+            details::clamp(precs[i], epsilon, max_val),
+            details::clamp(recs[i], epsilon, max_val),
+            nll_ptr,
+            p
+        );
     }
 } // multn_chi2_scores
 
@@ -255,13 +260,14 @@ inline void multn_chi2_scores_mt(
 
 #pragma omp parallel shared(precs, recs, nll_ptr, scores)
     {
-    double bound_prec;
-    double bound_rec;
 #pragma omp for
     for (int64_t i = 0; i < n_points; ++i) {
-        bound_prec = std::max(std::min(precs[i], max_val), epsilon);
-        bound_rec = std::max(std::min(recs[i], max_val), epsilon);
-        scores[i] = prof_loglike(bound_prec, bound_rec, nll_ptr, p);
+        scores[i] = prof_loglike(
+            details::clamp(precs[i], epsilon, max_val),
+            details::clamp(recs[i], epsilon, max_val),
+            nll_ptr,
+            p
+        );
     }
     }  // omp parallel
 }  // multn_chi2_scores_mt
