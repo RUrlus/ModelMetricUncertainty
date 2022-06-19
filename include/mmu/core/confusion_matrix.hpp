@@ -189,6 +189,73 @@ inline void confusion_matrix(
     }
 }
 
+/* Fill binary confusion matrix based on true labels y and classifier scores
+ *
+ * --- NOTE ---
+ * - this function:
+ * * does not handle nullptrs
+ * * expects all memory to be contiguous
+ * * expects conf_mat to point to zero'd memory
+ * --- NOTE ---
+ *
+ * --- Parameters ---
+ * - n_obs : minimum length of y and yhat
+ * - y : true labels
+ * - score : classifier scores
+ * - threshold : inclusive classification threshold
+ * - conf_mat : allocated and zero'd memory for the confusion matrix
+ */
+template <typename T1, typename T2, isInt<T1> = true, isFloat<T2> = true>
+inline void confusion_matrix(
+    const size_t n_obs,
+    const T1* __restrict y,
+    const T2* __restrict score,
+    const T2 threshold,
+    const T2 scaled_tol,
+    int64_t* __restrict const conf_mat) {
+    double delta;
+    for (size_t i = 0; i < n_obs; i++) {
+        delta = *score - threshold;
+        conf_mat[static_cast<bool>(*y) * 2 + (delta > scaled_tol || std::abs(delta) <= scaled_tol)]++;
+        y++;
+        score++;
+    }
+}
+
+/* Fill binary confusion matrix based on true labels y and classifier scores
+ *
+ * --- NOTE ---
+ * - this function:
+ * * does not handle nullptrs
+ * * expects all memory to be contiguous
+ * * expects conf_mat to point to zero'd memory
+ * --- NOTE ---
+ *
+ * --- Parameters ---
+ * - n_obs : minimum length of y and yhat
+ * - y : true labels
+ * - score : classifier scores
+ * - threshold : inclusive classification threshold
+ * - conf_mat : allocated and zero'd memory for the confusion matrix
+ */
+template <typename T1, typename T2, isFloat<T1> = true, isFloat<T2> = true>
+inline void confusion_matrix(
+    const size_t n_obs,
+    const T1* __restrict y,
+    const T2* __restrict score,
+    const T2 threshold,
+    const T2 scaled_tol,
+    int64_t* __restrict const conf_mat) {
+    constexpr T1 epsilon = std::numeric_limits<T1>::epsilon();
+    double delta;
+    for (size_t i = 0; i < n_obs; i++) {
+        delta = *score - threshold;
+        conf_mat[(*y > epsilon) * 2 + (delta > scaled_tol || std::abs(delta) <= scaled_tol)]++;
+        score++;
+        y++;
+    }
+}
+
 }  // namespace core
 }  // namespace mmu
 
