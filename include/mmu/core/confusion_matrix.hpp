@@ -59,11 +59,11 @@ inline bool greater_equal_tol(const T1 a, const T2 b, const double rtol = 1e-05,
  * - conf_mat : allocated and zero'd memory for the confusion matrix
  */
 inline void confusion_matrix(
-    const size_t n_obs,
+    const int64_t n_obs,
     const bool* __restrict y,
     const bool* __restrict yhat,
     int64_t* __restrict const conf_mat) {
-    for (size_t i = 0; i < n_obs; i++) {
+    for (int64_t i = 0; i < n_obs; i++) {
         conf_mat[*y * 2 + *yhat]++;
         yhat++;
         y++;
@@ -87,11 +87,11 @@ inline void confusion_matrix(
  */
 template <typename T1, typename T2, isInt<T1> = true, isInt<T2> = true>
 inline void confusion_matrix(
-    const size_t n_obs,
+    const int64_t n_obs,
     const T1* __restrict y,
     const T2* __restrict yhat,
     int64_t* __restrict const conf_mat) {
-    for (size_t i = 0; i < n_obs; i++) {
+    for (int64_t i = 0; i < n_obs; i++) {
         conf_mat[static_cast<bool>(*y) * 2 + static_cast<bool>(*yhat)]++;
         yhat++;
         y++;
@@ -115,13 +115,13 @@ inline void confusion_matrix(
  */
 template <typename T1, typename T2, isFloat<T1> = true, isFloat<T2> = true>
 inline void confusion_matrix(
-    const size_t n_obs,
+    const int64_t n_obs,
     const T1* __restrict y,
     const T2* __restrict yhat,
     int64_t* __restrict const conf_mat) {
     constexpr T1 epsilon_T1 = std::numeric_limits<T1>::epsilon();
     constexpr T2 epsilon_T2 = std::numeric_limits<T2>::epsilon();
-    for (size_t i = 0; i < n_obs; i++) {
+    for (int64_t i = 0; i < n_obs; i++) {
         conf_mat[(*y > epsilon_T1) * 2 + (*yhat > epsilon_T2)]++;
         yhat++;
         y++;
@@ -146,12 +146,12 @@ inline void confusion_matrix(
  */
 template <typename T1, typename T2, isInt<T1> = true, isFloat<T2> = true>
 inline void confusion_matrix(
-    const size_t n_obs,
+    const int64_t n_obs,
     const T1* __restrict y,
     const T2* __restrict score,
     const T2 threshold,
     int64_t* __restrict const conf_mat) {
-    for (size_t i = 0; i < n_obs; i++) {
+    for (int64_t i = 0; i < n_obs; i++) {
         conf_mat[static_cast<bool>(*y) * 2 + greater_equal_tol(*score, threshold)]++;
         y++;
         score++;
@@ -176,13 +176,13 @@ inline void confusion_matrix(
  */
 template <typename T1, typename T2, isFloat<T1> = true, isFloat<T2> = true>
 inline void confusion_matrix(
-    const size_t n_obs,
+    const int64_t n_obs,
     const T1* __restrict y,
     const T2* __restrict score,
     const T2 threshold,
     int64_t* __restrict const conf_mat) {
     constexpr T1 epsilon = std::numeric_limits<T1>::epsilon();
-    for (size_t i = 0; i < n_obs; i++) {
+    for (int64_t i = 0; i < n_obs; i++) {
         conf_mat[(*y > epsilon) * 2 + greater_equal_tol(*score, threshold)]++;
         score++;
         y++;
@@ -207,14 +207,14 @@ inline void confusion_matrix(
  */
 template <typename T1, typename T2, isInt<T1> = true, isFloat<T2> = true>
 inline void confusion_matrix(
-    const size_t n_obs,
+    const int64_t n_obs,
     const T1* __restrict y,
     const T2* __restrict score,
     const T2 threshold,
     const T2 scaled_tol,
     int64_t* __restrict const conf_mat) {
     double delta;
-    for (size_t i = 0; i < n_obs; i++) {
+    for (int64_t i = 0; i < n_obs; i++) {
         delta = *score - threshold;
         conf_mat[static_cast<bool>(*y) * 2 + (delta > scaled_tol || std::abs(delta) <= scaled_tol)]++;
         y++;
@@ -240,7 +240,7 @@ inline void confusion_matrix(
  */
 template <typename T1, typename T2, isFloat<T1> = true, isFloat<T2> = true>
 inline void confusion_matrix(
-    const size_t n_obs,
+    const int64_t n_obs,
     const T1* __restrict y,
     const T2* __restrict score,
     const T2 threshold,
@@ -248,7 +248,7 @@ inline void confusion_matrix(
     int64_t* __restrict const conf_mat) {
     constexpr T1 epsilon = std::numeric_limits<T1>::epsilon();
     double delta;
-    for (size_t i = 0; i < n_obs; i++) {
+    for (int64_t i = 0; i < n_obs; i++) {
         delta = *score - threshold;
         conf_mat[(*y > epsilon) * 2 + (delta > scaled_tol || std::abs(delta) <= scaled_tol)]++;
         score++;
