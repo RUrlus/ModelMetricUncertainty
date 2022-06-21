@@ -54,7 +54,7 @@ i64arr confusion_matrix(const py::array_t<T1>& y, const py::array_t<T2>& yhat) {
     }
 
     // guard against buffer overruns
-    const size_t n_obs = std::min(y.size(), yhat.size());
+    const int64_t n_obs = std::min(y.size(), yhat.size());
 
     auto conf_mat = npy::allocate_confusion_matrix<int64_t>();
     int64_t* const cm_ptr = npy::get_data(conf_mat);
@@ -84,7 +84,7 @@ i64arr confusion_matrix(const py::array_t<T1>& y, const py::array_t<T2>& score, 
     }
 
     // guard against buffer overruns
-    const size_t n_obs = std::min(y.size(), score.size());
+    const int64_t n_obs = std::min(y.size(), score.size());
 
     auto conf_mat = npy::allocate_confusion_matrix<int64_t>();
     int64_t* const cm_ptr = npy::get_data(conf_mat);
@@ -300,7 +300,7 @@ inline i64arr confusion_matrix_runs_thresholds(
     {
         T1* o_y_ptr;
         T2* o_score_ptr;
-        size_t o_n_obs;
+        int64_t o_n_obs;
         int64_t* o_cm_ptr;
         double scaled_tol;
 
