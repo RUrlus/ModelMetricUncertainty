@@ -154,6 +154,7 @@ dmypy.json
 *.png
 *.jpg
 *.jpeg
+*.pdf
 
 
 *version.py
@@ -161,3 +162,5 @@ dmypy.json
 _skbuild/
 
 docs/source/readme.rst
+
+manual_build.sh
