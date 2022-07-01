@@ -118,7 +118,7 @@ typedef struct s_prof_loglike_t {
     double p_fp;
     double p_fn;
     double p_tp;
-    double nll_h1;
+    double nll_h0;
 } prof_loglike_t;
 
 inline void set_prof_loglike_store(const int64_t* __restrict conf_mat, prof_loglike_t* store) {
@@ -138,9 +138,12 @@ inline void set_prof_loglike_store(const int64_t* __restrict conf_mat, prof_logl
     store->p_fn = store->x_fn / store->n;
     store->p_tp = store->x_tp / store->n;
 
-    store->nll_h1
-        = (-2. * details::xlogy(store->x_tn, store->p_tn) - 2. * details::xlogy(store->x_fp, store->p_fp)
-           - 2. * details::xlogy(store->x_fn, store->p_fn) - 2. * details::xlogy(store->x_tp, store->p_tp));
+    store->nll_h0 = -2 * (
+        details::xlogy(store->x_tn, store->p_tn)
+        + details::xlogy(store->x_fp, store->p_fp)
+        + details::xlogy(store->x_fn, store->p_fn)
+        + details::xlogy(store->x_tp, store->p_tp)
+    );
 }
 
 /* Compute -2logp of multinomial distribution given a precision and recall.
@@ -154,10 +157,8 @@ inline void set_prof_loglike_store(const int64_t* __restrict conf_mat, prof_logl
 inline double prof_loglike(const double prec, const double rec, prof_loglike_t* store, double* p_h0) {
     constrained_fit_cmp(prec, rec, store->n3, store->n, p_h0);
 
-    const double nll_h0
-        = (-2. * details::xlogy(store->x_tn, p_h0[0]) - 2. * details::xlogy(store->x_fp, p_h0[1])
-           - 2. * details::xlogy(store->x_fn, p_h0[2]) - 2. * details::xlogy(store->x_tp, p_h0[3]));
-    return nll_h0 - store->nll_h1;
+    const double nll_h1 = -2 * (details::xlogy(store->x_tn, p_h0[0]) + details::xlogy(store->x_fp, p_h0[1]) + details::xlogy(store->x_fn, p_h0[2]) + details::xlogy(store->x_tp, p_h0[3]));
+    return nll_h1 - store->nll_h0;
 }  // prof_loglike
 
 /* Compute -2logp of multinomial distribution given a precision and recall.
@@ -177,16 +178,12 @@ prof_loglike(const double prec, const double rec, const double n, const int64_t*
     const auto x_tp = static_cast<double>(conf_mat[3]);
 
     // constitutes the optimal/unconstrained fit of a multinomial
-    const double nll_h1
-        = (-2. * details::xlogy(x_tn, x_tn / n) - 2. * details::xlogy(x_fp, x_fp / n)
-           - 2. * details::xlogy(x_fn, x_fn / n) - 2. * details::xlogy(x_tp, x_tp / n));
+    const double nll_h0 = -2 * (details::xlogy(x_tn, x_tn / n) + details::xlogy(x_fp, x_fp / n) + details::xlogy(x_fn, x_fn / n) + details::xlogy(x_tp, x_tp / n));
 
     constrained_fit_cmp(prec, rec, n3, n, p_h0);
 
-    const double nll_h0
-        = (-2. * details::xlogy(x_tn, p_h0[0]) - 2. * details::xlogy(x_fp, p_h0[1]) - 2. * details::xlogy(x_fn, p_h0[2])
-           - 2. * details::xlogy(x_tp, p_h0[3]));
-    return nll_h0 - nll_h1;
+    const double nll_h1 = -2. * (details::xlogy(x_tn, p_h0[0]) + details::xlogy(x_fp, p_h0[1]) + details::xlogy(x_fn, p_h0[2]) + details::xlogy(x_tp, p_h0[3]));
+    return nll_h1 - nll_h0;
 }  // prof_loglike
 
 inline double multn_chi2_score(
