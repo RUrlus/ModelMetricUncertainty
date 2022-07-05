@@ -154,7 +154,7 @@ inline void set_prof_loglike_store(const int64_t* __restrict conf_mat, prof_logl
  *
  * We compute -2ln(L_h0) + 2ln(L_h1))
  */
-inline double prof_loglike(const double prec, const double rec, prof_loglike_t* store, double* p_h0) {
+inline double prof_loglike(const double prec, const double rec, prof_loglike_t* store, double* __restrict p_h0) {
     constrained_fit_cmp(prec, rec, store->n3, store->n, p_h0);
 
     const double nll_h1 = -2 * (details::xlogy(store->x_tn, p_h0[0]) + details::xlogy(store->x_fp, p_h0[1]) + details::xlogy(store->x_fn, p_h0[2]) + details::xlogy(store->x_tp, p_h0[3]));
@@ -170,7 +170,7 @@ inline double prof_loglike(const double prec, const double rec, prof_loglike_t* 
  * We compute -2ln(L_h0) + 2ln(L_h1))
  */
 inline double
-prof_loglike(const double prec, const double rec, const double n, const int64_t* __restrict conf_mat, double* p_h0) {
+prof_loglike(const double prec, const double rec, const double n, const int64_t* __restrict conf_mat, double* __restrict p_h0) {
     const auto n3 = n - static_cast<double>(conf_mat[0]);
     const auto x_tn = static_cast<double>(conf_mat[0]);
     const auto x_fp = static_cast<double>(conf_mat[1]);
@@ -273,8 +273,8 @@ inline void multn_chi2_scores_mt(
 inline void multn_error(
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,
-    double* result,
-    double* bounds,
+    double* __restrict result,
+    double* __restrict bounds,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
     // -- memory allocation --
@@ -309,8 +309,8 @@ inline void multn_error(
 inline void multn_error_mt(
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,
-    double* result,
-    double* bounds,
+    double* __restrict result,
+    double* __restrict bounds,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4,
     const int n_threads = 4) {
@@ -350,10 +350,10 @@ inline void multn_error_mt(
 inline void multn_grid_error(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
-    const double* prec_grid,
-    const double* rec_grid,
+    const double* __restrict prec_grid,
+    const double* __restrict rec_grid,
     const int64_t* __restrict conf_mat,
-    double* scores,
+    double* __restrict scores,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
     // give scores a high enough initial value that the chi2 p-values will be close to zero
@@ -402,10 +402,10 @@ inline void multn_grid_curve_error(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const int64_t n_conf_mats,
-    const double* prec_grid,
-    const double* rec_grid,
+    const double* __restrict prec_grid,
+    const double* __restrict rec_grid,
     const int64_t* __restrict conf_mat,
-    double* scores,
+    double* __restrict scores,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
     // give scores a high enough initial value that the chi2 p-values will be close to zero
@@ -451,10 +451,10 @@ inline void multn_grid_curve_error_mt(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const int64_t n_conf_mats,
-    const double* prec_grid,
-    const double* rec_grid,
+    const double* __restrict prec_grid,
+    const double* __restrict rec_grid,
     const int64_t* __restrict conf_mat,
-    double* scores,
+    double* __restrict scores,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4,
     const int64_t n_threads = 4) {
@@ -534,7 +534,7 @@ inline double prof_loglike_simulation_cov(
     const double rec,
     const double nll_obs,
     const int64_t n,
-    const double* p,
+    const double* __restrict p,
     random::details::binomial_t* sptr,
     int64_t* mult_ptr,
     double* p_sim_ptr) {
@@ -625,8 +625,8 @@ inline void multn_sim_error_mt(
     const int64_t n_sims,
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,
-    double* scores,
-    double* bounds,
+    double* __restrict scores,
+    double* __restrict bounds,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4,
     const uint64_t seed = 0,
