@@ -83,10 +83,10 @@ inline double bvn_chi2_score(
 
 inline void bvn_chi2_scores(
     const int64_t n_points,
-    const double* precs,
-    const double* recs,
+    const double* __restrict precs,
+    const double* __restrict recs,
     const int64_t* __restrict conf_mat,
-    double* scores,
+    double* __restrict scores,
     const double epsilon = 1e-4) {
     // -- memory allocation --
     std::array<double, 6> prec_rec_cov;
@@ -120,10 +120,10 @@ inline void bvn_chi2_scores(
 
 inline void bvn_chi2_scores_mt(
     const int64_t n_points,
-    const double* precs,
-    const double* recs,
+    const double* __restrict precs,
+    const double* __restrict recs,
     const int64_t* __restrict conf_mat,
-    double* scores,
+    double* __restrict scores,
     const double epsilon = 1e-4) {
     // -- memory allocation --
     std::array<double, 6> prec_rec_cov;
@@ -161,11 +161,11 @@ inline void bvn_chi2_scores_mt(
 inline void bvn_grid_error(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
-    const double* prec_grid,
-    const double* rec_grid,
+    const double* __restrict prec_grid,
+    const double* __restrict rec_grid,
     const int64_t* __restrict conf_mat,
-    double* prec_rec_cov,
-    double* scores,
+    double* __restrict prec_rec_cov,
+    double* __restrict scores,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
     // give scores a high enough initial value that the chi2 p-values will be close to zero
@@ -225,11 +225,11 @@ inline void bvn_grid_curve_error(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const int64_t n_conf_mats,
-    const double* prec_grid,
-    const double* rec_grid,
+    const double* __restrict prec_grid,
+    const double* __restrict rec_grid,
     const int64_t* __restrict conf_mat,
-    double* prec_rec_cov,
-    double* scores,
+    double* __restrict prec_rec_cov,
+    double* __restrict scores,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
     // give scores a high enough initial value that the chi2 p-values will be close to zero
@@ -311,11 +311,11 @@ inline void bvn_grid_curve_error_mt(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const int64_t n_conf_mats,
-    const double* prec_grid,
-    const double* rec_grid,
+    const double* __restrict prec_grid,
+    const double* __restrict rec_grid,
     const int64_t* __restrict conf_mat,
-    double* prec_rec_cov,
-    double* scores,
+    double* __restrict prec_rec_cov,
+    double* __restrict scores,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4,
     const int n_threads = 4) {
@@ -428,12 +428,12 @@ inline void bvn_grid_curve_error_wtrain(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const int64_t n_conf_mats,
-    const double* prec_grid,
-    const double* rec_grid,
+    const double* __restrict prec_grid,
+    const double* __restrict rec_grid,
     const int64_t* __restrict conf_mat,
     const double* __restrict train_cov,
-    double* prec_rec_cov,
-    double* scores,
+    double* __restrict prec_rec_cov,
+    double* __restrict scores,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
     // give scores a high enough initial value that the chi2 p-values will be close to zero
@@ -517,12 +517,12 @@ inline void bvn_grid_curve_error_wtrain_mt(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
     const int64_t n_conf_mats,
-    const double* prec_grid,
-    const double* rec_grid,
+    const double* __restrict prec_grid,
+    const double* __restrict rec_grid,
     const int64_t* __restrict conf_mat,
     const double* __restrict train_cov,
-    double* prec_rec_cov,
-    double* scores,
+    double* __restrict prec_rec_cov,
+    double* __restrict scores,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4,
     const int n_threads = 4) {

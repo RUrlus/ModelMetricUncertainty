@@ -76,8 +76,8 @@ class GridBounds {
     double rec_min;
     double ns_prec_sigma;
     double ns_rec_sigma;
-    const double* __restrict precs;
-    const double* __restrict recs;
+    const double* precs;
+    const double* recs;
     std::array<double, 4> prec_rec;
 
  public:
