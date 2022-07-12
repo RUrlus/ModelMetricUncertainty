@@ -357,7 +357,8 @@ inline void multn_grid_error(
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
     // give scores a high enough initial value that the chi2 p-values will be close to zero
-    std::fill(scores, scores + n_prec_bins * n_rec_bins, 1e4);
+    // i.e. ppf(1-1e-14) --> 64.47398179869367
+    std::fill(scores, scores + n_prec_bins * n_rec_bins, 65.0);
     // -- memory allocation --
     // memory to be used by constrained_fit_cmp
     std::array<double, 4> probas;
@@ -409,7 +410,8 @@ inline void multn_grid_curve_error(
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
     // give scores a high enough initial value that the chi2 p-values will be close to zero
-    std::fill(scores, scores + n_prec_bins * n_rec_bins, 1e4);
+    // i.e. ppf(1-1e-14) --> 64.47398179869367
+    std::fill(scores, scores + n_prec_bins * n_rec_bins, 65.0);
 
     // -- memory allocation --
     // memory to be used by constrained_fit_cmp
@@ -462,7 +464,9 @@ inline void multn_grid_curve_error_mt(
     const int64_t t_elem = n_elem * n_threads;
     auto thread_scores = std::unique_ptr<double[]>(new double[t_elem]);
 
-    std::fill(thread_scores.get(), thread_scores.get() + t_elem, 1e4);
+    // give scores a high enough initial value that the chi2 p-values will be close to zero
+    // i.e. ppf(1-1e-14) --> 64.47398179869367
+    std::fill(thread_scores.get(), thread_scores.get() + t_elem, 65);
 #pragma omp parallel num_threads(n_threads) \
     shared(n_prec_bins, n_rec_bins, n_conf_mats, prec_grid, rec_grid, conf_mat, n_sigmas, epsilon)
     {
@@ -515,7 +519,9 @@ inline void multn_grid_curve_error_mt(
     double tscore;
     double min_score;
     for (int64_t i = 0; i < n_elem; i++) {
-        min_score = 1e4;
+        // give scores a high enough initial value that the chi2 p-values will be close to zero
+        // i.e. ppf(1-1e-14) --> 64.47398179869367
+        min_score = 65;
         for (int64_t j = 0; j < n_threads; j++) {
             tscore = thread_scores[i + offsets[j]];
             if (tscore < min_score) {
@@ -602,7 +608,9 @@ inline void multn_sim_error(
     set_prof_loglike_store(conf_mat, nll_ptr);
     const int64_t n = nll_ptr->in;
 
-    std::fill(scores, scores + n_bins * n_bins, 1e4);
+    // give scores a high enough initial value that the chi2 p-values will be close to zero
+    // i.e. ppf(1-1e-14) --> 64.47398179869367
+    std::fill(scores, scores + n_bins * n_bins, 65);
 
     double rec;
     double prec;
@@ -643,7 +651,9 @@ inline void multn_sim_error_mt(
     std::array<uint64_t, 2> gen_seeds;
     seed_source.generate(gen_seeds.begin(), gen_seeds.end());
 
-    std::fill(scores, scores + n_bins * n_bins, 1e4);
+    // give scores a high enough initial value that the chi2 p-values will be close to zero
+    // i.e. ppf(1-1e-14) --> 64.47398179869367
+    std::fill(scores, scores + n_bins * n_bins, 65);
 
 #pragma omp parallel num_threads(n_threads) shared(conf_mat, gen_seeds, seed, prec_start, prec_delta, rec_grid)
     {
