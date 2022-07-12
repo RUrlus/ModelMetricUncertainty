@@ -8,10 +8,10 @@ from mmu.lib import _core
 from mmu.lib import _MMU_MT_SUPPORT
 
 _ORDER_SH = {
-    'C_CONTIGUOUS': 'C',
-    0: 'C',
-    'F_CONTIGUOUS': 'F',
-    1: 'F',
+    "C_CONTIGUOUS": "C",
+    0: "C",
+    "F_CONTIGUOUS": "F",
+    1: "F",
 }
 
 
@@ -52,16 +52,12 @@ def _check_array(
     for s in arr.shape:
         ndims += s > 1
     if ndims > max_dim:
-        raise ValueError(
-            f'Array must be at most {max_dim} dimensional.'
-        )
+        raise ValueError(f"Array must be at most {max_dim} dimensional.")
     elif ndims < min_dim:
-        raise ValueError(
-            f'Array must have at least {min_dim} dimensions.'
-        )
+        raise ValueError(f"Array must have at least {min_dim} dimensions.")
 
     if check_finite and (not _core.all_finite(arr)):
-        raise ValueError('Non-finite values encountered')
+        raise ValueError("Non-finite values encountered")
 
     # check if array has assumed layout row, column wise
     if axis is None:
@@ -99,7 +95,7 @@ def check_array(
     dtype_check=_convert_to_ext_types,
     copy=False,
     check_finite=True,
-    **kwargs
+    **kwargs,
 ):
     """Check if array has the appropiate properties.
 
@@ -147,33 +143,29 @@ def check_array(
             max_dim=max_dim,
             dtype_check=dtype_check,
             copy=copy,
-            check_finite=check_finite
+            check_finite=check_finite,
         )
     # slow path handles more types
 
     # these settings must not change
-    kwargs['accept_sparse'] = False
-    kwargs['accept_large_sparse'] = False
-    kwargs['force_all_finite'] = True
-    kwargs['allow_nd'] = False
+    kwargs["accept_sparse"] = False
+    kwargs["accept_large_sparse"] = False
+    kwargs["force_all_finite"] = True
+    kwargs["allow_nd"] = False
 
-    if 'ensure_2d' not in kwargs:
-        kwargs['ensure_2d'] = min_dim == 2
+    if "ensure_2d" not in kwargs:
+        kwargs["ensure_2d"] = min_dim == 2
 
     _, dtype = dtype_check(arr)
-    kwargs['dtype'] = dtype
+    kwargs["dtype"] = dtype
 
     ndims = 0
     for s in arr.shape:
         ndims += s > 1
     if ndims > max_dim:
-        raise ValueError(
-            f'Array must be at most {max_dim} dimensional.'
-        )
+        raise ValueError(f"Array must be at most {max_dim} dimensional.")
     elif ndims < min_dim:
-        raise ValueError(
-            f'Array must have at least {min_dim} dimensions.'
-        )
+        raise ValueError(f"Array must have at least {min_dim} dimensions.")
 
     # check if array has assumed layout row, column wise
     if axis is None:
@@ -194,7 +186,7 @@ def check_array(
         or (order == -1)
         or (ndims > 1 and order != target_order)
     ):
-        kwargs['order'] = _ORDER_SH[target_order]
+        kwargs["order"] = _ORDER_SH[target_order]
     else:
-        kwargs['order'] = None
+        kwargs["order"] = None
     return sk_check_array(arr, **kwargs)

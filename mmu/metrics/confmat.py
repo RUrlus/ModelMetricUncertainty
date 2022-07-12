@@ -20,8 +20,8 @@ def confusion_matrix_to_dataframe(conf_mat):
         the confusion matrix
 
     """
-    index = (('observed', 'negative'), ('observed', 'positive'))
-    cols = (('estimated', 'negative'), ('estimated', 'positive'))
+    index = (("observed", "negative"), ("observed", "positive"))
+    cols = (("estimated", "negative"), ("estimated", "positive"))
     if conf_mat.size == 4:
         conf_mat = conf_mat.reshape(2, 2)
     return pd.DataFrame(conf_mat, index=index, columns=cols)
@@ -41,7 +41,7 @@ def confusion_matrices_to_dataframe(conf_mat):
         the confusion matrix
 
     """
-    return pd.DataFrame(conf_mat, columns=['TN', 'FP', 'FN', 'TP'])
+    return pd.DataFrame(conf_mat, columns=["TN", "FP", "FN", "TP"])
 
 
 def confusion_matrix(y, yhat=None, scores=None, threshold=0.5, return_df=False):
@@ -83,11 +83,7 @@ def confusion_matrix(y, yhat=None, scores=None, threshold=0.5, return_df=False):
 
     """
     # condition checks
-    y = check_array(
-        y,
-        max_dim=1,
-        dtype_check=_convert_to_ext_types
-    )
+    y = check_array(y, max_dim=1, dtype_check=_convert_to_ext_types)
 
     if scores is not None:
         scores = check_array(
@@ -98,7 +94,7 @@ def confusion_matrix(y, yhat=None, scores=None, threshold=0.5, return_df=False):
         if not isinstance(threshold, float):
             raise TypeError("`threshold` must be a float if scores is not None")
         if scores.size != y.size:
-            raise ValueError('`scores` and `y` must have equal length.')
+            raise ValueError("`scores` and `y` must have equal length.")
         conf_mat = _core.confusion_matrix_score(y, scores, threshold)
     elif yhat is not None:
         yhat = check_array(
@@ -107,7 +103,7 @@ def confusion_matrix(y, yhat=None, scores=None, threshold=0.5, return_df=False):
             dtype_check=_convert_to_ext_types,
         )
         if yhat.size != y.size:
-            raise ValueError('`yhat` and `y` must have equal length.')
+            raise ValueError("`yhat` and `y` must have equal length.")
 
         conf_mat = _core.confusion_matrix(y, yhat)
     else:
@@ -164,7 +160,7 @@ def confusion_matrices(
         y,
         axis=obs_axis,
         target_axis=obs_axis,
-        target_order=1-obs_axis,
+        target_order=1 - obs_axis,
         max_dim=2,
         dtype_check=_convert_to_ext_types,
     )
@@ -174,26 +170,28 @@ def confusion_matrices(
             scores,
             axis=obs_axis,
             target_axis=obs_axis,
-            target_order=1-obs_axis,
+            target_order=1 - obs_axis,
             max_dim=2,
             dtype_check=_convert_to_float,
         )
         if not isinstance(threshold, float):
             raise TypeError("`threshold` must be a float if scores is not None")
         if scores.size != y.size:
-            raise ValueError('`scores` and `y` must have equal length.')
-        conf_mat = _core.confusion_matrix_score_runs(y, scores, threshold, obs_axis=obs_axis)
+            raise ValueError("`scores` and `y` must have equal length.")
+        conf_mat = _core.confusion_matrix_score_runs(
+            y, scores, threshold, obs_axis=obs_axis
+        )
     elif yhat is not None:
         yhat = check_array(
             yhat,
             axis=obs_axis,
             target_axis=obs_axis,
-            target_order=1-obs_axis,
+            target_order=1 - obs_axis,
             max_dim=2,
             dtype_check=_convert_to_ext_types,
         )
         if yhat.size != y.size:
-            raise ValueError('`yhat` and `y` must have equal length.')
+            raise ValueError("`yhat` and `y` must have equal length.")
 
         conf_mat = _core.confusion_matrix_runs(y, yhat, obs_axis=obs_axis)
     else:
@@ -251,7 +249,7 @@ def confusion_matrices_thresholds(y, scores, thresholds, return_df=False):
     )
 
     if scores.size != y.size:
-        raise ValueError('`scores` and `y` must have equal length.')
+        raise ValueError("`scores` and `y` must have equal length.")
 
     conf_mat = _core.confusion_matrix_thresholds(y, scores, thresholds)
 
@@ -307,7 +305,7 @@ def confusion_matrices_runs_thresholds(
         scores,
         axis=obs_axis,
         target_axis=obs_axis,
-        target_order=1-obs_axis,
+        target_order=1 - obs_axis,
         max_dim=2,
         dtype_check=_convert_to_float,
     )
@@ -324,7 +322,7 @@ def confusion_matrices_runs_thresholds(
         y,
         axis=obs_axis,
         target_axis=obs_axis,
-        target_order=1-obs_axis,
+        target_order=1 - obs_axis,
         max_dim=2,
         dtype_check=_convert_to_ext_types,
     )
@@ -333,24 +331,22 @@ def confusion_matrices_runs_thresholds(
     if n_obs is None:
         n_obs = np.repeat(max_obs, n_runs)
 
-    cm = _core.confusion_matrix_runs_thresholds(
-        y, scores, thresholds, n_obs
-    )
+    cm = _core.confusion_matrix_runs_thresholds(y, scores, thresholds, n_obs)
     # cm and mtr are both flat arrays with order conf_mat, thresholds, runs
     # as this is fastest to create. However, how the cubes will be sliced
     # later doesn't align with this. So we incur a copy such that the cubes
     # have the optimal strides for further processing
     if n_thresholds == 1:
         # create cube from flat array
-        cm = cm.reshape(n_runs, 4, order='C')
+        cm = cm.reshape(n_runs, 4, order="C")
     else:
         # create cube from flat array
-        cm = cm.reshape(n_runs, n_thresholds, 4, order='C')
+        cm = cm.reshape(n_runs, n_thresholds, 4, order="C")
         # reorder such that with F-order we get from smallest to largest
         # strides: conf_mat, runs, thresholds
         cm = np.swapaxes(np.swapaxes(cm, 0, 2), 1, 2)
         # make values over the confusion matrix and runs contiguous
-        cm = np.asarray(cm, order='F')
+        cm = np.asarray(cm, order="F")
         # change order s.t. we have thresholds, conf_mat, runs
         cm = np.swapaxes(cm.T, 1, 2)
     return cm

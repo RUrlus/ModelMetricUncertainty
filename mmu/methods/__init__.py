@@ -6,9 +6,9 @@ PRU = PrecisionRecallUncertainty
 PRCU = PrecisionRecallCurveUncertainty
 
 __all__ = [
-    'PRU',
-    'PRCU',
-    'PrecisionRecallUncertainty',
-    'PrecisionRecallSimulatedUncertainty',
-    'PrecisionRecallCurveUncertainty',
+    "PRU",
+    "PRCU",
+    "PrecisionRecallUncertainty",
+    "PrecisionRecallSimulatedUncertainty",
+    "PrecisionRecallCurveUncertainty",
 ]

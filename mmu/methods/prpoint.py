@@ -104,6 +104,7 @@ class PrecisionRecallUncertainty:
         **Only set when initialised with ``from_scores_with_train``.**
 
     """
+
     def __init__(self):
         self.conf_mat = None
         self.precision = None
@@ -123,8 +124,8 @@ class PrecisionRecallUncertainty:
         self.epsilon = None
         self._has_cov = False
         self._moptions = {
-            'mult': {'mult', 'multinomial'},
-            'bvn': {'bvn', 'bivariate', 'elliptical'}
+            "mult": {"mult", "multinomial"},
+            "bvn": {"bvn", "bivariate", "elliptical"},
         }
 
     def _parse_threshold(self, threshold):
@@ -133,10 +134,10 @@ class PrecisionRecallUncertainty:
         self.threshold = threshold
 
     def _parse_method(self, method):
-        if method in self._moptions['mult']:
+        if method in self._moptions["mult"]:
             self.method = method
             self._compute_scores = self._compute_multn_scores
-        elif method in self._moptions['bvn']:
+        elif method in self._moptions["bvn"]:
             self._has_cov = True
             self.method = method
             self._compute_scores = self._compute_bvn_scores
@@ -181,10 +182,10 @@ class PrecisionRecallUncertainty:
                 conf_mat=self.conf_mat,
                 n_sigmas=self.n_sigmas,
                 epsilon=self.epsilon,
-                n_threads=n_threads
+                n_threads=n_threads,
             )
         else:
-            if (n_threads > 1):
+            if n_threads > 1:
                 warnings.warn(
                     "mmu was not compiled with multi-threading enabled,"
                     " ignoring `n_threads`"
@@ -193,7 +194,7 @@ class PrecisionRecallUncertainty:
                 n_bins=self.n_bins,
                 conf_mat=self.conf_mat,
                 n_sigmas=self.n_sigmas,
-                epsilon=self.epsilon
+                epsilon=self.epsilon,
             )
         self.precision_bounds = bounds[0, :].copy()
         self.recall_bounds = bounds[1, :].copy()
@@ -229,15 +230,16 @@ class PrecisionRecallUncertainty:
             )
 
     @classmethod
-    def from_scores(cls,
-        y : np.ndarray,
-        scores : np.ndarray,
-        threshold : float = 0.5,
-        method : str = 'multinomial',
-        n_bins : int = 100,
-        n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12,
-        n_threads: Optional[int] = None
+    def from_scores(
+        cls,
+        y: np.ndarray,
+        scores: np.ndarray,
+        threshold: float = 0.5,
+        method: str = "multinomial",
+        n_bins: int = 100,
+        n_sigmas: Union[int, float] = 6.0,
+        epsilon: float = 1e-12,
+        n_threads: Optional[int] = None,
     ):
         """Compute joint-uncertainty on precision and recall.
 
@@ -284,14 +286,15 @@ class PrecisionRecallUncertainty:
         return self
 
     @classmethod
-    def from_predictions(cls,
-        y : np.ndarray,
-        yhat : np.ndarray,
-        method : str = 'multinomial',
-        n_bins : int = 100,
-        n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12,
-        n_threads: Optional[int] = None
+    def from_predictions(
+        cls,
+        y: np.ndarray,
+        yhat: np.ndarray,
+        method: str = "multinomial",
+        n_bins: int = 100,
+        n_sigmas: Union[int, float] = 6.0,
+        epsilon: float = 1e-12,
+        n_threads: Optional[int] = None,
     ):
         """Compute joint-uncertainty on precision and recall.
 
@@ -331,13 +334,14 @@ class PrecisionRecallUncertainty:
         return self
 
     @classmethod
-    def from_confusion_matrix(cls,
-        conf_mat : np.ndarray,
-        method : str = 'multinomial',
-        n_bins : int = 100,
-        n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12,
-        n_threads: Optional[int] = None
+    def from_confusion_matrix(
+        cls,
+        conf_mat: np.ndarray,
+        method: str = "multinomial",
+        n_bins: int = 100,
+        n_sigmas: Union[int, float] = 6.0,
+        epsilon: float = 1e-12,
+        n_threads: Optional[int] = None,
     ):
         """Compute joint-uncertainty on precision and recall.
 
@@ -379,16 +383,17 @@ class PrecisionRecallUncertainty:
         return self
 
     @classmethod
-    def from_classifier(cls,
+    def from_classifier(
+        cls,
         clf,
-        X : np.ndarray,
-        y : np.ndarray,
-        threshold : float = 0.5,
-        method : str = 'multinomial',
-        n_bins : int = 100,
-        n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12,
-        n_threads: Optional[int] = None
+        X: np.ndarray,
+        y: np.ndarray,
+        threshold: float = 0.5,
+        method: str = "multinomial",
+        n_bins: int = 100,
+        n_sigmas: Union[int, float] = 6.0,
+        epsilon: float = 1e-12,
+        n_threads: Optional[int] = None,
     ):
         """Compute joint-uncertainty on precision and recall.
 
@@ -430,7 +435,7 @@ class PrecisionRecallUncertainty:
         self = cls()
         self._parse_method(method)
         self._parse_threshold(threshold)
-        if not hasattr(clf, 'predict_proba'):
+        if not hasattr(clf, "predict_proba"):
             raise TypeError("`clf` must have a method `predict_proba`")
         scores = clf.predict_proba(X)[:, 1]
         self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
@@ -438,12 +443,13 @@ class PrecisionRecallUncertainty:
         return self
 
     @classmethod
-    def from_scores_with_train(cls,
-        y : np.ndarray,
-        scores : np.ndarray,
-        scores_bs : np.ndarray,
-        threshold : float = 0.5,
-        obs_axis : int = 0
+    def from_scores_with_train(
+        cls,
+        y: np.ndarray,
+        scores: np.ndarray,
+        scores_bs: np.ndarray,
+        threshold: float = 0.5,
+        obs_axis: int = 0,
     ):
         """Compute joint-uncertainty on precision and recall from classifier scores
         with train uncertainty.
@@ -480,14 +486,10 @@ class PrecisionRecallUncertainty:
         """
         self = cls()
         self._has_cov = True
-        self.method = 'bvn_with_train'
+        self.method = "bvn_with_train"
         self._parse_threshold(threshold)
 
-        y = check_array(
-            y,
-            max_dim=1,
-            dtype_check=_convert_to_ext_types
-        )
+        y = check_array(y, max_dim=1, dtype_check=_convert_to_ext_types)
 
         scores = check_array(
             scores,
@@ -495,13 +497,13 @@ class PrecisionRecallUncertainty:
             dtype_check=_convert_to_float,
         )
         if scores.size != y.size:
-            raise ValueError('`scores` and `y` must have equal size.')
+            raise ValueError("`scores` and `y` must have equal size.")
 
         scores_bs = check_array(
             scores_bs,
             axis=obs_axis,
             target_axis=obs_axis,
-            target_order=1-obs_axis,
+            target_order=1 - obs_axis,
             max_dim=2,
             dtype_check=_convert_to_float,
         )
@@ -516,20 +518,17 @@ class PrecisionRecallUncertainty:
             np.tile(y, n_runs).reshape(n_runs, y.size).T,
             axis=0,
             target_axis=obs_axis,
-            target_order=1-obs_axis,
+            target_order=1 - obs_axis,
             max_dim=2,
             dtype_check=_convert_to_ext_types,
-            check_finite=False
+            check_finite=False,
         )
 
         self.conf_mat = _core.confusion_matrix_score(y, scores, self.threshold)
         self._compute_bvn_scores()
 
         self.train_conf_mats = _core.confusion_matrix_score_runs(
-            y_bs,
-            scores_bs,
-            self.threshold,
-            obs_axis=obs_axis
+            y_bs, scores_bs, self.threshold, obs_axis=obs_axis
         )
         out = _core.precision_recall_2d(self.train_conf_mats)
         self.train_precisions = out[:, 0]
@@ -546,12 +545,12 @@ class PrecisionRecallUncertainty:
         return np.sqrt(sts.chi2.ppf(alphas, 2))
 
     def _get_scaling_factor_std(self, stds):
-        alphas = 2. * (sts.norm.cdf(stds) - 0.5)
+        alphas = 2.0 * (sts.norm.cdf(stds) - 0.5)
         return np.sqrt(sts.chi2.ppf(alphas, 2))
 
     def _get_critical_values_std(self, n_std):
         """Compute the critical values for a chi2 with 2df using the continuity correction"""
-        alphas = 2. * (sts.norm.cdf(n_std) - 0.5)
+        alphas = 2.0 * (sts.norm.cdf(n_std) - 0.5)
         # confidence limits in two dimensions
         return sts.chi2.ppf(alphas, 2)
 
@@ -600,7 +599,7 @@ class PrecisionRecallUncertainty:
                 "`cov_mat` is not computed when method is not"
                 " Bivariate-Normal/Elliptical."
             )
-        cov_cols = ['precision', 'recall']
+        cov_cols = ["precision", "recall"]
         return pd.DataFrame(self.cov_mat, index=cov_cols, columns=cov_cols)
 
     def get_train_cov_mat(self) -> pd.DataFrame:
@@ -622,7 +621,7 @@ class PrecisionRecallUncertainty:
                 "`train_cov_mat` is only compute when initialised "
                 " with ``from_scores_with_train``"
             )
-        cov_cols = ['precision', 'recall']
+        cov_cols = ["precision", "recall"]
         return pd.DataFrame(self.train_cov_mat, index=cov_cols, columns=cov_cols)
 
     def get_total_cov_mat(self) -> pd.DataFrame:
@@ -644,13 +643,14 @@ class PrecisionRecallUncertainty:
                 "`total_cov_mat` is only compute when initialised "
                 " with ``from_scores_with_train``"
             )
-        cov_cols = ['precision', 'recall']
+        cov_cols = ["precision", "recall"]
         return pd.DataFrame(self.total_cov_mat, index=cov_cols, columns=cov_cols)
 
-    def compute_score_for(self,
-        prec : Union[float, np.ndarray],
-        rec : Union[float, np.ndarray],
-        epsilon : float = 1e-12
+    def compute_score_for(
+        self,
+        prec: Union[float, np.ndarray],
+        rec: Union[float, np.ndarray],
+        epsilon: float = 1e-12,
     ) -> float:
         """Compute score for a given precision(s) and recall(s).
         If method is `bvn` the sum of squared Z scores is computed, if method
@@ -689,15 +689,14 @@ class PrecisionRecallUncertainty:
             if self._has_cov:
                 return _core.pr_bvn_chi2_score(prec, rec, self.conf_mat, epsilon)
             return _core.pr_multn_chi2_score(prec, rec, self.conf_mat, epsilon)
-        elif (
-            isinstance(prec, np.ndarray)
-            and isinstance(rec, np.ndarray)
-        ):
+        elif isinstance(prec, np.ndarray) and isinstance(rec, np.ndarray):
             prec = check_array(prec, max_dim=1, dtype_check=_convert_to_float)
             rec = check_array(rec, max_dim=1, dtype_check=_convert_to_float)
             if self._has_cov:
                 if _MMU_MT_SUPPORT:
-                    return _core.pr_bvn_chi2_scores_mt(prec, rec, self.conf_mat, epsilon)
+                    return _core.pr_bvn_chi2_scores_mt(
+                        prec, rec, self.conf_mat, epsilon
+                    )
                 return _core.pr_bvn_chi2_scores(prec, rec, self.conf_mat, epsilon)
             if _MMU_MT_SUPPORT:
                 return _core.pr_multn_chi2_scores_mt(prec, rec, self.conf_mat, epsilon)
@@ -708,10 +707,11 @@ class PrecisionRecallUncertainty:
                 " floats in [0, 1]"
             )
 
-    def compute_pvalue_for(self,
-        prec : Union[float, np.ndarray],
-        rec : Union[float, np.ndarray],
-        epsilon : float = 1e-12
+    def compute_pvalue_for(
+        self,
+        prec: Union[float, np.ndarray],
+        rec: Union[float, np.ndarray],
+        epsilon: float = 1e-12,
     ) -> float:
         """Compute p-value(s) for a given precision(s) and recall(s).
         If method is `bvn` the sum of squared Z scores is computed, if method
@@ -751,29 +751,30 @@ class PrecisionRecallUncertainty:
 
     def _add_point_to_plot(self, point, point_kwargs):
         if isinstance(point_kwargs, dict):
-            if 'cmap' not in point_kwargs:
-                point_kwargs['cmap'] = 'Reds'
-            if 'ax' in point_kwargs:
-                point_kwargs.pop('ax')
+            if "cmap" not in point_kwargs:
+                point_kwargs["cmap"] = "Reds"
+            if "ax" in point_kwargs:
+                point_kwargs.pop("ax")
         elif point_kwargs is None:
-            point_kwargs = {'cmap': 'Reds'}
+            point_kwargs = {"cmap": "Reds"}
         else:
             raise TypeError("`point_kwargs` must be a Dict or None")
         self._ax = point.plot(ax=self._ax, **point_kwargs)
         self._handles = self._handles + point._handles
-        self._ax.legend(handles=self._handles, loc='lower left', fontsize=12)  # type: ignore
+        self._ax.legend(handles=self._handles, loc="lower left", fontsize=12)  # type: ignore
 
     def _add_other_to_plot(self, other, other_kwargs):
-        if (
-            isinstance(other, PrecisionRecallUncertainty)
-            or isinstance(other, PrecisionRecallSimulatedUncertainty)
+        if isinstance(other, PrecisionRecallUncertainty) or isinstance(
+            other, PrecisionRecallSimulatedUncertainty
         ):
             self._add_point_to_plot(other, other_kwargs)
         elif isinstance(other, (list, tuple)):
             if other_kwargs is None:
                 other_kwargs = {}
             elif isinstance(other_kwargs, dict):
-                other_kwargs = [other_kwargs, ] * len(other)
+                other_kwargs = [
+                    other_kwargs,
+                ] * len(other)
             for point, kwargs in zip_longest(other, other_kwargs):
                 self._add_point_to_plot(point, kwargs)
         else:
@@ -793,24 +794,24 @@ class PrecisionRecallUncertainty:
         legend_loc,
         alpha,
         other,
-        other_kwargs
+        other_kwargs,
     ):
         """Plot elliptical confidence interval(s) for precision and recall."""
         if self.cov_mat is None:
             raise RuntimeError("the class needs to be initialised with from_*")
 
         # -- parse uncertainties
-        if uncertainties == 'test':
+        if uncertainties == "test":
             cov_mat = self.cov_mat
-        elif uncertainties == 'all':
+        elif uncertainties == "all":
             if self.total_cov_mat is not None:
-                cov_mat =  self.total_cov_mat
+                cov_mat = self.total_cov_mat
             else:
                 raise RuntimeError(
                     "`toal_cov_mat` is only compute when initialised "
                     " with ``from_scores_with_train``"
                 )
-        elif uncertainties == 'train':
+        elif uncertainties == "train":
             if self.train_cov_mat is not None:
                 cov_mat = self.train_cov_mat
             else:
@@ -819,9 +820,7 @@ class PrecisionRecallUncertainty:
                     " with ``from_scores_with_train``"
                 )
         else:
-            raise ValueError(
-                "`uncertainties` must be one of {'test', 'train', 'all'}"
-            )
+            raise ValueError("`uncertainties` must be one of {'test', 'train', 'all'}")
         # quick catch for list and tuples
         if isinstance(levels, (list, tuple)):
             levels = np.asarray(levels)
@@ -829,31 +828,25 @@ class PrecisionRecallUncertainty:
         # transform levels into scaling factors for the ellipse
         if levels is None:
             scales = self._get_scaling_factor_std(np.array((1, 2, 3)))
-            labels = [r'$1\sigma$ CI', r'$2\sigma$ CI', r'$3\sigma$ CI']
+            labels = [r"$1\sigma$ CI", r"$2\sigma$ CI", r"$3\sigma$ CI"]
         elif isinstance(levels, int):
-            labels = [f'{levels}' + r'$\sigma$ CI']
+            labels = [f"{levels}" + r"$\sigma$ CI"]
             scales = self._get_scaling_factor_std(np.array((levels,)))
-        elif (
-            isinstance(levels, np.ndarray)
-            and np.issubdtype(levels.dtype, np.integer)
-        ):
+        elif isinstance(levels, np.ndarray) and np.issubdtype(levels.dtype, np.integer):
             levels = np.sort(np.unique(levels))
-            labels = [f'{l}' + r'$\sigma$ CI' for l in levels]
+            labels = [f"{l}" + r"$\sigma$ CI" for l in levels]
             scales = self._get_scaling_factor_std(levels)
         elif isinstance(levels, float):
-            labels = [f'{round(levels * 100, 3)}% CI']
+            labels = [f"{round(levels * 100, 3)}% CI"]
             scales = self._get_scaling_factor_alpha(np.array((levels,)))
-        elif (
-            isinstance(levels, np.ndarray)
-            and np.issubdtype(levels.dtype, np.floating)
+        elif isinstance(levels, np.ndarray) and np.issubdtype(
+            levels.dtype, np.floating
         ):
             levels = np.sort(np.unique(levels))
-            labels = [f'{round(l * 100, 3)}% CI' for l in levels]
+            labels = [f"{round(l * 100, 3)}% CI" for l in levels]
             scales = self._get_scaling_factor_alpha(levels)
         else:
-            raise TypeError(
-                "`levels` must be a int, float, array-like or None"
-            )
+            raise TypeError("`levels` must be a int, float, array-like or None")
 
         self.critical_values_plot = levels
 
@@ -868,7 +861,7 @@ class PrecisionRecallUncertainty:
             alpha=alpha,
             equal_aspect=equal_aspect,
             limit_axis=limit_axis,
-            legend_loc=legend_loc
+            legend_loc=legend_loc,
         )
         if other is not None:
             self._add_other_to_plot(other, other_kwargs)
@@ -884,7 +877,7 @@ class PrecisionRecallUncertainty:
         legend_loc,
         alpha,
         other,
-        other_kwargs
+        other_kwargs,
     ):
         """Plot confidence interval(s) for precision and recall."""
         if self.chi2_scores is None:
@@ -897,31 +890,25 @@ class PrecisionRecallUncertainty:
         # transform levels into scaling factors for the ellipse
         if levels is None:
             levels = self._get_critical_values_std(np.array((1, 2, 3)))
-            labels = [r'$1\sigma$ CI', r'$2\sigma$ CI', r'$3\sigma$ CI']
+            labels = [r"$1\sigma$ CI", r"$2\sigma$ CI", r"$3\sigma$ CI"]
         elif isinstance(levels, int):
-            labels = [f'{levels}' + r'$\sigma$ CI']
+            labels = [f"{levels}" + r"$\sigma$ CI"]
             levels = self._get_critical_values_std(np.array((levels,)))
-        elif (
-            isinstance(levels, np.ndarray)
-            and np.issubdtype(levels.dtype, np.integer)
-        ):
+        elif isinstance(levels, np.ndarray) and np.issubdtype(levels.dtype, np.integer):
             levels = np.sort(np.unique(levels))
-            labels = [f'{l}' + r'$\sigma$ CI' for l in levels]
+            labels = [f"{l}" + r"$\sigma$ CI" for l in levels]
             levels = self._get_critical_values_std(levels)
         elif isinstance(levels, float):
-            labels = [f'{round(levels * 100, 3)}% CI']
+            labels = [f"{round(levels * 100, 3)}% CI"]
             levels = self._get_critical_values_alpha(np.array((levels,)))
-        elif (
-            isinstance(levels, np.ndarray)
-            and np.issubdtype(levels.dtype, np.floating)
+        elif isinstance(levels, np.ndarray) and np.issubdtype(
+            levels.dtype, np.floating
         ):
             levels = np.sort(np.unique(levels))
-            labels = [f'{round(l * 100, 3)}% CI' for l in levels]
+            labels = [f"{round(l * 100, 3)}% CI" for l in levels]
             levels = self._get_critical_values_alpha(levels)
         else:
-            raise TypeError(
-                "`levels` must be a int, float, array-like or None"
-            )
+            raise TypeError("`levels` must be a int, float, array-like or None")
 
         self.critical_values_plot = levels
 
@@ -938,7 +925,7 @@ class PrecisionRecallUncertainty:
             alpha=alpha,
             equal_aspect=equal_aspect,
             limit_axis=limit_axis,
-            legend_loc=legend_loc
+            legend_loc=legend_loc,
         )
 
         if other is not None:
@@ -947,20 +934,22 @@ class PrecisionRecallUncertainty:
 
     def plot(
         self,
-        levels : Union[int, float, np.ndarray, None] = None,
-        source = 'test',
+        levels: Union[int, float, np.ndarray, None] = None,
+        source="test",
         ax=None,
-        cmap : str = 'Blues',
-        equal_aspect : bool = True,
-        limit_axis : bool = True,
-        legend_loc : Optional[str] = None,
-        alpha : float = 0.8,
-        other : Union['PrecisionRecallUncertainty',
-            'PrecisionRecallSimulatedUncertainty',
-            List['PrecisionRecallUncertainty'],
-            List['PrecisionRecallSimulatedUncertainty'], None
+        cmap: str = "Blues",
+        equal_aspect: bool = True,
+        limit_axis: bool = True,
+        legend_loc: Optional[str] = None,
+        alpha: float = 0.8,
+        other: Union[
+            "PrecisionRecallUncertainty",
+            "PrecisionRecallSimulatedUncertainty",
+            List["PrecisionRecallUncertainty"],
+            List["PrecisionRecallSimulatedUncertainty"],
+            None,
         ] = None,
-        other_kwargs : Union[Dict, List[Dict], None] = None
+        other_kwargs: Union[Dict, List[Dict], None] = None,
     ):
         """Plot confidence interval(s) for precision and recall.
 
@@ -1017,7 +1006,7 @@ class PrecisionRecallUncertainty:
                 legend_loc=legend_loc,
                 alpha=alpha,
                 other=other,
-                other_kwargs=other_kwargs
+                other_kwargs=other_kwargs,
             )
         else:
             return self._plot_contour(
@@ -1029,7 +1018,7 @@ class PrecisionRecallUncertainty:
                 legend_loc=legend_loc,
                 alpha=alpha,
                 other=other,
-                other_kwargs=other_kwargs
+                other_kwargs=other_kwargs,
             )
 
 
@@ -1081,6 +1070,7 @@ class PrecisionRecallSimulatedUncertainty:
         the number of simulations performed per grid point
 
     """
+
     def __init__(self):
         self.conf_mat = None
         self.precision = None
@@ -1098,8 +1088,8 @@ class PrecisionRecallSimulatedUncertainty:
             raise TypeError("`threshold` must be a float in [0, 1]")
         self.threshold = threshold
 
-    def _simulate_multn_scores(self,
-        n_simulations, n_bins, n_sigmas, epsilon, n_threads
+    def _simulate_multn_scores(
+        self, n_simulations, n_bins, n_sigmas, epsilon, n_threads
     ):
         n_threads = _check_n_threads(n_threads)
         if isinstance(n_simulations, int):
@@ -1148,7 +1138,7 @@ class PrecisionRecallSimulatedUncertainty:
                 n_threads=n_threads,
             )
         else:
-            if (n_threads > 1):
+            if n_threads > 1:
                 warnings.warn(
                     "mmu was not compiled with multi-threading enabled,"
                     " ignoring `n_threads`"
@@ -1165,15 +1155,16 @@ class PrecisionRecallSimulatedUncertainty:
         self._bounds = bounds.flatten()
 
     @classmethod
-    def from_scores(cls,
-        y : np.ndarray,
-        scores : np.ndarray,
-        threshold : float = 0.5,
-        n_simulations : int = 10000,
-        n_bins : int = 100,
-        n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12,
-        n_threads: Optional[int] = None
+    def from_scores(
+        cls,
+        y: np.ndarray,
+        scores: np.ndarray,
+        threshold: float = 0.5,
+        n_simulations: int = 10000,
+        n_bins: int = 100,
+        n_sigmas: Union[int, float] = 6.0,
+        epsilon: float = 1e-12,
+        n_threads: Optional[int] = None,
     ):
         """Compute joint-uncertainty on precision and recall.
 
@@ -1219,14 +1210,15 @@ class PrecisionRecallSimulatedUncertainty:
         return self
 
     @classmethod
-    def from_predictions(cls,
-        y : np.ndarray,
-        yhat : np.ndarray,
-        n_simulations : int = 10000,
-        n_bins : int = 100,
-        n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12,
-        n_threads: Optional[int] = None
+    def from_predictions(
+        cls,
+        y: np.ndarray,
+        yhat: np.ndarray,
+        n_simulations: int = 10000,
+        n_bins: int = 100,
+        n_sigmas: Union[int, float] = 6.0,
+        epsilon: float = 1e-12,
+        n_threads: Optional[int] = None,
     ):
         """Compute joint-uncertainty on precision and recall.
 
@@ -1261,19 +1253,18 @@ class PrecisionRecallSimulatedUncertainty:
         """
         self = cls()
         self.conf_mat = confusion_matrix(y=y, yhat=yhat)
-        self._simulate_multn_scores(
-            n_simulations, n_bins, n_sigmas, epsilon, n_threads
-        )
+        self._simulate_multn_scores(n_simulations, n_bins, n_sigmas, epsilon, n_threads)
         return self
 
     @classmethod
-    def from_confusion_matrix(cls,
-        conf_mat : np.ndarray,
-        n_simulations : int = 10000,
-        n_bins : int = 100,
-        n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12,
-        n_threads: Optional[int] = None
+    def from_confusion_matrix(
+        cls,
+        conf_mat: np.ndarray,
+        n_simulations: int = 10000,
+        n_bins: int = 100,
+        n_sigmas: Union[int, float] = 6.0,
+        epsilon: float = 1e-12,
+        n_threads: Optional[int] = None,
     ):
         """Compute joint-uncertainty on precision and recall.
 
@@ -1310,22 +1301,21 @@ class PrecisionRecallSimulatedUncertainty:
         if conf_mat.shape == (2, 2):
             conf_mat = conf_mat.ravel()
         self.conf_mat = check_array(conf_mat, max_dim=1, dtype_check=_convert_to_int)
-        self._simulate_multn_scores(
-            n_simulations, n_bins, n_sigmas, epsilon, n_threads
-        )
+        self._simulate_multn_scores(n_simulations, n_bins, n_sigmas, epsilon, n_threads)
         return self
 
     @classmethod
-    def from_classifier(cls,
+    def from_classifier(
+        cls,
         clf,
-        X : np.ndarray,
-        y : np.ndarray,
-        threshold : float = 0.5,
-        n_simulations : int = 10000,
-        n_bins : int = 100,
-        n_sigmas : Union[int, float] = 6.0,
-        epsilon : float = 1e-12,
-        n_threads: Optional[int] = None
+        X: np.ndarray,
+        y: np.ndarray,
+        threshold: float = 0.5,
+        n_simulations: int = 10000,
+        n_bins: int = 100,
+        n_sigmas: Union[int, float] = 6.0,
+        epsilon: float = 1e-12,
+        n_threads: Optional[int] = None,
     ):
         """Compute joint-uncertainty on precision and recall.
 
@@ -1366,17 +1356,15 @@ class PrecisionRecallSimulatedUncertainty:
         """
         self = cls()
         self._parse_threshold(threshold)
-        if not hasattr(clf, 'predict_proba'):
+        if not hasattr(clf, "predict_proba"):
             raise TypeError("`clf` must have a method `predict_proba`")
         scores = clf.predict_proba(X)[:, 1]
         self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
-        self._simulate_multn_scores(
-            n_simulations, n_bins, n_sigmas, epsilon, n_threads
-        )
+        self._simulate_multn_scores(n_simulations, n_bins, n_sigmas, epsilon, n_threads)
         return self
 
     def _get_cdf_factor_std(self, stds):
-        return 2. * (sts.norm.cdf(stds) - 0.5)
+        return 2.0 * (sts.norm.cdf(stds) - 0.5)
 
     def get_conf_mat(self) -> pd.DataFrame:
         """Obtain confusion matrix as a DataFrame.
@@ -1390,29 +1378,30 @@ class PrecisionRecallSimulatedUncertainty:
 
     def _add_point_to_plot(self, point, point_kwargs):
         if isinstance(point_kwargs, dict):
-            if 'cmap' not in point_kwargs:
-                point_kwargs['cmap'] = 'Reds'
-            if 'ax' in point_kwargs:
-                point_kwargs.pop('ax')
+            if "cmap" not in point_kwargs:
+                point_kwargs["cmap"] = "Reds"
+            if "ax" in point_kwargs:
+                point_kwargs.pop("ax")
         elif point_kwargs is None:
-            point_kwargs = {'cmap': 'Reds'}
+            point_kwargs = {"cmap": "Reds"}
         else:
             raise TypeError("`point_kwargs` must be a Dict or None")
         self._ax = point.plot(ax=self._ax, **point_kwargs)
         self._handles = self._handles + point._handles
-        self._ax.legend(handles=self._handles, loc='lower left', fontsize=12)  # type: ignore
+        self._ax.legend(handles=self._handles, loc="lower left", fontsize=12)  # type: ignore
 
     def _add_other_to_plot(self, other, other_kwargs):
-        if (
-            isinstance(other, PrecisionRecallUncertainty)
-            or isinstance(other, PrecisionRecallSimulatedUncertainty)
+        if isinstance(other, PrecisionRecallUncertainty) or isinstance(
+            other, PrecisionRecallSimulatedUncertainty
         ):
             self._add_point_to_plot(other, other_kwargs)
         elif isinstance(other, (list, tuple)):
             if other_kwargs is None:
                 other_kwargs = {}
             elif isinstance(other_kwargs, dict):
-                other_kwargs = [other_kwargs, ] * len(other)
+                other_kwargs = [
+                    other_kwargs,
+                ] * len(other)
             for point, kwargs in zip_longest(other, other_kwargs):
                 self._add_point_to_plot(point, kwargs)
         else:
@@ -1423,19 +1412,21 @@ class PrecisionRecallSimulatedUncertainty:
 
     def plot(
         self,
-        levels : Union[int, float, np.ndarray, None] = None,
+        levels: Union[int, float, np.ndarray, None] = None,
         ax=None,
-        cmap : str = 'Blues',
-        equal_aspect : bool = False,
-        limit_axis : bool = True,
-        legend_loc : Optional[str] = None,
-        alpha : float = 0.8,
-        other : Union['PrecisionRecallUncertainty',
-            'PrecisionRecallSimulatedUncertainty',
-            List['PrecisionRecallUncertainty'],
-            List['PrecisionRecallSimulatedUncertainty'], None
+        cmap: str = "Blues",
+        equal_aspect: bool = False,
+        limit_axis: bool = True,
+        legend_loc: Optional[str] = None,
+        alpha: float = 0.8,
+        other: Union[
+            "PrecisionRecallUncertainty",
+            "PrecisionRecallSimulatedUncertainty",
+            List["PrecisionRecallUncertainty"],
+            List["PrecisionRecallSimulatedUncertainty"],
+            None,
         ] = None,
-        other_kwargs : Union[Dict, List[Dict], None] = None
+        other_kwargs: Union[Dict, List[Dict], None] = None,
     ):
         """Plot confidence interval(s) for precision and recall.
 
@@ -1484,29 +1475,23 @@ class PrecisionRecallSimulatedUncertainty:
         # transform levels into scaling factors for the ellipse
         if levels is None:
             levels = self._get_cdf_factor_std(np.array((1, 2, 3)))
-            labels = [r'$1\sigma$ CI', r'$2\sigma$ CI', r'$3\sigma$ CI']
+            labels = [r"$1\sigma$ CI", r"$2\sigma$ CI", r"$3\sigma$ CI"]
         elif isinstance(levels, int):
-            labels = [f'{levels}' + r'$\sigma$ CI']
+            labels = [f"{levels}" + r"$\sigma$ CI"]
             levels = self._get_cdf_factor_std(np.array((levels,)))
-        elif (
-            isinstance(levels, np.ndarray)
-            and np.issubdtype(levels.dtype, np.integer)
-        ):
+        elif isinstance(levels, np.ndarray) and np.issubdtype(levels.dtype, np.integer):
             levels = np.sort(np.unique(levels))
-            labels = [f'{l}' + r'$\sigma$ CI' for l in levels]
+            labels = [f"{l}" + r"$\sigma$ CI" for l in levels]
         elif isinstance(levels, float):
-            labels = [f'{round(levels * 100, 3)}% CI']
+            labels = [f"{round(levels * 100, 3)}% CI"]
             levels = np.array((levels,))
-        elif (
-            isinstance(levels, np.ndarray)
-            and np.issubdtype(levels.dtype, np.floating)
+        elif isinstance(levels, np.ndarray) and np.issubdtype(
+            levels.dtype, np.floating
         ):
             levels = np.sort(np.unique(levels))
-            labels = [f'{round(l * 100, 3)}% CI' for l in levels]
+            labels = [f"{round(l * 100, 3)}% CI" for l in levels]
         else:
-            raise TypeError(
-                "`levels` must be a int, float, array-like or None"
-            )
+            raise TypeError("`levels` must be a int, float, array-like or None")
 
         self.critical_values_plot = levels
 
@@ -1523,10 +1508,9 @@ class PrecisionRecallSimulatedUncertainty:
             alpha=alpha,
             equal_aspect=equal_aspect,
             limit_axis=limit_axis,
-            legend_loc=legend_loc
+            legend_loc=legend_loc,
         )
 
         if other is not None:
             self._add_other_to_plot(other, other_kwargs)
         return self._ax
-

@@ -84,8 +84,7 @@ def generate_test_labels(
     return (scores, yhat, y)
 
 
-def compute_reference_metrics(y, yhat=None, proba=None, threshold=None,
-        fill=1.):
+def compute_reference_metrics(y, yhat=None, proba=None, threshold=None, fill=1.0):
     """Compute the set of metrics based on sklearn's implementation.
 
     Parameters
@@ -116,15 +115,13 @@ def compute_reference_metrics(y, yhat=None, proba=None, threshold=None,
     """
     if yhat is None:
         if proba is None:
-            raise ValueError('``proba`` must not be None when yhat is None')
+            raise ValueError("``proba`` must not be None when yhat is None")
         if threshold is None:
-            raise ValueError(
-                '``threshold`` must note be None when Proba is not None'
-            )
+            raise ValueError("``threshold`` must note be None when Proba is not None")
         yhat = greater_equal_tol(proba, threshold)
 
     metrics = np.zeros(10, dtype=np.float64)
-    prec, rec, f1,  _ = skm.precision_recall_fscore_support(y, yhat, zero_division=fill)
+    prec, rec, f1, _ = skm.precision_recall_fscore_support(y, yhat, zero_division=fill)
     metrics[:2] = prec
     metrics[2:4] = rec
     metrics[4:6] = f1
