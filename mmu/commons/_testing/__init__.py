@@ -6,9 +6,9 @@ from mmu.commons._testing.utils import greater_equal_tol
 
 
 __all__ = [
-    'compute_reference_metrics',
-    'create_unaligned_array',
-    'DEFAULT_OVERLOAD_DTYPES',
-    'generate_test_labels',
-    'greater_equal_tol',
+    "compute_reference_metrics",
+    "create_unaligned_array",
+    "DEFAULT_OVERLOAD_DTYPES",
+    "generate_test_labels",
+    "greater_equal_tol",
 ]

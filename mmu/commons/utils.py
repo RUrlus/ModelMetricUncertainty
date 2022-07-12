@@ -2,8 +2,12 @@ import numpy as np
 
 
 def generate_data(
-    n_samples=10000, n_sets=1, score_dtype=np.float64, yhat_dtype=np.int64,
-    y_dtype=np.int64, random_state=None
+    n_samples=10000,
+    n_sets=1,
+    score_dtype=np.float64,
+    yhat_dtype=np.int64,
+    y_dtype=np.int64,
+    random_state=None,
 ):
     """Generate data from a logistic process.
 
@@ -51,20 +55,18 @@ def generate_data(
     y = rng.binomial(1, scores, t_samples).astype(y_dtype)  # type: ignore
     yhat = np.rint(scores).astype(yhat_dtype)
     return (
-        scores.reshape(n_samples, n_sets, order='F'),
-        yhat.reshape(n_samples, n_sets, order='F'),
-        y.reshape(n_samples, n_sets, order='F'),
+        scores.reshape(n_samples, n_sets, order="F"),
+        yhat.reshape(n_samples, n_sets, order="F"),
+        y.reshape(n_samples, n_sets, order="F"),
     )
 
 
 class SeedGenerator:
     """Generate sklearn compatible seeds/random_state as uint32's."""
+
     def _set_seeds(self):
-       self.seeds = self.rng.integers(
-            1000,
-            np.iinfo(np.uint32).max,
-            100,
-            dtype=np.uint32
+        self.seeds = self.rng.integers(
+            1000, np.iinfo(np.uint32).max, 100, dtype=np.uint32
         )
 
     def __init__(self, seed=None):

@@ -60,14 +60,13 @@ def precision_recall_bvn_uncertainty(
     metrics = mtr[:-4]
 
     if return_df:
-        cov_cols = ['precision', 'recall']
+        cov_cols = ["precision", "recall"]
         cov_df = pd.DataFrame(cov, index=cov_cols, columns=cov_cols)
         metrics_df = pd.DataFrame(
-            index=['precision', 'recall'],
-            columns=['metric', 'lb_ci', 'ub_ci']
+            index=["precision", "recall"], columns=["metric", "lb_ci", "ub_ci"]
         )
-        metrics_df.loc['precision', :] = metrics[:3]
-        metrics_df.loc['recall', :] = metrics[3:6]
+        metrics_df.loc["precision", :] = metrics[:3]
+        metrics_df.loc["recall", :] = metrics[3:6]
 
         return (confusion_matrix_to_dataframe(conf_mat), metrics_df, cov_df)
     return conf_mat, metrics, cov
@@ -104,24 +103,19 @@ def precision_recall_bvn_uncertainty_confusion_matrix(
     """
     if conf_mat.shape == (2, 2):
         conf_mat = conf_mat.ravel()
-    conf_mat = check_array(
-        conf_mat,
-        max_dim=1,
-        dtype_check=_convert_to_int
-    )
+    conf_mat = check_array(conf_mat, max_dim=1, dtype_check=_convert_to_int)
     mtr = pr_bvn_error(conf_mat, alpha)
     cov = mtr[-4:].reshape(2, 2)
     metrics = mtr[:-4]
 
     if return_df:
-        cov_cols = ['precision', 'recall']
+        cov_cols = ["precision", "recall"]
         cov_df = pd.DataFrame(cov, index=cov_cols, columns=cov_cols)
         metrics_df = pd.DataFrame(
-            index=['precision', 'recall'],
-            columns=['metric', 'lb_ci', 'ub_ci']
+            index=["precision", "recall"], columns=["metric", "lb_ci", "ub_ci"]
         )
-        metrics_df.loc['precision', :] = metrics[:3]
-        metrics_df.loc['recall', :] = metrics[3:6]
+        metrics_df.loc["precision", :] = metrics[:3]
+        metrics_df.loc["recall", :] = metrics[3:6]
 
         return (confusion_matrix_to_dataframe(conf_mat), metrics_df, cov_df)
     return conf_mat, metrics, cov
@@ -171,11 +165,11 @@ def precision_recall_bvn_uncertainty_confusion_matrices(
     metrics = mtr[:, :-4]
 
     if return_df:
-        cov_cols = ['precision', 'recall']
+        cov_cols = ["precision", "recall"]
         cov_df = pd.DataFrame(cov, index=cov_cols, columns=cov_cols)
         metrics_df = pd.DataFrame(
             data=metrics,
-            columns=['precision', 'lb_ci', 'ub_ci', 'recall', 'lb_ci', 'ub_ci']
+            columns=["precision", "lb_ci", "ub_ci", "recall", "lb_ci", "ub_ci"],
         )
         return metrics_df, cov_df
     return metrics, cov
@@ -228,11 +222,11 @@ def precision_recall_bvn_uncertainty_runs(
     metrics = mtr[:, :-4]
 
     if return_df:
-        cov_cols = ['precision', 'recall']
+        cov_cols = ["precision", "recall"]
         cov_df = pd.DataFrame(cov, index=cov_cols, columns=cov_cols)
         metrics_df = pd.DataFrame(
             data=metrics,
-            columns=['precision', 'lb_ci', 'ub_ci', 'recall', 'lb_ci', 'ub_ci']
+            columns=["precision", "lb_ci", "ub_ci", "recall", "lb_ci", "ub_ci"],
         )
         return (confusion_matrices_to_dataframe(conf_mat), metrics_df, cov_df)
     return conf_mat, metrics, cov

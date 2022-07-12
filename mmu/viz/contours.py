@@ -19,16 +19,16 @@ def _plot_pr_curve_contours(
     alpha,
     legend_loc,
     equal_aspect,
-    limit_axis
+    limit_axis,
 ):
     if cmap is None:
-        cmap = 'Blues'
+        cmap = "Blues"
     if legend_loc is None:
         # likely to be the best place for pr curve
-        legend_loc = 'lower center'
+        legend_loc = "lower center"
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=(12,8))
+        fig, ax = plt.subplots(figsize=(12, 8))
     else:
         fig = ax.get_figure()
 
@@ -40,9 +40,9 @@ def _plot_pr_curve_contours(
     # create contours
     ax.contourf(RX, PY, scores, levels=levels, colors=colors, alpha=alpha)  # type: ignore
     # plot precision recall
-    ax.plot(recall, precision, c='black', alpha=0.6, zorder=10)  # type: ignore
-    ax.set_xlabel('Recall', fontsize=14)  # type: ignore
-    ax.set_ylabel('Precision', fontsize=14)  # type: ignore
+    ax.plot(recall, precision, c="black", alpha=0.6, zorder=10)  # type: ignore
+    ax.set_xlabel("Recall", fontsize=14)  # type: ignore
+    ax.set_ylabel("Precision", fontsize=14)  # type: ignore
     ax.tick_params(labelsize=12)  # type: ignore
     if limit_axis:
         ylim_lb, ylim_ub = ax.get_ylim()  # type: ignore
@@ -55,7 +55,7 @@ def _plot_pr_curve_contours(
         xlim_ub = min(1.001, xlim_ub)
         ax.set_xlim(xlim_lb, xlim_ub)  # type: ignore
     if equal_aspect:
-        ax.set_aspect('equal')  # type: ignore
+        ax.set_aspect("equal")  # type: ignore
     # create custom legend with the correct colours and labels
     handles = _create_pr_legend(colors, labels)
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
@@ -79,13 +79,13 @@ def _plot_pr_contours(
     limit_axis,
 ):
     if cmap is None:
-        cmap = 'Blues'
+        cmap = "Blues"
     if legend_loc is None:
         # likely to be the best place for pr curve
-        legend_loc = 'lower left'
+        legend_loc = "lower left"
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=(12,8))
+        fig, ax = plt.subplots(figsize=(12, 8))
     else:
         fig = ax.get_figure()
 
@@ -106,13 +106,13 @@ def _plot_pr_contours(
         recall,
         precision,
         color=c_marker,
-        marker='x',
+        marker="x",
         s=50,
         lw=2,
-        zorder=len(labels) + 1
+        zorder=len(labels) + 1,
     )
-    ax.set_xlabel('Recall', fontsize=14)  # type: ignore
-    ax.set_ylabel('Precision', fontsize=14)  # type: ignore
+    ax.set_xlabel("Recall", fontsize=14)  # type: ignore
+    ax.set_ylabel("Precision", fontsize=14)  # type: ignore
     ax.tick_params(labelsize=12)  # type: ignore
 
     if limit_axis:
@@ -127,7 +127,7 @@ def _plot_pr_contours(
         ax.set_xlim(xlim_lb, xlim_ub)  # type: ignore
 
     if equal_aspect:
-        ax.set_aspect('equal')  # type: ignore
+        ax.set_aspect("equal")  # type: ignore
     # create custom legend with the correct colours and labels
     handles = _create_pr_legend_scatter(colors, c_marker, labels, (precision, recall))
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore

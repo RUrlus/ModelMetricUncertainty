@@ -12,14 +12,14 @@ def _get_radii_and_angle(cov_mat):
     a = cov_mat[1, 1]
     c = cov_mat[0, 0]
     b = cov_mat[1, 0]
-    lambda1 = (a+c)/2 + np.sqrt(((a-c)/2)**2 + b**2)
-    lambda2 = (a+c)/2 - np.sqrt(((a-c)/2)**2 + b**2)
+    lambda1 = (a + c) / 2 + np.sqrt(((a - c) / 2) ** 2 + b**2)
+    lambda2 = (a + c) / 2 - np.sqrt(((a - c) / 2) ** 2 + b**2)
 
     def calculate_theta(lambda1, a, b, c):
         if b == 0 and a >= c:
-            return 0.
+            return 0.0
         elif b == 0 and a < c:
-            return np.pi / 2.
+            return np.pi / 2.0
         else:
             return np.arctan2(lambda1 - a, b)
 
@@ -32,6 +32,7 @@ def _get_radii_and_angle(cov_mat):
 
     return precision_r, recall_r, angle
 
+
 def _plot_pr_ellipse(
     precision,
     recall,
@@ -43,16 +44,16 @@ def _plot_pr_ellipse(
     cmap,
     legend_loc,
     equal_aspect,
-    limit_axis
+    limit_axis,
 ):
     if cmap is None:
-        cmap = 'Blues'
+        cmap = "Blues"
     if legend_loc is None:
         # likely to be the best place for a single ellipse
-        legend_loc = 'lower left'
+        legend_loc = "lower left"
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=(12,8))
+        fig, ax = plt.subplots(figsize=(12, 8))
     else:
         fig = ax.get_figure()
 
@@ -77,13 +78,7 @@ def _plot_pr_ellipse(
         ax.add_patch(ellipse)  # type: ignore
 
     ax.scatter(  # type: ignore
-        recall,
-        precision,
-        color=c_marker,
-        marker='x',
-        s=50,
-        lw=2,
-        zorder=n_levels + 1
+        recall, precision, color=c_marker, marker="x", s=50, lw=2, zorder=n_levels + 1
     )
 
     if limit_axis:
@@ -99,15 +94,15 @@ def _plot_pr_ellipse(
         xlim_ub = min(1.001, xlim_ub)
         ax.set_xlim(xlim_lb, xlim_ub)  # type: ignore
 
-        ax.spines['right'].set_visible(False)  # type: ignore
-        ax.spines['top'].set_visible(False)  # type: ignore
+        ax.spines["right"].set_visible(False)  # type: ignore
+        ax.spines["top"].set_visible(False)  # type: ignore
 
-    ax.set_xlabel('Recall', fontsize=14)  # type: ignore
-    ax.set_ylabel('Precision', fontsize=14)  # type: ignore
+    ax.set_xlabel("Recall", fontsize=14)  # type: ignore
+    ax.set_ylabel("Precision", fontsize=14)  # type: ignore
     ax.tick_params(labelsize=12)  # type: ignore
 
     if equal_aspect:
-        ax.set_aspect('equal')  # type: ignore
+        ax.set_aspect("equal")  # type: ignore
     # create custom legend with the correct colours and labels
     handles = _create_pr_legend_scatter(colors, c_marker, labels, (precision, recall))
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
