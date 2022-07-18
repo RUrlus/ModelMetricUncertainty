@@ -1415,7 +1415,7 @@ class PrecisionRecallSimulatedUncertainty:
         levels: Union[int, float, np.ndarray, None] = None,
         ax=None,
         cmap: str = "Blues",
-        equal_aspect: bool = False,
+        equal_aspect: bool = True,
         limit_axis: bool = True,
         legend_loc: Optional[str] = None,
         alpha: float = 0.8,
