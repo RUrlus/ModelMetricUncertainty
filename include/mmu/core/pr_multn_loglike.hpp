@@ -466,7 +466,7 @@ inline void multn_grid_curve_error_mt(
 
     // give scores a high enough initial value that the chi2 p-values will be close to zero
     // i.e. ppf(1-1e-14) --> 64.47398179869367
-    std::fill(thread_scores.get(), thread_scores.get() + t_elem, 65);
+    std::fill(thread_scores.get(), thread_scores.get() + t_elem, 65.0);
 #pragma omp parallel num_threads(n_threads) \
     shared(n_prec_bins, n_rec_bins, n_conf_mats, prec_grid, rec_grid, conf_mat, n_sigmas, epsilon)
     {
@@ -521,7 +521,7 @@ inline void multn_grid_curve_error_mt(
     for (int64_t i = 0; i < n_elem; i++) {
         // give scores a high enough initial value that the chi2 p-values will be close to zero
         // i.e. ppf(1-1e-14) --> 64.47398179869367
-        min_score = 65;
+        min_score = 65.0;
         for (int64_t j = 0; j < n_threads; j++) {
             tscore = thread_scores[i + offsets[j]];
             if (tscore < min_score) {
@@ -533,26 +533,62 @@ inline void multn_grid_curve_error_mt(
 }  // multn_grid_curve_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
+struct simulation_store {
+    random::details::binomial_t binom_store;
+    random::pcg64_dxsm rng;
+    // memory to be used by constrained_fit_cmp
+    std::array<double, 4> probas;
+    // memory to be used to store probabilities for the multinomial alternative
+    std::array<double, 4> p_sim;
+    // allocate memory block to be used by multinomial
+    std::array<int64_t, 4> mult;
+    const int64_t n_sims;
+    const int64_t n;
+    random::details::binomial_t* sptr;
+    double* p;
+    double* p_sim_ptr;
+    int64_t* mult_ptr;
+
+    simulation_store(
+        random::pcg64_dxsm rng,
+        const int64_t n_sims,
+        const int64_t n
+    ) :
+        binom_store{random::details::binomial_t()},
+        rng{rng},
+        n_sims{n_sims},
+        n{n},
+        sptr{&binom_store}
+    {
+        sptr = &binom_store;
+        p = probas.data();
+        mult_ptr = mult.data();
+        p_sim_ptr = p_sim.data();
+    }
+};
+
 inline double prof_loglike_simulation_cov(
-    const int64_t n_sims,
-    random::pcg64_dxsm& rng,
     const double prec,
     const double rec,
     const double nll_obs,
-    const int64_t n,
-    const double* __restrict p,
-    random::details::binomial_t* sptr,
-    int64_t* mult_ptr,
-    double* p_sim_ptr) {
+    simulation_store& sim_store
+    ) {
     int64_t checks = 0;
-    for (int64_t i = 0; i < n_sims; i++) {
-        // random_multinomial is not guarentee that all values are set
-        zero_array<int64_t, 4>(mult_ptr);
+    for (int64_t i = 0; i < sim_store.n_sims; i++) {
+        // random_multinomial does not guarentee that all values are set
+        zero_array<int64_t, 4>(sim_store.mult_ptr);
         // draw a multinomial sample
-        random::details::random_multinomial(rng, n, mult_ptr, p, 4, sptr);
-        checks += prof_loglike(prec, rec, n, mult_ptr, p_sim_ptr) < nll_obs;
+        random::details::random_multinomial(
+            sim_store.rng,
+            sim_store.n,
+            sim_store.mult_ptr,
+            sim_store.p,
+            4,
+            sim_store.sptr
+        );
+        checks += prof_loglike(prec, rec, sim_store.n, sim_store.mult_ptr, sim_store.p_sim_ptr) < nll_obs;
     }
-    return static_cast<double>(checks) / n_sims;
+    return static_cast<double>(checks) / sim_store.n_sims;
 }  // prof_loglike_simulation_cov
 
 inline void multn_sim_error(
@@ -575,29 +611,6 @@ inline void multn_sim_error(
         rng.seed(seed);
     }
 
-    // -- memory allocation --
-    // memory to be used by constrained_fit_cmp
-    std::array<double, 4> probas;
-    double* p = probas.data();
-
-    // allocate memory block to be used by multinomial
-    std::array<int64_t, 4> mult;
-    int64_t* mult_ptr = mult.data();
-
-    // array used to store probabilities for the multinomial alternative
-    std::array<double, 4> p_sim;
-    double* p_sim_ptr = p_sim.data();
-
-    // struct used by the multinomial generation
-    auto binom_store = random::details::binomial_t();
-    random::details::binomial_t* sptr = &binom_store;
-
-    // struct used to store the elements used in the computation
-    // of the profile log-likelihood
-    auto nll_store = prof_loglike_t();
-    prof_loglike_t* nll_ptr = &nll_store;
-    // -- memory allocation --
-
     // obtain prec_start, prec_end, rec_start, rec_end
     get_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
     auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
@@ -605,12 +618,19 @@ inline void multn_sim_error(
     const double prec_start = bounds[0];
     const double prec_delta = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
 
+    // struct used to store the elements used in the computation
+    // of the profile log-likelihood
+    auto nll_store = prof_loglike_t();
+    prof_loglike_t* nll_ptr = &nll_store;
     set_prof_loglike_store(conf_mat, nll_ptr);
     const int64_t n = nll_ptr->in;
 
+    // struct with parameters used in the simulations
+    auto sim_store = simulation_store(rng, n_sims, n);
+
     // give scores a high enough initial value that the chi2 p-values will be close to zero
     // i.e. ppf(1-1e-14) --> 64.47398179869367
-    std::fill(scores, scores + n_bins * n_bins, 65);
+    std::fill(scores, scores + n_bins * n_bins, 65.0);
 
     double rec;
     double prec;
@@ -621,8 +641,8 @@ inline void multn_sim_error(
         for (int64_t j = 0; j < n_bins; j++) {
             // prof_loglike also sets p which we can re-use in prof_loglike sim
             rec = rec_grid[j];
-            nll_obs = prof_loglike(prec, rec, nll_ptr, p);
-            scores[idx] = prof_loglike_simulation_cov(n_sims, rng, prec, rec, nll_obs, n, p, sptr, mult_ptr, p_sim_ptr);
+            nll_obs = prof_loglike(prec, rec, nll_ptr, sim_store.p);
+            scores[idx] = prof_loglike_simulation_cov(prec, rec, nll_obs, sim_store);
             idx++;
         }
     }
@@ -653,7 +673,7 @@ inline void multn_sim_error_mt(
 
     // give scores a high enough initial value that the chi2 p-values will be close to zero
     // i.e. ppf(1-1e-14) --> 64.47398179869367
-    std::fill(scores, scores + n_bins * n_bins, 65);
+    std::fill(scores, scores + n_bins * n_bins, 65.0);
 
 #pragma omp parallel num_threads(n_threads) shared(conf_mat, gen_seeds, seed, prec_start, prec_delta, rec_grid)
     {
@@ -664,36 +684,19 @@ inline void multn_sim_error_mt(
             rng.seed(seed, omp_get_thread_num());
         }
 
-        // -- memory allocation --
-        // memory to be used by constrained_fit_cmp
-        std::array<double, 4> probas;
-        double* p = probas.data();
-
-        // allocate memory block to be used by multinomial
-        std::array<int64_t, 4> mult;
-        int64_t* mult_ptr = mult.data();
-
-        // array used to store probabilities for the multinomial alternative
-        std::array<double, 4> p_sim;
-        double* p_sim_ptr = p_sim.data();
-
-        // struct used by the multinomial generation
-        auto binom_store = random::details::binomial_t();
-        random::details::binomial_t* sptr = &binom_store;
-
         // struct used to store the elements used in the computation
         // of the profile log-likelihood
         auto nll_store = prof_loglike_t();
         prof_loglike_t* nll_ptr = &nll_store;
-        // -- memory allocation --
-
         set_prof_loglike_store(conf_mat, nll_ptr);
         const int64_t n = nll_ptr->in;
+
+        // struct with parameters used in the simulations
+        auto sim_store = simulation_store(rng, n_sims, n);
 
         double rec;
         double prec;
         double nll_obs;
-        int64_t idx = 0;
         int64_t odx = 0;
 
 #pragma omp for
@@ -701,11 +704,76 @@ inline void multn_sim_error_mt(
             prec = prec_start + (i * prec_delta);
             odx = i * n_bins;
             for (int64_t j = 0; j < n_bins; j++) {
-                idx = odx + j;
                 // prof_loglike also sets p which we can re-use in prof_loglike sim
                 rec = rec_grid[j];
-                nll_obs = prof_loglike(prec, rec, nll_ptr, p);
-                scores[idx] = prof_loglike_simulation_cov(n_sims, rng, prec, rec, nll_obs, n, p, sptr, mult_ptr, p_sim_ptr);
+                nll_obs = prof_loglike(prec, rec, nll_ptr, sim_store.p);
+                scores[odx + j] = prof_loglike_simulation_cov(prec, rec, nll_obs, sim_store);
+            }
+        }
+    } // omp parallel
+}  // multn_sim_error_mt
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
+#ifdef MMU_HAS_OPENMP_SUPPORT
+inline void multn_sim_curve_error_mt(
+    const int64_t n_sims,
+    const int64_t n_bins,
+    const int64_t* __restrict conf_mat,
+    double* __restrict scores,
+    double* __restrict bounds,
+    const double n_sigmas = 6.0,
+    const double epsilon = 1e-4,
+    const uint64_t seed = 0,
+    const int n_threads = 4
+) {
+    // obtain prec_start, prec_end, rec_start, rec_end
+    get_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
+    auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
+    details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
+    const double prec_start = bounds[0];
+    const double prec_delta = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
+
+    random::pcg_seed_seq seed_source;
+    std::array<uint64_t, 2> gen_seeds;
+    seed_source.generate(gen_seeds.begin(), gen_seeds.end());
+
+    // give scores a high enough initial value that the chi2 p-values will be close to zero
+    // i.e. ppf(1-1e-14) --> 64.47398179869367
+    std::fill(scores, scores + n_bins * n_bins, 65.0);
+
+#pragma omp parallel num_threads(n_threads) shared(conf_mat, gen_seeds, seed, prec_start, prec_delta, rec_grid)
+    {
+        random::pcg64_dxsm rng;
+        if (seed == 0) {
+            rng.seed(gen_seeds[0], omp_get_thread_num());
+        } else {
+            rng.seed(seed, omp_get_thread_num());
+        }
+
+        // struct used to store the elements used in the computation
+        // of the profile log-likelihood
+        auto nll_store = prof_loglike_t();
+        prof_loglike_t* nll_ptr = &nll_store;
+        set_prof_loglike_store(conf_mat, nll_ptr);
+        const int64_t n = nll_ptr->in;
+
+        // struct with parameters used in the simulations
+        auto sim_store = simulation_store(rng, n_sims, n);
+
+        double rec;
+        double prec;
+        double nll_obs;
+        int64_t odx = 0;
+
+#pragma omp for
+        for (int64_t i = 0; i < n_bins; i++) {
+            prec = prec_start + (i * prec_delta);
+            odx = i * n_bins;
+            for (int64_t j = 0; j < n_bins; j++) {
+                // prof_loglike also sets p which we can re-use in prof_loglike sim
+                rec = rec_grid[j];
+                nll_obs = prof_loglike(prec, rec, nll_ptr, sim_store.p);
+                scores[odx + j] = prof_loglike_simulation_cov(prec, rec, nll_obs, sim_store);
             }
         }
     } // omp parallel
