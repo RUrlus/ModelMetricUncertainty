@@ -543,7 +543,7 @@ struct simulation_store {
     // allocate memory block to be used by multinomial
     std::array<int64_t, 4> mult;
     const int64_t n_sims;
-    const int64_t n;
+    int64_t n;
     random::details::binomial_t* sptr;
     double* p;
     double* p_sim_ptr;
@@ -717,67 +717,101 @@ inline void multn_sim_error_mt(
 #ifdef MMU_HAS_OPENMP_SUPPORT
 inline void multn_sim_curve_error_mt(
     const int64_t n_sims,
-    const int64_t n_bins,
+    const int64_t n_prec_bins,
+    const int64_t n_rec_bins,
+    const int64_t n_conf_mats,
+    const double* __restrict prec_grid,
+    const double* __restrict rec_grid,
     const int64_t* __restrict conf_mat,
     double* __restrict scores,
-    double* __restrict bounds,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4,
     const uint64_t seed = 0,
-    const int n_threads = 4
-) {
-    // obtain prec_start, prec_end, rec_start, rec_end
-    get_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
-    auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
-    details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
-    const double prec_start = bounds[0];
-    const double prec_delta = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
+    const int64_t n_threads = 4) {
+    const int64_t n_elem = n_prec_bins * n_rec_bins;
+    const int64_t t_elem = n_elem * n_threads;
+    auto thread_scores = std::unique_ptr<double[]>(new double[t_elem]);
+
+    // give scores a high enough initial value that the chi2 p-values will be close to zero
+    // i.e. ppf(1-1e-14) --> 64.47398179869367
+    std::fill(thread_scores.get(), thread_scores.get() + t_elem, 1.0);
 
     random::pcg_seed_seq seed_source;
     std::array<uint64_t, 2> gen_seeds;
     seed_source.generate(gen_seeds.begin(), gen_seeds.end());
-
-    // give scores a high enough initial value that the chi2 p-values will be close to zero
-    // i.e. ppf(1-1e-14) --> 64.47398179869367
-    std::fill(scores, scores + n_bins * n_bins, 65.0);
-
-#pragma omp parallel num_threads(n_threads) shared(conf_mat, gen_seeds, seed, prec_start, prec_delta, rec_grid)
+#pragma omp parallel num_threads(n_threads) \
+    shared(n_prec_bins, n_rec_bins, n_conf_mats, prec_grid, rec_grid, conf_mat, n_sigmas, epsilon)
     {
+        double* thread_block = thread_scores.get() + (omp_get_thread_num() * n_elem);
+
+        // -- memory allocation --
+        auto nll_store = prof_loglike_t();
+        prof_loglike_t* nll_ptr = &nll_store;
+
+        // struct with parameters used in the simulations
+        //
         random::pcg64_dxsm rng;
         if (seed == 0) {
             rng.seed(gen_seeds[0], omp_get_thread_num());
         } else {
             rng.seed(seed, omp_get_thread_num());
         }
+        auto sim_store = simulation_store(rng, n_sims, 0);
 
-        // struct used to store the elements used in the computation
-        // of the profile log-likelihood
-        auto nll_store = prof_loglike_t();
-        prof_loglike_t* nll_ptr = &nll_store;
-        set_prof_loglike_store(conf_mat, nll_ptr);
-        const int64_t n = nll_ptr->in;
-
-        // struct with parameters used in the simulations
-        auto sim_store = simulation_store(rng, n_sims, n);
+        auto bounds = GridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
 
         double rec;
         double prec;
         double nll_obs;
-        int64_t odx = 0;
+        double score;
+        int64_t idx;
+        int64_t odx;
+        // -- memory allocation --
+        const int64_t* lcm;
 
 #pragma omp for
-        for (int64_t i = 0; i < n_bins; i++) {
-            prec = prec_start + (i * prec_delta);
-            odx = i * n_bins;
-            for (int64_t j = 0; j < n_bins; j++) {
-                // prof_loglike also sets p which we can re-use in prof_loglike sim
-                rec = rec_grid[j];
-                nll_obs = prof_loglike(prec, rec, nll_ptr, sim_store.p);
-                scores[odx + j] = prof_loglike_simulation_cov(prec, rec, nll_obs, sim_store);
+        for (int64_t k = 0; k < n_conf_mats; k++) {
+            lcm = conf_mat + (k * 4);
+            // update to new conf_mat
+            set_prof_loglike_store(lcm, nll_ptr);
+            bounds.compute_bounds(lcm);
+            sim_store.n = nll_store.n;
+
+            for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max; i++) {
+                prec = prec_grid[i];
+                odx = i * n_rec_bins;
+                for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max; j++) {
+                    rec = rec_grid[j];
+                    nll_obs = prof_loglike(prec, rec, nll_ptr, sim_store.p);
+                    score = prof_loglike_simulation_cov(prec, rec, nll_obs, sim_store);
+                    idx = odx + j;
+                    if (score < thread_block[idx]) {
+                        thread_block[idx] = score;
+                    }
+                }
             }
         }
-    } // omp parallel
-}  // multn_sim_error_mt
+    }  // omp parallel
+
+    // collect the scores
+    auto offsets = std::unique_ptr<int64_t[]>(new int64_t[n_threads]);
+    for (int64_t j = 0; j < n_threads; j++) {
+        offsets[j] = j * n_elem;
+    }
+
+    double tscore;
+    double min_score;
+    for (int64_t i = 0; i < n_elem; i++) {
+        min_score = 1.0;
+        for (int64_t j = 0; j < n_threads; j++) {
+            tscore = thread_scores[i + offsets[j]];
+            if (tscore < min_score) {
+                min_score = tscore;
+            }
+        }
+        scores[i] = min_score;
+    }
+}  // multn_sim_curve_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
 }  // namespace pr

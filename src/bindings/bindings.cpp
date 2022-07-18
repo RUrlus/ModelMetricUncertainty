@@ -69,6 +69,7 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     pr::bind_multn_error_mt(m);
     pr::bind_multn_grid_curve_error_mt(m);
     pr::bind_multn_sim_error_mt(m);
+    pr::bind_multn_sim_curve_error_mt(m);
     pr::bind_multn_chi2_scores_mt(m);
 #endif  // MMU_HAS_OPENMP_SUPPORT
 

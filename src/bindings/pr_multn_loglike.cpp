@@ -368,6 +368,56 @@ void bind_multn_chi2_scores_mt(py::module& m) {
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
+#ifdef MMU_HAS_OPENMP_SUPPORT
+void bind_multn_sim_curve_error_mt(py::module& m) {
+    m.def(
+        "pr_multn_sim_curve_error_mt",
+        &api::pr::multn_grid_sim_curve_error_mt,
+        R"pbdoc(Compute multinomial uncertainty on precision-recall through simulation.
+
+        Parameters
+        ----------
+        n_sims : int,
+            number of confusion matrices to simulate for each point in the grid
+        precs_grid : np.ndarray[float64]
+            the precision space over which to evaluate the uncertainty give the
+            confusion matrix
+        recs_grid : np.ndarray[float64]
+            the recall space over which to evaluate the uncertainty give the
+            confusion matrix
+        conf_mats : np.ndarray[int64]
+            the confusion matrix with flattened order: TN, FP, FN, TP
+        n_sigmas : double, default=6.0
+            number std deviations of the marginal distributions to use as
+            grid boundaries
+        epsilon : double, default=1e-4
+            epsilon used to clip recall or precision at the 0, 1 boundaries
+        seed : int, default=0
+            seed for the random number generator, if equal to zero
+            the random device is used to generate a seed
+        n_threads : int, default=4,
+            the number of threads to use
+
+        Returns
+        -------
+        coverage : np.array[np.float64]
+            percentage of simulated simulated multinomial with a lower profile
+            log-likelihood than the observed profile log-likelihood
+        bounds : np.array[np.float64]
+            the lower and upper bound of the grids for precision and recall respectively
+        )pbdoc",
+        py::arg("n_sims"),
+        py::arg("n_conf_mats"),
+        py::arg("precs_grid"),
+        py::arg("recs_grid"),
+        py::arg("conf_mats"),
+        py::arg("n_sigmas") = 6.0,
+        py::arg("epsilon") = 1e-4,
+        py::arg("seed") = 0,
+        py::arg("n_threads") = 4);
+}
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
 }  // namespace pr
 }  // namespace bindings
 }  // namespace mmu
