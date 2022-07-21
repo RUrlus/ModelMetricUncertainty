@@ -18,8 +18,6 @@ namespace pr {
 void bind_bvn_grid_error(py::module& m);
 void bind_bvn_grid_curve_error(py::module& m);
 void bind_bvn_grid_curve_error_mt(py::module& m);
-void bind_bvn_grid_curve_error_wtrain(py::module& m);
-void bind_bvn_grid_curve_error_wtrain_mt(py::module& m);
 
 void bind_bvn_chi2_score(py::module& m);
 void bind_bvn_chi2_scores(py::module& m);
