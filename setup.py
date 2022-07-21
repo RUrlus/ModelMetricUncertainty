@@ -28,7 +28,7 @@ PATCH = 0
 # dev should be the dev version number (typically 0) or None if not dev version
 DEV = None
 # rc should be the release candidate version (typically 0) or None if not rc
-RC = 2
+RC = 3
 
 FULL_VERSION = VERSION = f'{MAJOR}.{REVISION}.{PATCH}'
 IS_RELEASE = False
