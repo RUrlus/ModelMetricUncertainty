@@ -2,6 +2,8 @@
 MMU - Model Metric Uncertainty
 ==============================
 
+**A library for the evaluation of model performance and estimation of the uncertainty on these metrics.**
+
 .. image:: figs/pr_curve_mult_w_points.png
   :width: 1000
   :alt: Uncertainty on the Precision-Recall curve
@@ -9,6 +11,7 @@ MMU - Model Metric Uncertainty
 .. only:: latex
 
 .. include:: readme.rst
+   :start-line: 34
 
 **Contents**
 

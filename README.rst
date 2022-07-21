@@ -1,6 +1,12 @@
 ==============================
-Model-Metric-Uncertainty (MMU)
+MMU - Model-Metric-Uncertainty
 ==============================
+
+**A library for the evaluation of model performance and estimation of the uncertainty on these metrics.**
+
+.. figure:: docs/source/figs/pr_curve_mult_w_points.png
+    :alt: Uncertainty on the precision-recall curve
+    :align: center
 
 .. image:: https://github.com/RUrlus/ModelMetricUncertainty/actions/workflows/macos.yml/badge.svg?branch=stable
     :target: https://github.com/RUrlus/ModelMetricUncertainty/actions/workflows/macos.yml
@@ -21,9 +27,8 @@ Model-Metric-Uncertainty (MMU)
     :target: https://pypi.org/project/mmu/
     :alt: PyPi
 
-**Model-Metric-Uncertainty (MMU) is a library for the evaluation of model performance and estimation of the uncertainty on these metrics.**
-
 `Documentation <https://mmu.readthedocs.io/en/latest/>`_
+--------------------------------------------------------
 
 **MMU is currently in alpha state and not yet ready for production usage**
 
