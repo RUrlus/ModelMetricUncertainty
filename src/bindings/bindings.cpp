@@ -47,7 +47,6 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
 
     pr::bind_bvn_grid_error(m);
     pr::bind_bvn_grid_curve_error(m);
-    pr::bind_bvn_grid_curve_error_wtrain(m);
 
     pr::bind_bvn_chi2_score(m);
     pr::bind_bvn_chi2_scores(m);
@@ -63,7 +62,6 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
 #ifdef MMU_HAS_OPENMP_SUPPORT
     // lep_bvn
     pr::bind_bvn_grid_curve_error_mt(m);
-    pr::bind_bvn_grid_curve_error_wtrain_mt(m);
     pr::bind_bvn_chi2_scores_mt(m);
     // multn_loglike
     pr::bind_multn_error_mt(m);

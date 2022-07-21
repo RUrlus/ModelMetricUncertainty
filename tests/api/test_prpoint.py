@@ -545,27 +545,3 @@ def test_PREU_compute_pvalue_for():
     scores = pr_err.compute_score_for(prec, rec)
     assert scores.size == prec.size
     assert np.isnan(scores).sum() == 0
-
-
-def test_PRU_from_scores_with_train():
-    """Test PREU.from_classifier"""
-    ref_path = os.path.join(
-        os.path.abspath(os.path.dirname(__file__)),
-        'train_reference_sets.npz'
-    )
-    ll = np.load(ref_path)
-    y_test = ll.get('y_test')
-    y_score = ll.get('y_score')
-    scores_bs = ll.get('scores_bs')
-
-    pr_err = mmu.PRU.from_scores_with_train(
-        y_test,
-        scores=y_score,
-        scores_bs=scores_bs,
-        threshold=0.5,
-        obs_axis=0
-    )
-    ref_set_test = [0.0006159 , 0.00010284, 0.00010284, 0.00057342]
-    ref_set_train = [2.30241132e-04, -8.41839128e-05, -8.41839128e-05,  3.88862912e-04]
-    assert np.allclose(pr_err.cov_mat.flatten(), ref_set_test, rtol=5e3)
-    assert np.allclose(pr_err.train_cov_mat.flatten(), ref_set_train)
