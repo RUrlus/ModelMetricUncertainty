@@ -36,7 +36,7 @@ copyright = '2022, R. Urlus'
 author = 'R. Urlus'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.0rc2'
+release = '0.1.0rc3'
 
 
 # -- General configuration ---------------------------------------------------
