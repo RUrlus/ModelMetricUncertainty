@@ -545,3 +545,50 @@ def test_PREU_compute_pvalue_for():
     scores = pr_err.compute_score_for(prec, rec)
     assert scores.size == prec.size
     assert np.isnan(scores).sum() == 0
+
+
+def test_PREU_plot_integration():
+    X, y = make_classification(
+        n_samples=1000, n_classes=2, random_state=1949933174
+    )
+
+    # split into train/test sets
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.5, random_state=3437779408
+    )
+    # fit a model
+    model = LogisticRegression(solver='lbfgs')
+    model.fit(X_train, y_train)
+
+    # predict probabilities, for the positive outcome only
+    y_score = model.predict_proba(X_test)[:, 1]
+
+    mmu.PRU.from_scores(
+        y_test,
+        scores=y_score,
+        threshold=0.5,
+        method='bvn'
+    ).plot()
+
+
+def test_PRMU_plot_integration():
+    X, y = make_classification(
+        n_samples=1000, n_classes=2, random_state=1949933174
+    )
+
+    # split into train/test sets
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.5, random_state=3437779408
+    )
+    # fit a model
+    model = LogisticRegression(solver='lbfgs')
+    model.fit(X_train, y_train)
+
+    # predict probabilities, for the positive outcome only
+    y_score = model.predict_proba(X_test)[:, 1]
+
+    mmu.PRU.from_scores(
+        y_test,
+        scores=y_score,
+        threshold=0.5,
+    ).plot()
