@@ -599,7 +599,6 @@ class PrecisionRecallUncertainty:
     def _plot_ellipse(
         self,
         levels,
-        uncertainties,
         ax,
         cmap,
         equal_aspect,
@@ -782,7 +781,6 @@ class PrecisionRecallUncertainty:
         if self._has_cov is True:
             return self._plot_ellipse(
                 levels=levels,
-                uncertainties=source,
                 ax=ax,
                 cmap=cmap,
                 equal_aspect=equal_aspect,

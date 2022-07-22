@@ -10,7 +10,6 @@ from mmu.commons import (
     check_array,
     _convert_to_float,
     _convert_to_int,
-    _convert_to_ext_types,
 )
 from mmu.commons.checks import _check_n_threads
 from mmu.metrics.utils import auto_thresholds
