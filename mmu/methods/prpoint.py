@@ -8,11 +8,10 @@ import pandas as pd
 import scipy.stats as sts
 
 from mmu.commons import check_array
-from mmu.commons import _convert_to_int, _convert_to_float, _convert_to_ext_types
+from mmu.commons import _convert_to_int, _convert_to_float
 from mmu.commons.checks import _check_n_threads
 from mmu.metrics.confmat import confusion_matrix
 from mmu.metrics.confmat import confusion_matrix_to_dataframe
-from mmu.metrics.confmat import confusion_matrices_to_dataframe
 from mmu.viz.ellipse import _plot_pr_ellipse
 from mmu.viz.contours import _plot_pr_contours
 
@@ -525,7 +524,7 @@ class PrecisionRecallUncertainty:
         prec: Union[float, np.ndarray],
         rec: Union[float, np.ndarray],
         epsilon: float = 1e-12,
-    ) -> float:
+    ) -> Union[float, np.ndarray]:
         """Compute p-value(s) for a given precision(s) and recall(s).
         If method is `bvn` the sum of squared Z scores is computed, if method
         is 'mult' the profile loglikelihood is computed. Both follow are chi2
