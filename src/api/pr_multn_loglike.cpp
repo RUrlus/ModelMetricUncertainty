@@ -1,5 +1,5 @@
-/* pr_multn_loglike.cpp -- Implementation of Python API of multinomial log-likelihood uncertainty
- * Copyright 2022 Ralph Urlus
+/* pr_multn_loglike.cpp -- Implementation of Python API of multinomial
+ * log-likelihood uncertainty Copyright 2022 Ralph Urlus
  */
 #include <mmu/api/pr_multn_loglike.hpp>  // for py::array
 
@@ -9,9 +9,14 @@ namespace mmu {
 namespace api {
 namespace pr {
 
-py::tuple multn_error(const int64_t n_bins, const i64arr& conf_mat, const double n_sigmas, const double epsilon) {
+py::tuple multn_error(
+    const int64_t n_bins,
+    const i64arr& conf_mat,
+    const double n_sigmas,
+    const double epsilon) {
     if (!npy::is_well_behaved(conf_mat)) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     auto result = f64arr({n_bins, n_bins});
     auto bounds = f64arr({2, 2});
@@ -30,7 +35,8 @@ py::tuple multn_error_mt(
     const double epsilon,
     const int n_threads) {
     if (!npy::is_well_behaved(conf_mat)) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     auto result = f64arr({n_bins, n_bins});
     auto bounds = f64arr({2, 2});
@@ -38,14 +44,7 @@ py::tuple multn_error_mt(
     double* bnds_ptr = npy::get_data(bounds);
     int64_t* cm_ptr = npy::get_data(conf_mat);
     core::pr::multn_error_mt(
-        n_bins,
-        cm_ptr,
-        res_ptr,
-        bnds_ptr,
-        n_sigmas,
-        epsilon,
-        n_threads
-    );
+        n_bins, cm_ptr, res_ptr, bnds_ptr, n_sigmas, epsilon, n_threads);
     return py::make_tuple(result, bounds);
 }  // multn_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
@@ -56,32 +55,42 @@ double multn_chi2_score(
     const i64arr& conf_mat,
     const double epsilon = 1e-4) {
     if (!npy::is_well_behaved(conf_mat)) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     if (conf_mat.size() != 4) {
         throw std::runtime_error("``conf_mat`` should have length of 4.");
     }
-    return core::pr::multn_chi2_score(prec, rec, npy::get_data(conf_mat), epsilon);
+    return core::pr::multn_chi2_score(
+        prec, rec, npy::get_data(conf_mat), epsilon);
 }
 
 f64arr multn_chi2_scores(
     const f64arr& precs,
     const f64arr& recs,
     const i64arr& conf_mat,
-    const double epsilon = 1e-4
-) {
-    if ((!npy::is_well_behaved(conf_mat)) || (!npy::is_well_behaved(precs)) || (!npy::is_well_behaved(recs))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    const double epsilon = 1e-4) {
+    if ((!npy::is_well_behaved(conf_mat)) || (!npy::is_well_behaved(precs))
+        || (!npy::is_well_behaved(recs))) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     if (conf_mat.size() != 4) {
         throw std::runtime_error("``conf_mat`` should have length of 4.");
     }
     if (precs.size() != recs.size()) {
-        throw std::runtime_error("``precs`` and ``recs`` should have equal length.");
+        throw std::runtime_error(
+            "``precs`` and ``recs`` should have equal length.");
     }
     const int64_t n_points = precs.size();
     auto scores = f64arr(n_points);
-    core::pr::multn_chi2_scores(n_points, npy::get_data(precs), npy::get_data(recs), npy::get_data(conf_mat), npy::get_data(scores), epsilon);
+    core::pr::multn_chi2_scores(
+        n_points,
+        npy::get_data(precs),
+        npy::get_data(recs),
+        npy::get_data(conf_mat),
+        npy::get_data(scores),
+        epsilon);
     return scores;
 }
 
@@ -90,24 +99,31 @@ f64arr multn_chi2_scores_mt(
     const f64arr& precs,
     const f64arr& recs,
     const i64arr& conf_mat,
-    const double epsilon = 1e-4
-) {
-    if ((!npy::is_well_behaved(conf_mat)) || (!npy::is_well_behaved(precs)) || (!npy::is_well_behaved(recs))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    const double epsilon = 1e-4) {
+    if ((!npy::is_well_behaved(conf_mat)) || (!npy::is_well_behaved(precs))
+        || (!npy::is_well_behaved(recs))) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     if (conf_mat.size() != 4) {
         throw std::runtime_error("``conf_mat`` should have length of 4.");
     }
     if (precs.size() != recs.size()) {
-        throw std::runtime_error("``precs`` and ``recs`` should have equal length.");
+        throw std::runtime_error(
+            "``precs`` and ``recs`` should have equal length.");
     }
     const int64_t n_points = precs.size();
     auto scores = f64arr(n_points);
-    core::pr::multn_chi2_scores_mt(n_points, npy::get_data(precs), npy::get_data(recs), npy::get_data(conf_mat), npy::get_data(scores), epsilon);
+    core::pr::multn_chi2_scores_mt(
+        n_points,
+        npy::get_data(precs),
+        npy::get_data(recs),
+        npy::get_data(conf_mat),
+        npy::get_data(scores),
+        epsilon);
     return scores;
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
-
 
 f64arr multn_grid_error(
     const f64arr& prec_grid,
@@ -115,8 +131,10 @@ f64arr multn_grid_error(
     const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon) {
-    if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid)) || (!npy::is_well_behaved(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid))
+        || (!npy::is_well_behaved(conf_mat))) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();
@@ -140,8 +158,10 @@ f64arr multn_grid_curve_error(
     const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon) {
-    if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid)) || (!npy::is_well_behaved(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid))
+        || (!npy::is_well_behaved(conf_mat))) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();
@@ -168,8 +188,10 @@ f64arr multn_grid_curve_error_mt(
     const double n_sigmas,
     const double epsilon,
     const int64_t n_threads) {
-    if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid)) || (!npy::is_well_behaved(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid))
+        || (!npy::is_well_behaved(conf_mat))) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();
@@ -198,12 +220,21 @@ py::tuple multn_sim_error(
     const uint64_t seed,
     const uint64_t stream) {
     if (!npy::is_well_behaved(conf_mat)) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     auto scores = f64arr({n_bins, n_bins});
     auto bounds = f64arr({2, 2});
     core::pr::multn_sim_error(
-        n_sims, n_bins, npy::get_data(conf_mat), npy::get_data(scores), npy::get_data(bounds), n_sigmas, epsilon, seed, stream);
+        n_sims,
+        n_bins,
+        npy::get_data(conf_mat),
+        npy::get_data(scores),
+        npy::get_data(bounds),
+        n_sigmas,
+        epsilon,
+        seed,
+        stream);
     return py::make_tuple(scores, bounds);
 }  // multn_sim_error
 
@@ -217,13 +248,22 @@ py::tuple multn_sim_error_mt(
     const uint64_t seed,
     const int n_threads) {
     if (!npy::is_well_behaved(conf_mat)) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
 
     auto bounds = f64arr({2, 2});
     auto scores = f64arr({n_bins, n_bins});
     core::pr::multn_sim_error_mt(
-        n_sims, n_bins, npy::get_data(conf_mat), npy::get_data(scores), npy::get_data(bounds), n_sigmas, epsilon, seed, n_threads);
+        n_sims,
+        n_bins,
+        npy::get_data(conf_mat),
+        npy::get_data(scores),
+        npy::get_data(bounds),
+        n_sigmas,
+        epsilon,
+        seed,
+        n_threads);
     return py::make_tuple(scores, bounds);
 }  // multn_sim_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
@@ -239,8 +279,10 @@ f64arr multn_grid_sim_curve_error_mt(
     const double epsilon,
     const uint64_t seed,
     const int64_t n_threads) {
-    if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid)) || (!npy::is_well_behaved(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid))
+        || (!npy::is_well_behaved(conf_mat))) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();

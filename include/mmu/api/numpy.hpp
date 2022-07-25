@@ -6,7 +6,8 @@
 
 /* pybind11 include required even if not explicitly used
  * to prevent link with pythonXX_d.lib on Win32
- * (cf Py_DEBUG defined in numpy headers and https://github.com/pybind/pybind11/issues/1295)
+ * (cf Py_DEBUG defined in numpy headers and
+ * https://github.com/pybind/pybind11/issues/1295)
  */
 #include <pybind11/numpy.h>  // for py::array_t
 #include <pybind11/pybind11.h>
@@ -29,7 +30,8 @@ namespace mmu {
 namespace npc {
 
 inline bool is_f_contiguous(PyObject* src) {
-    return PyArray_CHKFLAGS(reinterpret_cast<PyArrayObject*>(src), NPY_ARRAY_F_CONTIGUOUS);
+    return PyArray_CHKFLAGS(
+        reinterpret_cast<PyArrayObject*>(src), NPY_ARRAY_F_CONTIGUOUS);
 }
 
 inline bool is_f_contiguous(PyArrayObject* src) {
@@ -37,7 +39,8 @@ inline bool is_f_contiguous(PyArrayObject* src) {
 }
 
 inline bool is_c_contiguous(PyObject* src) {
-    return PyArray_CHKFLAGS(reinterpret_cast<PyArrayObject*>(src), NPY_ARRAY_C_CONTIGUOUS);
+    return PyArray_CHKFLAGS(
+        reinterpret_cast<PyArrayObject*>(src), NPY_ARRAY_C_CONTIGUOUS);
 }
 
 inline bool is_c_contiguous(PyArrayObject* src) {
@@ -46,11 +49,15 @@ inline bool is_c_contiguous(PyArrayObject* src) {
 
 inline bool is_contiguous(PyObject* src) {
     auto arr = reinterpret_cast<PyArrayObject*>(src);
-    return (PyArray_CHKFLAGS(arr, NPY_ARRAY_C_CONTIGUOUS) || PyArray_CHKFLAGS(arr, NPY_ARRAY_F_CONTIGUOUS));
+    return (
+        PyArray_CHKFLAGS(arr, NPY_ARRAY_C_CONTIGUOUS)
+        || PyArray_CHKFLAGS(arr, NPY_ARRAY_F_CONTIGUOUS));
 }
 
 inline bool is_contiguous(PyArrayObject* arr) {
-    return (PyArray_CHKFLAGS(arr, NPY_ARRAY_C_CONTIGUOUS) || PyArray_CHKFLAGS(arr, NPY_ARRAY_F_CONTIGUOUS));
+    return (
+        PyArray_CHKFLAGS(arr, NPY_ARRAY_C_CONTIGUOUS)
+        || PyArray_CHKFLAGS(arr, NPY_ARRAY_F_CONTIGUOUS));
 }
 
 inline bool is_aligned(PyObject* src) {
@@ -176,7 +183,9 @@ inline bool all_finite_strided(const py::array_t<T>& arr) {
     // argsort the strides
     std::vector<size_t> idx(3);
     std::iota(idx.begin(), idx.end(), 0);
-    std::sort(idx.begin(), idx.begin() + ndim, [&](size_t i1, size_t i2) { return strides[i1] < strides[i2]; });
+    std::sort(idx.begin(), idx.begin() + ndim, [&](size_t i1, size_t i2) {
+        return strides[i1] < strides[i2];
+    });
 
     int s0 = strides[idx[0]];
     size_t acc = 0;

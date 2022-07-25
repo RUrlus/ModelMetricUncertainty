@@ -1,5 +1,5 @@
-/* pr_bvn_grid.cpp -- Implementation of Python API of bvn uncertainty over grid precision recall grid
- * Copyright 2022 Ralph Urlus
+/* pr_bvn_grid.cpp -- Implementation of Python API of bvn uncertainty over grid
+ * precision recall grid Copyright 2022 Ralph Urlus
  */
 #include <mmu/api/pr_bvn_grid.hpp>
 
@@ -15,8 +15,10 @@ py::tuple bvn_grid_error(
     const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon) {
-    if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid)) || (!npy::is_well_behaved(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid))
+        || (!npy::is_well_behaved(conf_mat))) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();
@@ -41,32 +43,42 @@ double bvn_chi2_score(
     const i64arr& conf_mat,
     const double epsilon = 1e-4) {
     if (!npy::is_well_behaved(conf_mat)) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     if (conf_mat.size() != 4) {
         throw std::runtime_error("``conf_mat`` should have length of 4.");
     }
-    return core::pr::bvn_chi2_score(prec, rec, npy::get_data(conf_mat), epsilon);
+    return core::pr::bvn_chi2_score(
+        prec, rec, npy::get_data(conf_mat), epsilon);
 }
 
 f64arr bvn_chi2_scores(
     const f64arr& precs,
     const f64arr& recs,
     const i64arr& conf_mat,
-    const double epsilon = 1e-4
-) {
-    if ((!npy::is_well_behaved(conf_mat)) || (!npy::is_well_behaved(precs)) || (!npy::is_well_behaved(recs))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    const double epsilon = 1e-4) {
+    if ((!npy::is_well_behaved(conf_mat)) || (!npy::is_well_behaved(precs))
+        || (!npy::is_well_behaved(recs))) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     if (conf_mat.size() != 4) {
         throw std::runtime_error("``conf_mat`` should have length of 4.");
     }
     if (precs.size() != recs.size()) {
-        throw std::runtime_error("``precs`` and ``recs`` should have equal length.");
+        throw std::runtime_error(
+            "``precs`` and ``recs`` should have equal length.");
     }
     const int64_t n_points = precs.size();
     auto scores = f64arr(n_points);
-    core::pr::bvn_chi2_scores(n_points, npy::get_data(precs), npy::get_data(recs), npy::get_data(conf_mat), npy::get_data(scores), epsilon);
+    core::pr::bvn_chi2_scores(
+        n_points,
+        npy::get_data(precs),
+        npy::get_data(recs),
+        npy::get_data(conf_mat),
+        npy::get_data(scores),
+        epsilon);
     return scores;
 }
 
@@ -75,20 +87,28 @@ f64arr bvn_chi2_scores_mt(
     const f64arr& precs,
     const f64arr& recs,
     const i64arr& conf_mat,
-    const double epsilon = 1e-4
-) {
-    if ((!npy::is_well_behaved(conf_mat)) || (!npy::is_well_behaved(precs)) || (!npy::is_well_behaved(recs))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    const double epsilon = 1e-4) {
+    if ((!npy::is_well_behaved(conf_mat)) || (!npy::is_well_behaved(precs))
+        || (!npy::is_well_behaved(recs))) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     if (conf_mat.size() != 4) {
         throw std::runtime_error("``conf_mat`` should have length of 4.");
     }
     if (precs.size() != recs.size()) {
-        throw std::runtime_error("``precs`` and ``recs`` should have equal length.");
+        throw std::runtime_error(
+            "``precs`` and ``recs`` should have equal length.");
     }
     const int64_t n_points = precs.size();
     auto scores = f64arr(n_points);
-    core::pr::bvn_chi2_scores_mt(n_points, npy::get_data(precs), npy::get_data(recs), npy::get_data(conf_mat), npy::get_data(scores), epsilon);
+    core::pr::bvn_chi2_scores_mt(
+        n_points,
+        npy::get_data(precs),
+        npy::get_data(recs),
+        npy::get_data(conf_mat),
+        npy::get_data(scores),
+        epsilon);
     return scores;
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
@@ -100,8 +120,10 @@ py::tuple bvn_grid_curve_error(
     const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon) {
-    if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid)) || (!npy::is_well_behaved(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid))
+        || (!npy::is_well_behaved(conf_mat))) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();
@@ -129,9 +151,11 @@ py::tuple bvn_grid_curve_error_mt(
     const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon,
-    const int64_t n_threads) {
-    if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid)) || (!npy::is_well_behaved(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+    const int n_threads) {
+    if ((!npy::is_well_behaved(prec_grid)) || (!npy::is_well_behaved(rec_grid))
+        || (!npy::is_well_behaved(conf_mat))) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     const int64_t prec_bins = prec_grid.size();
     const int64_t rec_bins = rec_grid.size();

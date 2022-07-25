@@ -1,4 +1,5 @@
-/* mmu/random/distributions.hpp -- Headers of binomial and multinomial generators.
+/* mmu/random/distributions.hpp -- Headers of binomial and multinomial
+ * generators.
  *
  * The below implementation was taken and modified from Numpy:
  *
@@ -83,19 +84,25 @@ inline double random_standard_uniform(pcg64_dxsm& rng) {
     return next_double(rng);
 }
 
-inline void random_standard_uniform_fill(pcg64_dxsm& rng, int64_t cnt, double* out) {
+inline void
+random_standard_uniform_fill(pcg64_dxsm& rng, int64_t cnt, double* out) {
     int64_t i;
     for (i = 0; i < cnt; i++) {
         out[i] = next_double(rng);
     }
 }
 
-inline int64_t random_binomial_btpe(pcg64_dxsm& rng, const int64_t n, const double p, binomial_t* binomial) {
+inline int64_t random_binomial_btpe(
+    pcg64_dxsm& rng,
+    const int64_t n,
+    const double p,
+    binomial_t* binomial) {
     double r, q, fm, p1, xm, xl, xr, c, laml, lamr, p2, p3, p4;
     double a, u, v, s, F, rho, t, A, nrq, x1, x2, f1, f2, z, z2, w, w2, x;
     int64_t m, y, k, i;
 
-    if (!(binomial->has_binomial) || (binomial->nsave != n) || (binomial->psave != p)) {
+    if (!(binomial->has_binomial) || (binomial->nsave != n)
+        || (binomial->psave != p)) {
         /* initialize */
         binomial->nsave = n;
         binomial->psave = p;
@@ -192,7 +199,8 @@ Step50:
     goto Step60;
 
 Step52:
-    rho = (k / (nrq)) * ((k * (k / 3.0 + 0.625) + 0.16666666666666666) / nrq + 0.5);
+    rho = (k / (nrq))
+          * ((k * (k / 3.0 + 0.625) + 0.16666666666666666) / nrq + 0.5);
     t = -k * k / (2 * nrq);
     /* log(0.0) ok here */
     A = log(v);
@@ -210,11 +218,16 @@ Step52:
     z2 = z * z;
     w2 = w * w;
     if (A
-        > (xm * log(f1 / x1) + (n - m + 0.5) * log(z / w) + (y - m) * log(w * r / (x1 * q))
-           + (13680. - (462. - (132. - (99. - 140. / f2) / f2) / f2) / f2) / f1 / 166320.
-           + (13680. - (462. - (132. - (99. - 140. / z2) / z2) / z2) / z2) / z / 166320.
-           + (13680. - (462. - (132. - (99. - 140. / x2) / x2) / x2) / x2) / x1 / 166320.
-           + (13680. - (462. - (132. - (99. - 140. / w2) / w2) / w2) / w2) / w / 166320.)) {
+        > (xm * log(f1 / x1) + (n - m + 0.5) * log(z / w)
+           + (y - m) * log(w * r / (x1 * q))
+           + (13680. - (462. - (132. - (99. - 140. / f2) / f2) / f2) / f2) / f1
+                 / 166320.
+           + (13680. - (462. - (132. - (99. - 140. / z2) / z2) / z2) / z2) / z
+                 / 166320.
+           + (13680. - (462. - (132. - (99. - 140. / x2) / x2) / x2) / x2) / x1
+                 / 166320.
+           + (13680. - (462. - (132. - (99. - 140. / w2) / w2) / w2) / w2) / w
+                 / 166320.)) {
         goto Step10;
     }
 
@@ -226,11 +239,16 @@ Step60:
     return y;
 }
 
-inline int64_t random_binomial_inversion(pcg64_dxsm& rng, const int64_t n, const double p, binomial_t* binomial) {
+inline int64_t random_binomial_inversion(
+    pcg64_dxsm& rng,
+    const int64_t n,
+    const double p,
+    binomial_t* binomial) {
     double q, qn, np, px, U;
     int64_t X, bound;
 
-    if (!(binomial->has_binomial) || (binomial->nsave != n) || (binomial->psave != p)) {
+    if (!(binomial->has_binomial) || (binomial->nsave != n)
+        || (binomial->psave != p)) {
         binomial->nsave = n;
         binomial->psave = p;
         binomial->has_binomial = 1;
@@ -261,7 +279,11 @@ inline int64_t random_binomial_inversion(pcg64_dxsm& rng, const int64_t n, const
     return X;
 }
 
-inline int64_t random_binomial(pcg64_dxsm& rng, const double p, const int64_t n, binomial_t* binomial) {
+inline int64_t random_binomial(
+    pcg64_dxsm& rng,
+    const double p,
+    const int64_t n,
+    binomial_t* binomial) {
     double q;
 
     if ((n == 0LL) || (p == 0.0f))

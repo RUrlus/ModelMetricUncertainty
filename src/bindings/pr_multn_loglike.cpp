@@ -1,5 +1,5 @@
-/* pr_multn_loglike.cpp -- Python bindings of multinomial log-likelihood uncertainty
- * Copyright 2022 Ralph Urlus
+/* pr_multn_loglike.cpp -- Python bindings of multinomial log-likelihood
+ * uncertainty Copyright 2022 Ralph Urlus
  */
 #include <mmu/bindings/pr_multn_loglike.hpp>
 
@@ -74,7 +74,7 @@ void bind_multn_error_mt(py::module& m) {
         py::arg("epsilon") = 1e-4,
         py::arg("n_threads") = 4);
 }
-#endif // MMU_HAS_OPENMP_SUPPORT
+#endif  // MMU_HAS_OPENMP_SUPPORT
 
 void bind_multn_grid_error(py::module& m) {
     m.def(
@@ -336,7 +336,6 @@ void bind_multn_chi2_scores(py::module& m) {
         py::arg("conf_mat"),
         py::arg("epsilon") = 1e-4);
 }
-
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
 void bind_multn_chi2_scores_mt(py::module& m) {

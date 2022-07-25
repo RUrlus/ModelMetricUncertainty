@@ -59,7 +59,7 @@ py::tuple bvn_grid_curve_error_mt(
     const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon,
-    const int64_t n_threads);
+    const int n_threads);
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
 }  // namespace pr

@@ -1,5 +1,5 @@
-/* utils.hpp -- Python bindings for utility functions from mmu/numpy and mmu/utils
- * Copyright 2022 Ralph Urlus
+/* utils.hpp -- Python bindings for utility functions from mmu/numpy and
+ * mmu/utils Copyright 2022 Ralph Urlus
  */
 #ifndef INCLUDE_MMU_BINDINGS_UTILS_HPP_
 #define INCLUDE_MMU_BINDINGS_UTILS_HPP_

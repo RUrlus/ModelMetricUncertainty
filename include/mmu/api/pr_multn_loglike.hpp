@@ -1,5 +1,5 @@
-/* multn_loglike.hpp -- Implementation of Python API of multinomial log-likelihood uncertainty
- * Copyright 2022 Ralph Urlus
+/* multn_loglike.hpp -- Implementation of Python API of multinomial
+ * log-likelihood uncertainty Copyright 2022 Ralph Urlus
  */
 #ifndef INCLUDE_MMU_API_PR_MULTN_LOGLIKE_HPP_
 #define INCLUDE_MMU_API_PR_MULTN_LOGLIKE_HPP_
@@ -18,8 +18,11 @@ namespace mmu {
 namespace api {
 namespace pr {
 
-py::tuple
-multn_error(const int64_t n_bins, const i64arr& conf_mat, const double n_sigmas, const double epsilon);
+py::tuple multn_error(
+    const int64_t n_bins,
+    const i64arr& conf_mat,
+    const double n_sigmas,
+    const double epsilon);
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
 py::tuple multn_error_mt(

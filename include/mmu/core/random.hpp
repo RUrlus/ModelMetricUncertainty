@@ -131,7 +131,8 @@ inline int64_t* generate_confusion_matrices_mt(
 
 #pragma omp for
         for (int64_t i = 0; i < n_matrices; i++) {
-            random::details::random_multinomial(rng, N, result + (i * 4), probas, 4, sptr);
+            random::details::random_multinomial(
+                rng, N, result + (i * 4), probas, 4, sptr);
         }
     }  // omp parallel
     return result;

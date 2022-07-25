@@ -1,5 +1,5 @@
-/* pr_multn_loglike.hpp -- Implementation Multinomial uncertainty over Precision-Recall using Wilk's theorem
- * Copyright 2022 Ralph Urlus
+/* pr_multn_loglike.hpp -- Implementation Multinomial uncertainty over
+ * Precision-Recall using Wilk's theorem Copyright 2022 Ralph Urlus
  */
 #ifndef INCLUDE_MMU_CORE_PR_MULTN_LOGLIKE_HPP_
 #define INCLUDE_MMU_CORE_PR_MULTN_LOGLIKE_HPP_
@@ -16,10 +16,10 @@
 #include <memory>
 #include <utility>
 
-#include <mmu/core/common.hpp>
-#include <mmu/core/metrics.hpp>
 #include <mmu/core/bvn_error.hpp>
+#include <mmu/core/common.hpp>
 #include <mmu/core/grid_bounds.hpp>
+#include <mmu/core/metrics.hpp>
 #include <mmu/core/random.hpp>
 
 /* conf_mat layout:
@@ -31,6 +31,12 @@
 
 namespace mmu {
 namespace core {
+
+// fill value for the chi2 scres, this values results
+// p-values very close to 1
+// chi2.ppf(1-1e-14) --> 64.47398179869367
+constexpr double MULT_DEFAULT_CHI2_SCORE = 65.0;
+
 namespace details {
 
 template <typename T, isFloat<T> = true>
@@ -51,7 +57,8 @@ inline double xlogy(T x, T y) {
 }  // namespace details
 
 namespace pr {
-/* Compute the most conservative probabilities for a given confusion matrix constrained by precision and recall.
+/* Compute the most conservative probabilities for a given confusion matrix
+ * constrained by precision and recall.
  *
  * Parameters
  * ----------
@@ -72,8 +79,12 @@ inline void constrained_fit_cmp(
 
     // guard against divide by zero
     constexpr double ratio_fill = (1.0 - 1e-12) / 1e-12;
-    const double rec_ratio = rec > std::numeric_limits<double>::epsilon() ? (1.0 - rec) / rec : ratio_fill;
-    const double prec_ratio = prec > std::numeric_limits<double>::epsilon() ? (1.0 - prec) / prec : ratio_fill;
+    const double rec_ratio = rec > std::numeric_limits<double>::epsilon()
+                                 ? (1.0 - rec) / rec
+                                 : ratio_fill;
+    const double prec_ratio = prec > std::numeric_limits<double>::epsilon()
+                                  ? (1.0 - prec) / prec
+                                  : ratio_fill;
     const double alpha = 1 + prec_ratio + rec_ratio;
     const double p_tp = (n3 / n4) * (1. / alpha);
     const double p_fn = rec_ratio * p_tp;
@@ -86,7 +97,8 @@ inline void constrained_fit_cmp(
     probas[3] = p_tp;
 }  // constrained_fit_cmp
 
-/* Compute the most conservative probabilities for a given confusion matrix constrained by precision and recall.
+/* Compute the most conservative probabilities for a given confusion matrix
+ * constrained by precision and recall.
  *
  * Parameters
  * ----------
@@ -95,8 +107,12 @@ inline void constrained_fit_cmp(
  *  conf_mat : confusion matrix with order TN, FP, FN, TP
  *  probas : result array
  */
-inline void
-constrained_fit_cmp(const double prec, const double rec, const double n3, const double n4, double* __restrict probas) {
+inline void constrained_fit_cmp(
+    const double prec,
+    const double rec,
+    const double n3,
+    const double n4,
+    double* __restrict probas) {
     const double rec_ratio = (1.0 - rec) / rec;
     const double prec_ratio = (1.0 - prec) / prec;
     probas[3] = (n3 / n4) * (1. / (1. + prec_ratio + rec_ratio));
@@ -121,7 +137,9 @@ typedef struct s_prof_loglike_t {
     double nll_h0;
 } prof_loglike_t;
 
-inline void set_prof_loglike_store(const int64_t* __restrict conf_mat, prof_loglike_t* store) {
+inline void set_prof_loglike_store(
+    const int64_t* __restrict conf_mat,
+    prof_loglike_t* store) {
     // total number of entries in the confusion matrix
     const int64_t in3 = conf_mat[1] + conf_mat[2] + conf_mat[3];
     store->n3 = static_cast<double>(in3);
@@ -138,12 +156,11 @@ inline void set_prof_loglike_store(const int64_t* __restrict conf_mat, prof_logl
     store->p_fn = store->x_fn / store->n;
     store->p_tp = store->x_tp / store->n;
 
-    store->nll_h0 = -2 * (
-        details::xlogy(store->x_tn, store->p_tn)
-        + details::xlogy(store->x_fp, store->p_fp)
-        + details::xlogy(store->x_fn, store->p_fn)
-        + details::xlogy(store->x_tp, store->p_tp)
-    );
+    store->nll_h0 = -2
+                    * (details::xlogy(store->x_tn, store->p_tn)
+                       + details::xlogy(store->x_fp, store->p_fp)
+                       + details::xlogy(store->x_fn, store->p_fn)
+                       + details::xlogy(store->x_tp, store->p_tp));
 }
 
 /* Compute -2logp of multinomial distribution given a precision and recall.
@@ -154,10 +171,17 @@ inline void set_prof_loglike_store(const int64_t* __restrict conf_mat, prof_logl
  *
  * We compute -2ln(L_h0) + 2ln(L_h1))
  */
-inline double prof_loglike(const double prec, const double rec, prof_loglike_t* store, double* __restrict p_h0) {
+inline double prof_loglike(
+    const double prec,
+    const double rec,
+    prof_loglike_t* store,
+    double* __restrict p_h0) {
     constrained_fit_cmp(prec, rec, store->n3, store->n, p_h0);
-
-    const double nll_h1 = -2 * (details::xlogy(store->x_tn, p_h0[0]) + details::xlogy(store->x_fp, p_h0[1]) + details::xlogy(store->x_fn, p_h0[2]) + details::xlogy(store->x_tp, p_h0[3]));
+    const double nll_h1 = -2
+                          * (details::xlogy(store->x_tn, p_h0[0])
+                             + details::xlogy(store->x_fp, p_h0[1])
+                             + details::xlogy(store->x_fn, p_h0[2])
+                             + details::xlogy(store->x_tp, p_h0[3]));
     return nll_h1 - store->nll_h0;
 }  // prof_loglike
 
@@ -169,8 +193,12 @@ inline double prof_loglike(const double prec, const double rec, prof_loglike_t* 
  *
  * We compute -2ln(L_h0) + 2ln(L_h1))
  */
-inline double
-prof_loglike(const double prec, const double rec, const double n, const int64_t* __restrict conf_mat, double* __restrict p_h0) {
+inline double prof_loglike(
+    const double prec,
+    const double rec,
+    const double n,
+    const int64_t* __restrict conf_mat,
+    double* __restrict p_h0) {
     const auto n3 = n - static_cast<double>(conf_mat[0]);
     const auto x_tn = static_cast<double>(conf_mat[0]);
     const auto x_fp = static_cast<double>(conf_mat[1]);
@@ -178,11 +206,17 @@ prof_loglike(const double prec, const double rec, const double n, const int64_t*
     const auto x_tp = static_cast<double>(conf_mat[3]);
 
     // constitutes the optimal/unconstrained fit of a multinomial
-    const double nll_h0 = -2 * (details::xlogy(x_tn, x_tn / n) + details::xlogy(x_fp, x_fp / n) + details::xlogy(x_fn, x_fn / n) + details::xlogy(x_tp, x_tp / n));
+    const double nll_h0
+        = -2
+          * (details::xlogy(x_tn, x_tn / n) + details::xlogy(x_fp, x_fp / n)
+             + details::xlogy(x_fn, x_fn / n) + details::xlogy(x_tp, x_tp / n));
 
     constrained_fit_cmp(prec, rec, n3, n, p_h0);
 
-    const double nll_h1 = -2. * (details::xlogy(x_tn, p_h0[0]) + details::xlogy(x_fp, p_h0[1]) + details::xlogy(x_fn, p_h0[2]) + details::xlogy(x_tp, p_h0[3]));
+    const double nll_h1
+        = -2.
+          * (details::xlogy(x_tn, p_h0[0]) + details::xlogy(x_fp, p_h0[1])
+             + details::xlogy(x_fn, p_h0[2]) + details::xlogy(x_tp, p_h0[3]));
     return nll_h1 - nll_h0;
 }  // prof_loglike
 
@@ -196,15 +230,15 @@ inline double multn_chi2_score(
     std::array<double, 4> probas;
     double* p = probas.data();
     // -- memory allocation --
-    const auto n = static_cast<double>(conf_mat[0] + conf_mat[1] + conf_mat[2] + conf_mat[3]);
+    const auto n = static_cast<double>(
+        conf_mat[0] + conf_mat[1] + conf_mat[2] + conf_mat[3]);
     const double max_val = 1.0 - epsilon;
     return prof_loglike(
         details::clamp(prec, epsilon, max_val),
         details::clamp(rec, epsilon, max_val),
         n,
         conf_mat,
-        p
-    );
+        p);
 }  // multn_chi2_score
 
 inline void multn_chi2_scores(
@@ -230,10 +264,9 @@ inline void multn_chi2_scores(
             details::clamp(precs[i], epsilon, max_val),
             details::clamp(recs[i], epsilon, max_val),
             nll_ptr,
-            p
-        );
+            p);
     }
-} // multn_chi2_scores
+}  // multn_chi2_scores
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
 inline void multn_chi2_scores_mt(
@@ -243,12 +276,10 @@ inline void multn_chi2_scores_mt(
     const int64_t* __restrict conf_mat,
     double* scores,
     const double epsilon = 1e-4) {
-
     // -- memory allocation --
     // memory to be used by constrained_fit_cmp
     std::array<double, 4> probas;
     double* p = probas.data();
-
     auto nll_store = prof_loglike_t();
     prof_loglike_t* nll_ptr = &nll_store;
     set_prof_loglike_store(conf_mat, nll_ptr);
@@ -258,14 +289,13 @@ inline void multn_chi2_scores_mt(
 #pragma omp parallel shared(precs, recs, nll_ptr, scores)
     {
 #pragma omp for
-    for (int64_t i = 0; i < n_points; ++i) {
-        scores[i] = prof_loglike(
-            details::clamp(precs[i], epsilon, max_val),
-            details::clamp(recs[i], epsilon, max_val),
-            nll_ptr,
-            p
-        );
-    }
+        for (int64_t i = 0; i < n_points; ++i) {
+            scores[i] = prof_loglike(
+                details::clamp(precs[i], epsilon, max_val),
+                details::clamp(recs[i], epsilon, max_val),
+                nll_ptr,
+                p);
+        }
     }  // omp parallel
 }  // multn_chi2_scores_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
@@ -288,16 +318,16 @@ inline void multn_error(
     auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
     details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
     const double prec_start = bounds[0];
-    const double prec_delta = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
+    const double prec_delta
+        = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
 
     auto nll_store = prof_loglike_t();
     prof_loglike_t* nll_ptr = &nll_store;
     set_prof_loglike_store(conf_mat, nll_ptr);
 
     int64_t idx = 0;
-    double prec;
     for (int64_t i = 0; i < n_bins; i++) {
-        prec = prec_start + (i * prec_delta);
+        double prec = prec_start + (static_cast<double>(i) * prec_delta);
         for (int64_t j = 0; j < n_bins; j++) {
             result[idx] = prof_loglike(prec, rec_grid[j], nll_ptr, p);
             idx++;
@@ -314,13 +344,13 @@ inline void multn_error_mt(
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4,
     const int n_threads = 4) {
-
     // obtain prec_start, prec_end, rec_start, rec_end
     get_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
     auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
     details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
     const double prec_start = bounds[0];
-    const double prec_delta = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
+    const double prec_delta
+        = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
 
     auto nll_store = prof_loglike_t();
     prof_loglike_t* nll_ptr = &nll_store;
@@ -333,11 +363,11 @@ inline void multn_error_mt(
         double* p = probas.data();
         // -- memory allocation --
 
-        int64_t idx;
-        double prec;
 #pragma omp for
         for (int64_t i = 0; i < n_bins; i++) {
-            prec = prec_start + (i * prec_delta);
+            int64_t idx;
+            double prec;
+            prec = prec_start + (static_cast<double>(i) * prec_delta);
             idx = i * n_bins;
             for (int64_t j = 0; j < n_bins; j++) {
                 result[idx + j] = prof_loglike(prec, rec_grid[j], nll_ptr, p);
@@ -356,9 +386,10 @@ inline void multn_grid_error(
     double* __restrict scores,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
-    // give scores a high enough initial value that the chi2 p-values will be close to zero
-    // i.e. ppf(1-1e-14) --> 64.47398179869367
-    std::fill(scores, scores + n_prec_bins * n_rec_bins, 65.0);
+    // give scores a high enough initial value that the chi2 p-values will be
+    // close to zero i.e. ppf(1-1e-14) --> 64.47398179869367
+    std::fill(
+        scores, scores + n_prec_bins * n_rec_bins, MULT_DEFAULT_CHI2_SCORE);
     // -- memory allocation --
     // memory to be used by constrained_fit_cmp
     std::array<double, 4> probas;
@@ -373,7 +404,15 @@ inline void multn_grid_error(
 
     // obtain the indexes over which to loop
     // sets prec_idx_min, prec_idx_max, rec_idx_min, rec_idx_max
-    get_grid_bounds(n_prec_bins, n_rec_bins, conf_mat, prec_grid, rec_grid, idx_bounds, n_sigmas, epsilon);
+    get_grid_bounds(
+        n_prec_bins,
+        n_rec_bins,
+        conf_mat,
+        prec_grid,
+        rec_grid,
+        idx_bounds,
+        n_sigmas,
+        epsilon);
     const int64_t prec_idx_min = idx_bounds[0];
     const int64_t prec_idx_max = idx_bounds[1];
     const int64_t rec_idx_min = idx_bounds[2];
@@ -381,13 +420,11 @@ inline void multn_grid_error(
 
     set_prof_loglike_store(conf_mat, nll_ptr);
 
-    double prec;
     double score;
     int64_t idx;
-    int64_t odx;
     for (int64_t i = prec_idx_min; i < prec_idx_max; i++) {
-        prec = prec_grid[i];
-        odx = i * n_rec_bins;
+        double prec = prec_grid[i];
+        int64_t odx = i * n_rec_bins;
         for (int64_t j = rec_idx_min; j < rec_idx_max; j++) {
             score = prof_loglike(prec, rec_grid[j], nll_ptr, p);
             idx = odx + j;
@@ -409,9 +446,10 @@ inline void multn_grid_curve_error(
     double* __restrict scores,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
-    // give scores a high enough initial value that the chi2 p-values will be close to zero
-    // i.e. ppf(1-1e-14) --> 64.47398179869367
-    std::fill(scores, scores + n_prec_bins * n_rec_bins, 65.0);
+    // give scores a high enough initial value that the chi2 p-values will be
+    // close to zero i.e. ppf(1-1e-14) --> 64.47398179869367
+    std::fill(
+        scores, scores + n_prec_bins * n_rec_bins, MULT_DEFAULT_CHI2_SCORE);
 
     // -- memory allocation --
     // memory to be used by constrained_fit_cmp
@@ -421,7 +459,8 @@ inline void multn_grid_curve_error(
     auto nll_store = prof_loglike_t();
     prof_loglike_t* nll_ptr = &nll_store;
 
-    auto bounds = GridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
+    auto bounds = GridBounds(
+        n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
 
     double prec;
     double score;
@@ -464,13 +503,24 @@ inline void multn_grid_curve_error_mt(
     const int64_t t_elem = n_elem * n_threads;
     auto thread_scores = std::unique_ptr<double[]>(new double[t_elem]);
 
-    // give scores a high enough initial value that the chi2 p-values will be close to zero
-    // i.e. ppf(1-1e-14) --> 64.47398179869367
-    std::fill(thread_scores.get(), thread_scores.get() + t_elem, 65.0);
-#pragma omp parallel num_threads(n_threads) \
-    shared(n_prec_bins, n_rec_bins, n_conf_mats, prec_grid, rec_grid, conf_mat, n_sigmas, epsilon)
+    // give scores a high enough initial value that the chi2 p-values will be
+    // close to zero i.e. ppf(1-1e-14) --> 64.47398179869367
+    std::fill(
+        thread_scores.get(),
+        thread_scores.get() + t_elem,
+        MULT_DEFAULT_CHI2_SCORE);
+#pragma omp parallel num_threads(n_threads) shared( \
+    n_prec_bins,                                    \
+    n_rec_bins,                                     \
+    n_conf_mats,                                    \
+    prec_grid,                                      \
+    rec_grid,                                       \
+    conf_mat,                                       \
+    n_sigmas,                                       \
+    epsilon)
     {
-        double* thread_block = thread_scores.get() + (omp_get_thread_num() * n_elem);
+        double* thread_block
+            = thread_scores.get() + (omp_get_thread_num() * n_elem);
 
         // -- memory allocation --
         // memory to be used by constrained_fit_cmp
@@ -480,28 +530,26 @@ inline void multn_grid_curve_error_mt(
         auto nll_store = prof_loglike_t();
         prof_loglike_t* nll_ptr = &nll_store;
 
-        auto bounds = GridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
+        auto bounds = GridBounds(
+            n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
 
-        double prec;
-        double score;
-        int64_t idx;
-        int64_t odx;
         // -- memory allocation --
-        const int64_t* lcm;
 
 #pragma omp for
         for (int64_t k = 0; k < n_conf_mats; k++) {
-            lcm = conf_mat + (k * 4);
+            const int64_t* lcm = conf_mat + (k * 4);
             // update to new conf_mat
             set_prof_loglike_store(lcm, nll_ptr);
             bounds.compute_bounds(lcm);
 
-            for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max; i++) {
-                prec = prec_grid[i];
-                odx = i * n_rec_bins;
-                for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max; j++) {
-                    score = prof_loglike(prec, rec_grid[j], nll_ptr, p);
-                    idx = odx + j;
+            for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max;
+                 i++) {
+                double prec = prec_grid[i];
+                int64_t odx = i * n_rec_bins;
+                for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max;
+                     j++) {
+                    double score = prof_loglike(prec, rec_grid[j], nll_ptr, p);
+                    int64_t idx = odx + j;
                     if (score < thread_block[idx]) {
                         thread_block[idx] = score;
                     }
@@ -516,14 +564,12 @@ inline void multn_grid_curve_error_mt(
         offsets[j] = j * n_elem;
     }
 
-    double tscore;
-    double min_score;
     for (int64_t i = 0; i < n_elem; i++) {
-        // give scores a high enough initial value that the chi2 p-values will be close to zero
-        // i.e. ppf(1-1e-14) --> 64.47398179869367
-        min_score = 65.0;
+        // give scores a high enough initial value that the chi2 p-values will
+        // be close to zero i.e. ppf(1-1e-14) --> 64.47398179869367
+        double min_score = MULT_DEFAULT_CHI2_SCORE;
         for (int64_t j = 0; j < n_threads; j++) {
-            tscore = thread_scores[i + offsets[j]];
+            double tscore = thread_scores[i + offsets[j]];
             if (tscore < min_score) {
                 min_score = tscore;
             }
@@ -552,27 +598,22 @@ struct simulation_store {
     simulation_store(
         random::pcg64_dxsm rng,
         const int64_t n_sims,
-        const int64_t n
-    ) :
-        binom_store{random::details::binomial_t()},
-        rng{rng},
-        n_sims{n_sims},
-        n{n},
-        sptr{&binom_store}
-    {
-        sptr = &binom_store;
-        p = probas.data();
-        mult_ptr = mult.data();
-        p_sim_ptr = p_sim.data();
-    }
+        const int64_t n)
+        : binom_store{random::details::binomial_t()},
+          rng{rng},
+          n_sims{n_sims},
+          n{n},
+          sptr{&binom_store},
+          p(probas.data()),
+          p_sim_ptr(p_sim.data()),
+          mult_ptr(mult.data()) {}
 };
 
 inline double prof_loglike_simulation_cov(
     const double prec,
     const double rec,
     const double nll_obs,
-    simulation_store& sim_store
-    ) {
+    simulation_store& sim_store) {
     int64_t checks = 0;
     for (int64_t i = 0; i < sim_store.n_sims; i++) {
         // random_multinomial does not guarentee that all values are set
@@ -584,9 +625,14 @@ inline double prof_loglike_simulation_cov(
             sim_store.mult_ptr,
             sim_store.p,
             4,
-            sim_store.sptr
-        );
-        checks += prof_loglike(prec, rec, sim_store.n, sim_store.mult_ptr, sim_store.p_sim_ptr) < nll_obs;
+            sim_store.sptr);
+        checks += prof_loglike(
+                      prec,
+                      rec,
+                      sim_store.n,
+                      sim_store.mult_ptr,
+                      sim_store.p_sim_ptr)
+                  < nll_obs;
     }
     return static_cast<double>(checks) / sim_store.n_sims;
 }  // prof_loglike_simulation_cov
@@ -616,7 +662,8 @@ inline void multn_sim_error(
     auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
     details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
     const double prec_start = bounds[0];
-    const double prec_delta = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
+    const double prec_delta
+        = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
 
     // struct used to store the elements used in the computation
     // of the profile log-likelihood
@@ -628,9 +675,9 @@ inline void multn_sim_error(
     // struct with parameters used in the simulations
     auto sim_store = simulation_store(rng, n_sims, n);
 
-    // give scores a high enough initial value that the chi2 p-values will be close to zero
-    // i.e. ppf(1-1e-14) --> 64.47398179869367
-    std::fill(scores, scores + n_bins * n_bins, 65.0);
+    // give scores a high enough initial value that the chi2 p-values will be
+    // close to zero i.e. ppf(1-1e-14) --> 64.47398179869367
+    std::fill(scores, scores + n_bins * n_bins, MULT_DEFAULT_CHI2_SCORE);
 
     double rec;
     double prec;
@@ -642,7 +689,8 @@ inline void multn_sim_error(
             // prof_loglike also sets p which we can re-use in prof_loglike sim
             rec = rec_grid[j];
             nll_obs = prof_loglike(prec, rec, nll_ptr, sim_store.p);
-            scores[idx] = prof_loglike_simulation_cov(prec, rec, nll_obs, sim_store);
+            scores[idx]
+                = prof_loglike_simulation_cov(prec, rec, nll_obs, sim_store);
             idx++;
         }
     }
@@ -658,24 +706,25 @@ inline void multn_sim_error_mt(
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4,
     const uint64_t seed = 0,
-    const int n_threads = 4
-) {
+    const int n_threads = 4) {
     // obtain prec_start, prec_end, rec_start, rec_end
     get_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
     auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
     details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
     const double prec_start = bounds[0];
-    const double prec_delta = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
+    const double prec_delta
+        = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
 
     random::pcg_seed_seq seed_source;
     std::array<uint64_t, 2> gen_seeds;
     seed_source.generate(gen_seeds.begin(), gen_seeds.end());
 
-    // give scores a high enough initial value that the chi2 p-values will be close to zero
-    // i.e. ppf(1-1e-14) --> 64.47398179869367
-    std::fill(scores, scores + n_bins * n_bins, 65.0);
+    // give scores a high enough initial value that the chi2 p-values will be
+    // close to zero i.e. ppf(1-1e-14) --> 64.47398179869367
+    std::fill(scores, scores + n_bins * n_bins, MULT_DEFAULT_CHI2_SCORE);
 
-#pragma omp parallel num_threads(n_threads) shared(conf_mat, gen_seeds, seed, prec_start, prec_delta, rec_grid)
+#pragma omp parallel num_threads(n_threads) \
+    shared(conf_mat, gen_seeds, seed, prec_start, prec_delta, rec_grid)
     {
         random::pcg64_dxsm rng;
         if (seed == 0) {
@@ -694,23 +743,20 @@ inline void multn_sim_error_mt(
         // struct with parameters used in the simulations
         auto sim_store = simulation_store(rng, n_sims, n);
 
-        double rec;
-        double prec;
-        double nll_obs;
-        int64_t odx = 0;
-
 #pragma omp for
         for (int64_t i = 0; i < n_bins; i++) {
-            prec = prec_start + (i * prec_delta);
-            odx = i * n_bins;
+            double prec = prec_start + (static_cast<double>(i) * prec_delta);
+            int64_t odx = i * n_bins;
             for (int64_t j = 0; j < n_bins; j++) {
-                // prof_loglike also sets p which we can re-use in prof_loglike sim
-                rec = rec_grid[j];
-                nll_obs = prof_loglike(prec, rec, nll_ptr, sim_store.p);
-                scores[odx + j] = prof_loglike_simulation_cov(prec, rec, nll_obs, sim_store);
+                // prof_loglike also sets p which we can re-use in prof_loglike
+                // sim
+                double rec = rec_grid[j];
+                double nll_obs = prof_loglike(prec, rec, nll_ptr, sim_store.p);
+                scores[odx + j] = prof_loglike_simulation_cov(
+                    prec, rec, nll_obs, sim_store);
             }
         }
-    } // omp parallel
+    }  // omp parallel
 }  // multn_sim_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
@@ -732,17 +778,25 @@ inline void multn_sim_curve_error_mt(
     const int64_t t_elem = n_elem * n_threads;
     auto thread_scores = std::unique_ptr<double[]>(new double[t_elem]);
 
-    // give scores a high enough initial value that the chi2 p-values will be close to zero
-    // i.e. ppf(1-1e-14) --> 64.47398179869367
+    // give scores a high enough initial value that the chi2 p-values will be
+    // close to zero i.e. ppf(1-1e-14) --> 64.47398179869367
     std::fill(thread_scores.get(), thread_scores.get() + t_elem, 1.0);
 
     random::pcg_seed_seq seed_source;
     std::array<uint64_t, 2> gen_seeds;
     seed_source.generate(gen_seeds.begin(), gen_seeds.end());
-#pragma omp parallel num_threads(n_threads) \
-    shared(n_prec_bins, n_rec_bins, n_conf_mats, prec_grid, rec_grid, conf_mat, n_sigmas, epsilon)
+#pragma omp parallel num_threads(n_threads) shared( \
+    n_prec_bins,                                    \
+    n_rec_bins,                                     \
+    n_conf_mats,                                    \
+    prec_grid,                                      \
+    rec_grid,                                       \
+    conf_mat,                                       \
+    n_sigmas,                                       \
+    epsilon)
     {
-        double* thread_block = thread_scores.get() + (omp_get_thread_num() * n_elem);
+        double* thread_block
+            = thread_scores.get() + (omp_get_thread_num() * n_elem);
 
         // -- memory allocation --
         auto nll_store = prof_loglike_t();
@@ -758,7 +812,8 @@ inline void multn_sim_curve_error_mt(
         }
         auto sim_store = simulation_store(rng, n_sims, 0);
 
-        auto bounds = GridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
+        auto bounds = GridBounds(
+            n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
 
         double rec;
         double prec;
@@ -767,23 +822,25 @@ inline void multn_sim_curve_error_mt(
         int64_t idx;
         int64_t odx;
         // -- memory allocation --
-        const int64_t* lcm;
 
 #pragma omp for
         for (int64_t k = 0; k < n_conf_mats; k++) {
-            lcm = conf_mat + (k * 4);
+            const int64_t* lcm = conf_mat + (k * 4);
             // update to new conf_mat
             set_prof_loglike_store(lcm, nll_ptr);
             bounds.compute_bounds(lcm);
-            sim_store.n = nll_store.n;
+            sim_store.n = nll_store.in;
 
-            for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max; i++) {
+            for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max;
+                 i++) {
                 prec = prec_grid[i];
                 odx = i * n_rec_bins;
-                for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max; j++) {
+                for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max;
+                     j++) {
                     rec = rec_grid[j];
                     nll_obs = prof_loglike(prec, rec, nll_ptr, sim_store.p);
-                    score = prof_loglike_simulation_cov(prec, rec, nll_obs, sim_store);
+                    score = prof_loglike_simulation_cov(
+                        prec, rec, nll_obs, sim_store);
                     idx = odx + j;
                     if (score < thread_block[idx]) {
                         thread_block[idx] = score;
@@ -799,12 +856,10 @@ inline void multn_sim_curve_error_mt(
         offsets[j] = j * n_elem;
     }
 
-    double tscore;
-    double min_score;
     for (int64_t i = 0; i < n_elem; i++) {
-        min_score = 1.0;
+        double min_score = 1.0;
         for (int64_t j = 0; j < n_threads; j++) {
-            tscore = thread_scores[i + offsets[j]];
+            double tscore = thread_scores[i + offsets[j]];
             if (tscore < min_score) {
                 min_score = tscore;
             }

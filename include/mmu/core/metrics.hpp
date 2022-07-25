@@ -16,8 +16,10 @@
 namespace mmu {
 namespace core {
 
-inline void
-precision_recall(const int64_t* __restrict const conf_mat, double* __restrict const metrics, const double fill = 0.) {
+inline void precision_recall(
+    const int64_t* __restrict const conf_mat,
+    double* __restrict const metrics,
+    const double fill = 0.) {
     // real true/positive observations [FN + TP]
     const int64_t iP = conf_mat[2] + conf_mat[3];
     const bool P_nonzero = iP > 0;
@@ -34,7 +36,9 @@ precision_recall(const int64_t* __restrict const conf_mat, double* __restrict co
     metrics[1] = P_nonzero ? tp / P : fill;
 }  // binary_metrics
 
-inline void precision_recall_ecc(const int64_t* __restrict const conf_mat, double* __restrict const metrics) {
+inline void precision_recall_ecc(
+    const int64_t* __restrict const conf_mat,
+    double* __restrict const metrics) {
     // real true/positive observations [FN + TP]
     const auto itp = conf_mat[3];
     const auto tp = static_cast<double>(conf_mat[3]);
@@ -77,9 +81,13 @@ inline void precision_recall_ecc(const int64_t* __restrict const conf_mat, doubl
  *    9 - MCC
  */
 template <class T, std::enable_if_t<std::is_integral<T>::value, int> = 0>
-inline void binary_metrics(T* __restrict const conf_mat, double* __restrict const metrics, const double fill = 0.) {
+inline void binary_metrics(
+    T* __restrict const conf_mat,
+    double* __restrict const metrics,
+    const double fill = 0.) {
     // total observations
-    const auto K = static_cast<double>(conf_mat[0] + conf_mat[1] + conf_mat[2] + conf_mat[3]);
+    const auto K = static_cast<double>(
+        conf_mat[0] + conf_mat[1] + conf_mat[2] + conf_mat[3]);
 
     /*
      *                  pred
