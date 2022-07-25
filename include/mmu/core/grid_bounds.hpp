@@ -24,8 +24,7 @@ inline void linspace(const double start, double const end, const size_t steps, d
     if (steps == 0) {
         throw std::runtime_error("`steps` must be greater than zero.");
     } else if (steps == 1) {
-        auto v = new double[steps];
-        v[0] = static_cast<double>(start);
+        values[0] = static_cast<double>(start);
         return;
     }
     const double delta = (end - start) / static_cast<double>(steps - 1);
