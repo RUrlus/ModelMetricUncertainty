@@ -1,5 +1,5 @@
-/* pr_bvn_grid.cpp -- Implementation of Python API of bvn uncertainty over grid precision recall grid
- * Copyright 2022 Ralph Urlus
+/* pr_bvn_grid.cpp -- Implementation of Python API of bvn uncertainty over grid
+ * precision recall grid Copyright 2022 Ralph Urlus
  */
 #include <mmu/bindings/pr_bvn_grid.hpp>
 
@@ -188,7 +188,6 @@ void bind_bvn_chi2_scores(py::module& m) {
         py::arg("conf_mat"),
         py::arg("epsilon") = 1e-4);
 }
-
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
 void bind_bvn_chi2_scores_mt(py::module& m) {

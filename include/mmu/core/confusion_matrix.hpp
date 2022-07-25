@@ -1,5 +1,5 @@
-/* confusion_matrix.hpp -- Implementation of binary classification confusion matrix
- * Copyright 2021 Ralph Urlus
+/* confusion_matrix.hpp -- Implementation of binary classification confusion
+ * matrix Copyright 2021 Ralph Urlus
  */
 #ifndef INCLUDE_MMU_CORE_CONFUSION_MATRIX_HPP_
 #define INCLUDE_MMU_CORE_CONFUSION_MATRIX_HPP_
@@ -35,7 +35,11 @@ namespace core {
  * the scale of `b` to determine the tollerance.
  */
 template <typename T1, typename T2, isFloat<T1> = true, isFloat<T2> = true>
-inline bool greater_equal_tol(const T1 a, const T2 b, const double rtol = 1e-05, const double atol = 1e-8) {
+inline bool greater_equal_tol(
+    const T1 a,
+    const T2 b,
+    const double rtol = 1e-05,
+    const double atol = 1e-8) {
     const double delta = a - b;
     const double scaled_tol = atol + rtol * b;
     // the first condition checks if a is greater than b given the tollerance
@@ -152,7 +156,9 @@ inline void confusion_matrix(
     const T2 threshold,
     int64_t* __restrict const conf_mat) {
     for (int64_t i = 0; i < n_obs; i++) {
-        conf_mat[static_cast<bool>(*y) * 2 + greater_equal_tol(*score, threshold)]++;
+        conf_mat
+            [static_cast<bool>(*y) * 2
+             + greater_equal_tol(*score, threshold)]++;
         y++;
         score++;
     }
@@ -213,10 +219,11 @@ inline void confusion_matrix(
     const T2 threshold,
     const T2 scaled_tol,
     int64_t* __restrict const conf_mat) {
-    double delta;
     for (int64_t i = 0; i < n_obs; i++) {
-        delta = *score - threshold;
-        conf_mat[static_cast<bool>(*y) * 2 + (delta > scaled_tol || std::abs(delta) <= scaled_tol)]++;
+        double delta = *score - threshold;
+        conf_mat
+            [static_cast<bool>(*y) * 2
+             + (delta > scaled_tol || std::abs(delta) <= scaled_tol)]++;
         y++;
         score++;
     }
@@ -247,10 +254,11 @@ inline void confusion_matrix(
     const T2 scaled_tol,
     int64_t* __restrict const conf_mat) {
     constexpr T1 epsilon = std::numeric_limits<T1>::epsilon();
-    double delta;
     for (int64_t i = 0; i < n_obs; i++) {
-        delta = *score - threshold;
-        conf_mat[(*y > epsilon) * 2 + (delta > scaled_tol || std::abs(delta) <= scaled_tol)]++;
+        double delta = *score - threshold;
+        conf_mat
+            [(*y > epsilon) * 2
+             + (delta > scaled_tol || std::abs(delta) <= scaled_tol)]++;
         score++;
         y++;
     }

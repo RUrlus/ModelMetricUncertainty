@@ -11,9 +11,9 @@
 #include <cmath>      // for sqrt
 #include <stdexcept>  // for runtime_error
 
+#include <mmu/core/bvn_error.hpp>
 #include <mmu/core/common.hpp>
 #include <mmu/core/erfinv.hpp>
-#include <mmu/core/bvn_error.hpp>
 
 #include <mmu/api/common.hpp>
 #include <mmu/api/numpy.hpp>

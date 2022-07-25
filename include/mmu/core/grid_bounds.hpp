@@ -6,8 +6,8 @@
 
 #include <algorithm>
 #include <array>
-#include <mmu/core/common.hpp>
 #include <mmu/core/bvn_error.hpp>
+#include <mmu/core/common.hpp>
 
 /* conf_mat layout:
  *  0 TN
@@ -20,7 +20,11 @@ namespace mmu {
 namespace core {
 namespace details {
 
-inline void linspace(const double start, double const end, const size_t steps, double* values) {
+inline void linspace(
+    const double start,
+    double const end,
+    const size_t steps,
+    double* values) {
     if (steps == 0) {
         throw std::runtime_error("`steps` must be greater than zero.");
     } else if (steps == 1) {
@@ -79,7 +83,7 @@ class GridBounds {
     const double* recs;
     std::array<double, 4> prec_rec;
 
- public:
+   public:
     int64_t prec_idx_min = 0;
     int64_t prec_idx_max = 0;
     int64_t rec_idx_min = 0;
@@ -167,7 +171,8 @@ inline void get_grid_bounds(
     bvn_sigma(conf_mat, prec_rec.data());
 
     const double ns_prec_sigma = n_sigmas * prec_rec[1];
-    const double prec_max = std::min(prec_rec[0] + ns_prec_sigma, 1 - max_prec_clip);
+    const double prec_max
+        = std::min(prec_rec[0] + ns_prec_sigma, 1 - max_prec_clip);
     const double prec_min = std::max(prec_rec[0] - ns_prec_sigma, epsilon);
     int64_t prec_idx_min = 0;
     int64_t prec_idx_max = prec_bins;
@@ -188,7 +193,8 @@ inline void get_grid_bounds(
     result[1] = prec_idx_max <= prec_bins ? prec_idx_max : prec_bins;
 
     const double ns_rec_sigma = n_sigmas * prec_rec[3];
-    const double rec_max = std::min(prec_rec[2] + ns_rec_sigma, 1. - max_rec_clip);
+    const double rec_max
+        = std::min(prec_rec[2] + ns_rec_sigma, 1. - max_rec_clip);
     const double rec_min = std::max(prec_rec[2] - ns_rec_sigma, epsilon);
     int64_t rec_idx_min = 0;
     int64_t rec_idx_max = rec_bins;

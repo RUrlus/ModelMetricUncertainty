@@ -1,6 +1,6 @@
-/* bvn_error.hpp -- Implementation of variance and CI of Bivariate Normal distributions
- * over the Poisson errors of the Confusion Matrix
- * Copyright 2022 Ralph Urlus
+/* bvn_error.hpp -- Implementation of variance and CI of Bivariate Normal
+ * distributions over the Poisson errors of the Confusion Matrix Copyright 2022
+ * Ralph Urlus
  */
 #ifndef INCLUDE_MMU_CORE_BVN_ERROR_HPP_
 #define INCLUDE_MMU_CORE_BVN_ERROR_HPP_
@@ -35,18 +35,17 @@ inline double norm_ppf(const T mu, const T sigma, const T p) {
 /* This function computes the uncertainty on the precision-recall curve
  * using linear error propagation over the Poisson error.
  *
- * Another way of thinking about this as a Multivariate Normal over the Poisson errors.
- * Sets the following values at metrics index:
- *    0 - pos.precision aka Positive Predictive Value
- *    3 - pos.recall aka True Positive Rate aka Sensitivity
- *    4 - variance of precision
- *    5 - covariance precision, recall
- *    6 - variance of recall
- *    7 - covariance precision, recall
+ * Another way of thinking about this as a Multivariate Normal over the Poisson
+ * errors. Sets the following values at metrics index: 0 - pos.precision aka
+ * Positive Predictive Value 3 - pos.recall aka True Positive Rate aka
+ * Sensitivity 4 - variance of precision 5 - covariance precision, recall 6 -
+ * variance of recall 7 - covariance precision, recall
  */
 namespace pr {
 template <typename T, isInt<T> = true>
-inline void bvn_cov(T* __restrict const conf_mat, double* __restrict const metrics) {
+inline void bvn_cov(
+    const T* __restrict const conf_mat,
+    double* __restrict const metrics) {
     /*
      *                  pred
      *                0     1
@@ -78,7 +77,9 @@ inline void bvn_cov(T* __restrict const conf_mat, double* __restrict const metri
         metrics[2] = 0.0;
     } else if (tp_fp_nonzero) {
         metrics[0] = tp / (tp_fp);
-        metrics[2] = (static_cast<double>(conf_mat[3] * conf_mat[1]) / static_cast<double>(std::pow(tp_fp, 3.0)));
+        metrics[2]
+            = (static_cast<double>(conf_mat[3] * conf_mat[1])
+               / static_cast<double>(std::pow(tp_fp, 3.0)));
     } else {
         // precision == 0
         metrics[0] = 0.0;
@@ -93,7 +94,9 @@ inline void bvn_cov(T* __restrict const conf_mat, double* __restrict const metri
     } else if (tp_fn_nonzero) {
         metrics[1] = tp / (tp_fn);
         // rec_var
-        metrics[5] = (static_cast<double>(conf_mat[3] * conf_mat[2]) / static_cast<double>(std::pow(tp_fn, 3.0)));
+        metrics[5]
+            = (static_cast<double>(conf_mat[3] * conf_mat[2])
+               / static_cast<double>(std::pow(tp_fn, 3.0)));
     } else {
         // recall == 0.0
         metrics[1] = 0.0;
@@ -102,10 +105,9 @@ inline void bvn_cov(T* __restrict const conf_mat, double* __restrict const metri
 
     // covariance
     if (itp != itp_fp && itp != itp_fn) {
-        metrics[3] = metrics[4] = (
-            static_cast<double>(itp * conf_mat[1] * conf_mat[2])
-            / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2))
-        );
+        metrics[3] = metrics[4]
+            = (static_cast<double>(itp * conf_mat[1] * conf_mat[2])
+               / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2)));
     } else {
         metrics[3] = metrics[4] = 0.0;
     }
@@ -114,21 +116,20 @@ inline void bvn_cov(T* __restrict const conf_mat, double* __restrict const metri
 /* This function computes the uncertainty on the precision-recall curve
  * using linear error propagation over the Poisson error.
  *
- * Another way of thinking about this as a Multivariate Normal over the Poisson errors.
- * Sets the following values at metrics index:
- *    0 - pos.precision aka Positive Predictive Value
- *    1 - lower-bound of marginal CI precision
- *    2 - upper-bound of marginal CI precision
- *    3 - pos.recall aka True Positive Rate aka Sensitivity
- *    4 - lower-bound of marginal CI recall
- *    5 - upper-bound of marginal CI recall
- *    6 - variance of precision
- *    7 - covariance precision, recall
+ * Another way of thinking about this as a Multivariate Normal over the Poisson
+ * errors. Sets the following values at metrics index: 0 - pos.precision aka
+ * Positive Predictive Value 1 - lower-bound of marginal CI precision 2 -
+ * upper-bound of marginal CI precision 3 - pos.recall aka True Positive Rate
+ * aka Sensitivity 4 - lower-bound of marginal CI recall 5 - upper-bound of
+ * marginal CI recall 6 - variance of precision 7 - covariance precision, recall
  *    8 - variance of recall
  *    9 - covariance precision, recall
  */
 template <typename T, isInt<T> = true>
-inline void bvn_error(T* __restrict const conf_mat, double* __restrict const metrics, double alpha) {
+inline void bvn_error(
+    const T* __restrict const conf_mat,
+    double* __restrict const metrics,
+    double alpha) {
     /*
      *                  pred
      *                0     1
@@ -165,7 +166,9 @@ inline void bvn_error(T* __restrict const conf_mat, double* __restrict const met
         metrics[6] = 0.;
     } else if (tp_fp_nonzero) {
         val = tp / (tp_fp);
-        val_var = (static_cast<double>(conf_mat[3] * conf_mat[1]) / static_cast<double>(std::pow(tp_fp, 3.0)));
+        val_var
+            = (static_cast<double>(conf_mat[3] * conf_mat[1])
+               / static_cast<double>(std::pow(tp_fp, 3.0)));
         val_sigma = std::sqrt(val_var);
         metrics[0] = val;
         metrics[1] = norm_ppf(val, val_sigma, alpha_lb);
@@ -186,7 +189,9 @@ inline void bvn_error(T* __restrict const conf_mat, double* __restrict const met
     } else if (tp_fn_nonzero) {
         val = tp / (tp_fn);
         // rec_var
-        val_var = (static_cast<double>(conf_mat[3] * conf_mat[2]) / static_cast<double>(std::pow(tp_fn, 3.0)));
+        val_var
+            = (static_cast<double>(conf_mat[3] * conf_mat[2])
+               / static_cast<double>(std::pow(tp_fn, 3.0)));
         val_sigma = std::sqrt(val_var);
         metrics[3] = val;
         metrics[4] = norm_ppf(val, val_sigma, alpha_lb);
@@ -200,11 +205,14 @@ inline void bvn_error(T* __restrict const conf_mat, double* __restrict const met
 
     // covariance
     metrics[7] = metrics[8]
-        = (static_cast<double>(itp * conf_mat[1] * conf_mat[2]) / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2)));
+        = (static_cast<double>(itp * conf_mat[1] * conf_mat[2])
+           / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2)));
 }  // bvn_error
 
 template <typename T, isInt<T> = true>
-inline void bvn_sigma(T* __restrict const conf_mat, double* __restrict const metrics) {
+inline void bvn_sigma(
+    const T* __restrict const conf_mat,
+    double* __restrict const metrics) {
     /*
      *                  pred
      *                0     1
@@ -240,8 +248,9 @@ inline void bvn_sigma(T* __restrict const conf_mat, double* __restrict const met
         prec_sigma = std::sqrt((prec_for_sigma * (1 - prec_for_sigma)) / tp_fp);
     } else if (tp_fp_nonzero) {
         prec = tp / (tp_fp);
-        prec_sigma
-            = std::sqrt(static_cast<double>(conf_mat[3] * conf_mat[1]) / static_cast<double>(std::pow(tp_fp, 3.0)));
+        prec_sigma = std::sqrt(
+            static_cast<double>(conf_mat[3] * conf_mat[1])
+            / static_cast<double>(std::pow(tp_fp, 3.0)));
     } else {
         // precision == 0
         prec = 0.0;
@@ -261,8 +270,9 @@ inline void bvn_sigma(T* __restrict const conf_mat, double* __restrict const met
         rec_sigma = std::sqrt((rec_for_sigma * (1 - rec_for_sigma)) / tp_fn);
     } else if (tp_fn_nonzero) {
         rec = tp / (tp_fn);
-        rec_sigma
-            = std::sqrt(static_cast<double>(conf_mat[3] * conf_mat[2]) / static_cast<double>(std::pow(tp_fn, 3.0)));
+        rec_sigma = std::sqrt(
+            static_cast<double>(conf_mat[3] * conf_mat[2])
+            / static_cast<double>(std::pow(tp_fn, 3.0)));
     } else {
         // recall == 0.0
         rec = 0.0;

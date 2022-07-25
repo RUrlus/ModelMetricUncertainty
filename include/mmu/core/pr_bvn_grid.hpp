@@ -1,5 +1,5 @@
-/* pr_bvn_grid.hpp -- Implementation of Bivariate Normal uncertainty over the grid
- * Copyright 2022 Ralph Urlus
+/* pr_bvn_grid.hpp -- Implementation of Bivariate Normal uncertainty over the
+ * grid Copyright 2022 Ralph Urlus
  *
  *  /Slide 4 at
  *  https://www2.stat.duke.edu/courses/Spring12/sta104.1/Lectures/Lec22.pdf
@@ -39,10 +39,10 @@
 #include <memory>
 #include <utility>
 
-#include <mmu/core/common.hpp>
-#include <mmu/core/metrics.hpp>
 #include <mmu/core/bvn_error.hpp>
+#include <mmu/core/common.hpp>
 #include <mmu/core/grid_bounds.hpp>
+#include <mmu/core/metrics.hpp>
 #include <mmu/core/random.hpp>
 
 /* conf_mat layout:
@@ -74,9 +74,11 @@ inline double bvn_chi2_score(
     const double rho = prec_rec_cov[3] / (prec_simga * rec_simga);
     const double rho_rhs = std::sqrt(1 - std::pow(rho, 2));
 
-        // compute Z1
-    const double z1 = (details::clamp(rec, epsilon, max_val) - rec_mu) / rec_simga;
-    const double prec_score = (details::clamp(prec, epsilon, max_val) - prec_mu) / prec_simga;
+    // compute Z1
+    const double z1
+        = (details::clamp(rec, epsilon, max_val) - rec_mu) / rec_simga;
+    const double prec_score
+        = (details::clamp(prec, epsilon, max_val) - prec_mu) / prec_simga;
     const double z2 = (prec_score - rho * z1) / rho_rhs;
     return std::pow(z1, 2) + std::pow(z2, 2);
 }  // bvn_chi2_score
@@ -102,18 +104,16 @@ inline void bvn_chi2_scores(
     const double rho_rhs = std::sqrt(1 - std::pow(rho, 2));
 
     // compute Z1
-    double z1;
-    double rho_z1;
-    double z1_sq;
-    double prec_score;
-    double z2;
     for (int64_t i = 0; i < n_points; ++i) {
-        z1 = (details::clamp(recs[i], epsilon, max_val) - rec_mu) / rec_simga;
-        rho_z1 = rho * z1;
-        z1_sq = std::pow(z1, 2);
+        double z1
+            = (details::clamp(recs[i], epsilon, max_val) - rec_mu) / rec_simga;
+        double rho_z1 = rho * z1;
+        double z1_sq = std::pow(z1, 2);
 
-        prec_score = (details::clamp(precs[i], epsilon, max_val) - prec_mu) / prec_simga;
-        z2 = (prec_score - rho_z1) / rho_rhs;
+        double prec_score
+            = (details::clamp(precs[i], epsilon, max_val) - prec_mu)
+              / prec_simga;
+        double z2 = (prec_score - rho_z1) / rho_rhs;
         scores[i] = z1_sq + std::pow(z2, 2);
     }
 }  // bvn_chi2_scores
@@ -137,22 +137,20 @@ inline void bvn_chi2_scores_mt(
     const double rho = prec_rec_cov[3] / (prec_simga * rec_simga);
     const double rho_rhs = std::sqrt(1 - std::pow(rho, 2));
 
-#pragma omp parallel shared(precs, recs, prec_mu, rec_mu, prec_simga, rec_simga, rho, rho_rhs, scores)
+#pragma omp parallel shared( \
+    precs, recs, prec_mu, rec_mu, prec_simga, rec_simga, rho, rho_rhs, scores)
     {
-        double z1;
-        double rho_z1;
-        double z1_sq;
-        double prec_score;
-        double z2;
 #pragma omp for
         for (int64_t i = 0; i < n_points; ++i) {
+            double z1 = (details::clamp(recs[i], epsilon, max_val) - rec_mu)
+                        / rec_simga;
+            double rho_z1 = rho * z1;
+            double z1_sq = std::pow(z1, 2);
 
-            z1 = (details::clamp(recs[i], epsilon, max_val) - rec_mu) / rec_simga;
-            rho_z1 = rho * z1;
-            z1_sq = std::pow(z1, 2);
-
-            prec_score = (details::clamp(precs[i], epsilon, max_val) - prec_mu) / prec_simga;
-            z2 = (prec_score - rho_z1) / rho_rhs;
+            double prec_score
+                = (details::clamp(precs[i], epsilon, max_val) - prec_mu)
+                  / prec_simga;
+            double z2 = (prec_score - rho_z1) / rho_rhs;
             scores[i] = z1_sq + std::pow(z2, 2);
         }
     }  // omp parallel
@@ -168,7 +166,8 @@ inline void bvn_grid_error(
     double* __restrict scores,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
-    // give scores a high enough initial value that the chi2 p-values will be close to zero
+    // give scores a high enough initial value that the chi2 p-values will be
+    // close to zero
     std::fill(scores, scores + n_prec_bins * n_rec_bins, 1e4);
     // -- memory allocation --
     std::array<int64_t, 4> bounds;
@@ -177,7 +176,15 @@ inline void bvn_grid_error(
 
     // obtain the indexes over which to loop
     // sets prec_idx_min, prec_idx_max, rec_idx_min, rec_idx_max
-    get_grid_bounds(n_prec_bins, n_rec_bins, conf_mat, prec_grid, rec_grid, idx_bounds, n_sigmas, epsilon);
+    get_grid_bounds(
+        n_prec_bins,
+        n_rec_bins,
+        conf_mat,
+        prec_grid,
+        rec_grid,
+        idx_bounds,
+        n_sigmas,
+        epsilon);
     const int64_t prec_idx_min = idx_bounds[0];
     const int64_t prec_idx_max = idx_bounds[1];
     const int64_t rec_idx_min = idx_bounds[2];
@@ -193,26 +200,20 @@ inline void bvn_grid_error(
 
     auto z1_sq = std::unique_ptr<double[]>(new double[n_rec_bins]);
     auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
-    double z_tmp;
     for (int64_t i = rec_idx_min; i < rec_idx_max; i++) {
         // compute Z1
-        z_tmp = (rec_grid[i] - rec_mu) / rec_simga;
+        double z_tmp = (rec_grid[i] - rec_mu) / rec_simga;
         rho_z1[i] = rho * z_tmp;
         z1_sq[i] = std::pow(z_tmp, 2);
     }
 
-    int64_t idx;
-    int64_t odx;
-    double z2;
-    double score;
-    double prec_score;
     for (int64_t i = prec_idx_min; i < prec_idx_max; i++) {
-        odx = i * n_rec_bins;
-        prec_score = (prec_grid[i] - prec_mu) / prec_simga;
+        int64_t odx = i * n_rec_bins;
+        double prec_score = (prec_grid[i] - prec_mu) / prec_simga;
         for (int64_t j = rec_idx_min; j < rec_idx_max; j++) {
-            z2 = (prec_score - rho_z1[j]) / rho_rhs;
-            score = z1_sq[j] + std::pow(z2, 2);
-            idx = odx + j;
+            double z2 = (prec_score - rho_z1[j]) / rho_rhs;
+            double score = z1_sq[j] + std::pow(z2, 2);
+            int64_t idx = odx + j;
             // log likelihoods and thus always positive
             if (score < scores[idx]) {
                 scores[idx] = score;
@@ -232,27 +233,17 @@ inline void bvn_grid_curve_error(
     double* __restrict scores,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
-    // give scores a high enough initial value that the chi2 p-values will be close to zero
+    // give scores a high enough initial value that the chi2 p-values will be
+    // close to zero
     std::fill(scores, scores + n_prec_bins * n_rec_bins, 1e4);
 
     // -- memory allocation --
     auto z1_sq = std::unique_ptr<double[]>(new double[n_rec_bins]);
     auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
-    double z_tmp;
 
-    auto bounds = GridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
+    auto bounds = GridBounds(
+        n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
 
-    int64_t idx;
-    int64_t odx;
-    double z2;
-    double score;
-    double prec_score;
-    double prec_mu;
-    double rec_mu;
-    double prec_simga;
-    double rec_simga;
-    double rho;
-    double rho_rhs;
     // -- memory allocation --
 
     for (int64_t k = 0; k < n_conf_mats; k++) {
@@ -261,39 +252,37 @@ inline void bvn_grid_curve_error(
 
         // compute covariance matrix and mean
         bvn_cov(conf_mat, prec_rec_cov);
-        prec_mu = prec_rec_cov[0];
-        rec_mu = prec_rec_cov[1];
-        prec_simga = std::sqrt(prec_rec_cov[2]);
-        rec_simga = std::sqrt(prec_rec_cov[5]);
+        double prec_mu = prec_rec_cov[0];
+        double rec_mu = prec_rec_cov[1];
+        double prec_simga = std::sqrt(prec_rec_cov[2]);
+        double rec_simga = std::sqrt(prec_rec_cov[5]);
 
         // short circuit regions where uncertainty will be zero
-        if (
-            prec_simga < std::numeric_limits<double>::epsilon()
-            || rec_simga < std::numeric_limits<double>::epsilon()
-        ) {
+        if (prec_simga < std::numeric_limits<double>::epsilon()
+            || rec_simga < std::numeric_limits<double>::epsilon()) {
             conf_mat += 4;
             prec_rec_cov += 6;
             continue;
         }
 
-        rho = prec_rec_cov[3] / (prec_simga * rec_simga);
-        rho_rhs = std::sqrt(1 - std::pow(rho, 2));
+        double rho = prec_rec_cov[3] / (prec_simga * rec_simga);
+        double rho_rhs = std::sqrt(1 - std::pow(rho, 2));
 
         // compute Z1 and variants of it
         for (int64_t i = bounds.rec_idx_min; i < bounds.rec_idx_max; i++) {
             // compute Z1
-            z_tmp = (rec_grid[i] - rec_mu) / rec_simga;
+            double z_tmp = (rec_grid[i] - rec_mu) / rec_simga;
             rho_z1[i] = rho * z_tmp;
             z1_sq[i] = std::pow(z_tmp, 2);
         }
 
         for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max; i++) {
-            odx = i * n_rec_bins;
-            prec_score = (prec_grid[i] - prec_mu) / prec_simga;
+            int64_t odx = i * n_rec_bins;
+            double prec_score = (prec_grid[i] - prec_mu) / prec_simga;
             for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max; j++) {
-                z2 = (prec_score - rho_z1[j]) / rho_rhs;
-                score = z1_sq[j] + std::pow(z2, 2);
-                idx = odx + j;
+                double z2 = (prec_score - rho_z1[j]) / rho_rhs;
+                double score = z1_sq[j] + std::pow(z2, 2);
+                int64_t idx = odx + j;
                 // log likelihoods and thus always positive
                 if (score < scores[idx]) {
                     scores[idx] = score;
@@ -323,57 +312,53 @@ inline void bvn_grid_curve_error_mt(
     const int64_t t_elem = n_elem * n_threads;
     auto thread_scores = std::unique_ptr<double[]>(new double[t_elem]);
 
-    // give scores a high enough initial value that the chi2 p-values will be close to zero
+    // give scores a high enough initial value that the chi2 p-values will be
+    // close to zero
     std::fill(thread_scores.get(), thread_scores.get() + t_elem, 1e4);
-#pragma omp parallel num_threads(n_threads) \
-    shared(n_prec_bins, n_rec_bins, n_conf_mats, prec_grid, rec_grid, conf_mat, n_sigmas, epsilon, thread_scores, prec_rec_cov)
+#pragma omp parallel num_threads(n_threads) shared( \
+    n_prec_bins,                                    \
+    n_rec_bins,                                     \
+    n_conf_mats,                                    \
+    prec_grid,                                      \
+    rec_grid,                                       \
+    conf_mat,                                       \
+    n_sigmas,                                       \
+    epsilon,                                        \
+    thread_scores,                                  \
+    prec_rec_cov)
     {
-        double* thread_block = thread_scores.get() + (omp_get_thread_num() * n_elem);
+        double* thread_block
+            = thread_scores.get() + (omp_get_thread_num() * n_elem);
 
         // -- memory allocation --
         auto z1_sq = std::unique_ptr<double[]>(new double[n_rec_bins]);
         auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
         double z_tmp;
 
-        auto bounds = GridBounds(n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
-
-        int64_t idx;
-        int64_t odx;
-        double z2;
-        double score;
-        double prec_score;
-        double prec_mu;
-        double rec_mu;
-        double prec_simga;
-        double rec_simga;
-        double rho;
-        double rho_rhs;
-        double* prc_ptr;
-        const int64_t* lcm;
+        auto bounds = GridBounds(
+            n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
         // -- memory allocation --
 
 #pragma omp for
         for (int64_t k = 0; k < n_conf_mats; k++) {
-            lcm = conf_mat + (k * 4);
-            prc_ptr = prec_rec_cov + (k * 6);
+            const int64_t* lcm = conf_mat + (k * 4);
+            double* prc_ptr = prec_rec_cov + (k * 6);
             // update to new conf_mat
             bounds.compute_bounds(lcm);
 
             // compute covariance matrix and mean
             bvn_cov(lcm, prc_ptr);
-            prec_mu = prc_ptr[0];
-            rec_mu = prc_ptr[1];
-            prec_simga = std::sqrt(prc_ptr[2]);
-            rec_simga = std::sqrt(prc_ptr[5]);
+            double prec_mu = prc_ptr[0];
+            double rec_mu = prc_ptr[1];
+            double prec_simga = std::sqrt(prc_ptr[2]);
+            double rec_simga = std::sqrt(prc_ptr[5]);
             // short circuit regions where uncertainty will be zero
-            if (
-                prec_simga < std::numeric_limits<double>::epsilon()
-                || rec_simga < std::numeric_limits<double>::epsilon()
-            ) {
+            if (prec_simga < std::numeric_limits<double>::epsilon()
+                || rec_simga < std::numeric_limits<double>::epsilon()) {
                 continue;
             }
-            rho = prc_ptr[3] / (prec_simga * rec_simga);
-            rho_rhs = std::sqrt(1 - std::pow(rho, 2));
+            double rho = prc_ptr[3] / (prec_simga * rec_simga);
+            double rho_rhs = std::sqrt(1 - std::pow(rho, 2));
 
             // compute Z1 and variants of it
             for (int64_t i = bounds.rec_idx_min; i < bounds.rec_idx_max; i++) {
@@ -383,13 +368,15 @@ inline void bvn_grid_curve_error_mt(
                 z1_sq[i] = std::pow(z_tmp, 2);
             }
 
-            for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max; i++) {
-                odx = i * n_rec_bins;
-                prec_score = (prec_grid[i] - prec_mu) / prec_simga;
-                for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max; j++) {
-                    z2 = (prec_score - rho_z1[j]) / rho_rhs;
-                    score = z1_sq[j] + std::pow(z2, 2);
-                    idx = odx + j;
+            for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max;
+                 i++) {
+                int64_t odx = i * n_rec_bins;
+                double prec_score = (prec_grid[i] - prec_mu) / prec_simga;
+                for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max;
+                     j++) {
+                    double z2 = (prec_score - rho_z1[j]) / rho_rhs;
+                    double score = z1_sq[j] + std::pow(z2, 2);
+                    int64_t idx = odx + j;
                     // log likelihoods and thus always positive
                     if (score < thread_block[idx]) {
                         thread_block[idx] = score;
@@ -406,15 +393,13 @@ inline void bvn_grid_curve_error_mt(
     }
 
     // collect the scores
-    double tscore;
-    double min_score;
     // We loop through the grid in a flat order
     // for each point in the grid we check which thread
     // has the lowest score
     for (int64_t i = 0; i < n_elem; i++) {
-        min_score = 1e4;
+        double min_score = 1e4;
         for (int64_t j = 0; j < n_threads; j++) {
-            tscore = thread_scores[i + offsets[j]];
+            double tscore = thread_scores[i + offsets[j]];
             if (tscore < min_score) {
                 min_score = tscore;
             }

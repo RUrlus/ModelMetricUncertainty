@@ -1,5 +1,5 @@
-/* confusion_matrix_bindings.hpp -- Python bindings for confusion_matrix.hpp metrics
- * Copyright 2021 Ralph Urlus
+/* confusion_matrix_bindings.hpp -- Python bindings for confusion_matrix.hpp
+ * metrics Copyright 2021 Ralph Urlus
  */
 #ifndef INCLUDE_MMU_BINDINGS_CONFUSION_MATRIX_HPP_
 #define INCLUDE_MMU_BINDINGS_CONFUSION_MATRIX_HPP_

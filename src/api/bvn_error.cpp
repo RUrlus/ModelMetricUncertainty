@@ -31,11 +31,13 @@ namespace pr {
 f64arr bvn_error(const i64arr& conf_mat, double alpha) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-C-contiguous array.");
     }
     size_t ndim = conf_mat.ndim();
     if (ndim > 2 || conf_mat.size() != 4) {
-        throw std::runtime_error("`conf_mat` should have shape (2, 2) or (4,).");
+        throw std::runtime_error(
+            "`conf_mat` should have shape (2, 2) or (4,).");
     }
     // allocate memory confusion_matrix
     int64_t* const cm_ptr = npy::get_data(conf_mat);
@@ -70,7 +72,8 @@ f64arr bvn_error(const i64arr& conf_mat, double alpha) {
 f64arr bvn_error_runs(const i64arr& conf_mat, double alpha) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-C-contiguous array.");
     }
     size_t ndim = conf_mat.ndim();
     if (ndim != 2 || conf_mat.shape(1) != 4) {
@@ -114,7 +117,8 @@ f64arr bvn_error_runs(const i64arr& conf_mat, double alpha) {
 f64arr curve_bvn_error(const i64arr& conf_mat, double alpha) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-C-contiguous array.");
     }
     size_t ndim = conf_mat.ndim();
     if (ndim > 2 || conf_mat.shape(1) != 4) {
@@ -151,11 +155,13 @@ f64arr curve_bvn_error(const i64arr& conf_mat, double alpha) {
 f64arr bvn_cov(const i64arr& conf_mat) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-C-contiguous array.");
     }
     size_t ndim = conf_mat.ndim();
     if (ndim > 2 || conf_mat.size() != 4) {
-        throw std::runtime_error("`conf_mat` should have shape (2, 2) or (4,).");
+        throw std::runtime_error(
+            "`conf_mat` should have shape (2, 2) or (4,).");
     }
     // allocate memory confusion_matrix
     int64_t* const cm_ptr = npy::get_data(conf_mat);
@@ -186,7 +192,8 @@ f64arr bvn_cov(const i64arr& conf_mat) {
 f64arr bvn_cov_runs(const i64arr& conf_mat) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-C-contiguous array.");
     }
     size_t ndim = conf_mat.ndim();
     if (ndim != 2 || conf_mat.shape(1) != 4) {
@@ -226,7 +233,8 @@ f64arr bvn_cov_runs(const i64arr& conf_mat) {
 f64arr curve_bvn_cov(const i64arr& conf_mat) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-C-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-C-contiguous array.");
     }
     size_t ndim = conf_mat.ndim();
     if (ndim > 2 || conf_mat.shape(1) != 4) {

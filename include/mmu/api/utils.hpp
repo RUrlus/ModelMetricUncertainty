@@ -47,8 +47,9 @@ inline int check_1d_soft(const py::array_t<T>& arr, const std::string& name) {
     throw std::runtime_error(name + " should be one dimensional");
 }
 
-/* Check x and y have the same length where we account for row and column orientation.
- * We only consider the obs_axis_ for each array, the obs_axis_ is the 0 for an array shaped (n, m)
+/* Check x and y have the same length where we account for row and column
+ * orientation. We only consider the obs_axis_ for each array, the obs_axis_ is
+ * the 0 for an array shaped (n, m)
  *
  * Throws RuntimeError if condition is not met.
  */
@@ -61,12 +62,16 @@ inline void check_equal_length(
     const int obs_axis_x = 0,
     const int obs_axis_y = 0) {
     if (x.shape(obs_axis_x) != y.shape(obs_axis_y)) {
-        throw std::runtime_error(x_name + " and " + y_name + " should have equal number of observations");
+        throw std::runtime_error(
+            x_name + " and " + y_name
+            + " should have equal number of observations");
     }
 }
 
 template <typename T>
-inline void check_contiguous(const py::array_t<T>& arr, const std::string& name) {
+inline void check_contiguous(
+    const py::array_t<T>& arr,
+    const std::string& name) {
     if (!npy::is_contiguous<T>(arr)) {
         throw std::runtime_error(name + " should be C or F contiguous");
     }
@@ -87,7 +92,8 @@ inline void check_equal_shape(
         }
     }
     if (pass != x_dim) {
-        throw std::runtime_error(x_name + " and " + y_name + " should have equal shape");
+        throw std::runtime_error(
+            x_name + " and " + y_name + " should have equal shape");
     }
 }
 
@@ -102,19 +108,24 @@ inline void check_equal_shape(
  * - arr : the input array or the input array with the correct memory order
  */
 template <typename T>
-inline py::array_t<T> ensure_shape_order(py::array_t<T>& arr, const std::string& name, const int obs_axis = 0) {
+inline py::array_t<T> ensure_shape_order(
+    py::array_t<T>& arr,
+    const std::string& name,
+    const int obs_axis = 0) {
     const ssize_t n_dim = arr.ndim();
     if (n_dim > 2) {
         throw std::runtime_error(name + " must be at most two dimensional.");
     }
     if (obs_axis == 0) {
         if (!is_f_contiguous(arr)) {
-            return py::array_t<T, py::array::f_style | py::array::forcecast>(arr);
+            return py::array_t<T, py::array::f_style | py::array::forcecast>(
+                arr);
         }
         return arr;
     } else if (obs_axis == 1) {
         if (!is_c_contiguous(arr)) {
-            return py::array_t<T, py::array::c_style | py::array::forcecast>(arr);
+            return py::array_t<T, py::array::c_style | py::array::forcecast>(
+                arr);
         }
         return arr;
     } else {
@@ -137,7 +148,9 @@ inline py::array_t<T> ensure_shape_order(py::array_t<T>& arr, const std::string&
  * - expected : the size we expect of one the two dimensions to have
  */
 template <typename T>
-inline bool is_correct_shape_order(const py::array_t<T>& arr, ssize_t expected) {
+inline bool is_correct_shape_order(
+    const py::array_t<T>& arr,
+    ssize_t expected) {
     ssize_t n_dim = arr.ndim();
     bool state = false;
     if (n_dim == 1 && arr.size() == expected) {

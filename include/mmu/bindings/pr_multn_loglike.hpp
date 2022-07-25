@@ -1,5 +1,5 @@
-/* multn_loglike.hpp -- Python bindings of multinomial log-likelihood uncertainty
- * Copyright 2022 Ralph Urlus
+/* multn_loglike.hpp -- Python bindings of multinomial log-likelihood
+ * uncertainty Copyright 2022 Ralph Urlus
  */
 #ifndef INCLUDE_MMU_BINDINGS_PR_MULTN_LOGLIKE_HPP_
 #define INCLUDE_MMU_BINDINGS_PR_MULTN_LOGLIKE_HPP_

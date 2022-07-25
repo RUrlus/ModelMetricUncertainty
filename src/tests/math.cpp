@@ -13,11 +13,17 @@ void bind_erfinv(py::module& m) {
 }
 
 void bind_norm_ppf(py::module& m) {
-    m.def("norm_ppf", [](double mu, double sigma, double p) { return mmu::core::norm_ppf<double>(mu, sigma, p); });
+    m.def("norm_ppf", [](double mu, double sigma, double p) {
+        return mmu::core::norm_ppf<double>(mu, sigma, p);
+    });
 }
 
-py::array_t<int64_t>
-binomial_rvs(const int64_t n_samples, const int64_t n, const double p, const uint64_t seed, const uint64_t stream) {
+py::array_t<int64_t> binomial_rvs(
+    const int64_t n_samples,
+    const int64_t n,
+    const double p,
+    const uint64_t seed,
+    const uint64_t stream) {
     py::array_t<int64_t> result(n_samples);
     int64_t* ptr = result.mutable_data();
     mmu::core::random::binomial_rvs(n_samples, n, p, ptr, seed, stream);
@@ -44,7 +50,8 @@ py::array_t<int64_t> multinomial_rvs(
     py::array_t<int64_t> result(n_samples * p.size());
     int64_t* ptr = result.mutable_data();
     mmu::core::zero_array(ptr, result.size());
-    mmu::core::random::multinomial_rvs(n_samples, n, p.size(), p.mutable_data(), ptr, seed, stream);
+    mmu::core::random::multinomial_rvs(
+        n_samples, n, p.size(), p.mutable_data(), ptr, seed, stream);
     return result.reshape({static_cast<ssize_t>(n_samples), p.size()});
 }
 

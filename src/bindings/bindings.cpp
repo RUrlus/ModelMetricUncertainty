@@ -3,9 +3,9 @@
  */
 #include <pybind11/pybind11.h>
 
+#include <mmu/bindings/bvn_error.hpp>
 #include <mmu/bindings/confusion_matrix.hpp>
 #include <mmu/bindings/metrics.hpp>
-#include <mmu/bindings/bvn_error.hpp>
 #include <mmu/bindings/pr_bvn_grid.hpp>
 #include <mmu/bindings/pr_multn_loglike.hpp>
 #include <mmu/bindings/utils.hpp>

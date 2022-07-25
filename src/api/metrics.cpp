@@ -20,7 +20,8 @@ namespace api {
 f64arr precision_recall(const i64arr& conf_mat, const double fill) {
     // condition checks
     if (!npy::is_well_behaved(conf_mat)) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     auto metrics = py::array_t<double>(2);
     double* const metrics_ptr = npy::get_data(metrics);
@@ -42,7 +43,8 @@ f64arr precision_recall(const i64arr& conf_mat, const double fill) {
 f64arr precision_recall_2d(const i64arr& conf_mat, const double fill) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     if (conf_mat.ndim() != 2 || conf_mat.shape(1) != 4) {
         throw std::runtime_error("`conf_mat` should have shape (N, 4)");
@@ -61,7 +63,8 @@ f64arr precision_recall_2d(const i64arr& conf_mat, const double fill) {
     return metrics;
 }
 
-/* Compute the precision, recall given N confusion matrices in a flattened shape.
+/* Compute the precision, recall given N confusion matrices in a flattened
+ * shape.
  *
  * --- Parameters ---
  * - conf_mat : filled confusion matrix
@@ -73,7 +76,8 @@ f64arr precision_recall_2d(const i64arr& conf_mat, const double fill) {
 f64arr precision_recall_flattened(const i64arr& conf_mat, const double fill) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     if ((conf_mat.ndim() != 1) || ((conf_mat.size() % 4) != 0)) {
         throw std::runtime_error("`conf_mat` should have shape (N * 4)");
@@ -106,7 +110,8 @@ f64arr precision_recall_flattened(const i64arr& conf_mat, const double fill) {
 f64arr binary_metrics(const i64arr& conf_mat, const double fill) {
     // condition checks
     if (!npy::is_well_behaved(conf_mat)) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     auto metrics = py::array_t<double>(10);
     double* const metrics_ptr = npy::get_data(metrics);
@@ -128,7 +133,8 @@ f64arr binary_metrics(const i64arr& conf_mat, const double fill) {
 f64arr binary_metrics_2d(const i64arr& conf_mat, const double fill) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     if (conf_mat.ndim() != 2 || conf_mat.shape(1) != 4) {
         throw std::runtime_error("`conf_mat` should have shape (N, 4)");
@@ -159,7 +165,8 @@ f64arr binary_metrics_2d(const i64arr& conf_mat, const double fill) {
 f64arr binary_metrics_flattened(const i64arr& conf_mat, const double fill) {
     // condition checks
     if ((!npy::is_aligned(conf_mat)) || (!npy::is_c_contiguous(conf_mat))) {
-        throw std::runtime_error("Encountered non-aligned or non-contiguous array.");
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
     }
     if ((conf_mat.ndim() != 1) || ((conf_mat.size() % 4) != 0)) {
         throw std::runtime_error("`conf_mat` should have shape (N * 4)");
