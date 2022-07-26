@@ -126,7 +126,6 @@ inline int64_t random_binomial_btpe(
     } else {
         r = binomial->r;
         q = binomial->q;
-        fm = binomial->fm;
         m = binomial->m;
         p1 = binomial->p1;
         xm = binomial->xm;
@@ -244,11 +243,12 @@ inline int64_t random_binomial_inversion(
     const int64_t n,
     const double p,
     binomial_t* binomial) {
-    double q, qn, np, px, U;
+    double q, qn, px, U;
     int64_t X, bound;
 
     if (!(binomial->has_binomial) || (binomial->nsave != n)
         || (binomial->psave != p)) {
+        double np;
         binomial->nsave = n;
         binomial->psave = p;
         binomial->has_binomial = 1;
@@ -259,7 +259,6 @@ inline int64_t random_binomial_inversion(
     } else {
         q = binomial->q;
         qn = binomial->r;
-        np = binomial->c;
         bound = binomial->m;
     }
     X = 0;
@@ -284,8 +283,6 @@ inline int64_t random_binomial(
     const double p,
     const int64_t n,
     binomial_t* binomial) {
-    double q;
-
     if ((n == 0LL) || (p == 0.0f))
         return 0;
 
@@ -296,7 +293,7 @@ inline int64_t random_binomial(
             return random_binomial_btpe(rng, n, p, binomial);
         }
     } else {
-        q = 1.0 - p;
+        double q = 1.0 - p;
         if (q * n <= 30.0) {
             return n - random_binomial_inversion(rng, n, q, binomial);
         } else {
