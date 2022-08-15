@@ -22,6 +22,8 @@ pybind11_add_module(${MODNAME}
         ${MMU_BINDINGS_PATH}/pr_bvn_grid.cpp
         ${MMU_API_PATH}/pr_multn_loglike.cpp
         ${MMU_BINDINGS_PATH}/pr_multn_loglike.cpp
+        ${MMU_API_PATH}/pr_dirich_multn.cpp
+        ${MMU_BINDINGS_PATH}/pr_dirich_multn.cpp
 )
 
 TARGET_LINK_LIBRARIES(${MODNAME} PUBLIC mmu::mmu)

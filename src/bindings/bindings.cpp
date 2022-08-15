@@ -7,6 +7,7 @@
 #include <mmu/bindings/confusion_matrix.hpp>
 #include <mmu/bindings/metrics.hpp>
 #include <mmu/bindings/pr_bvn_grid.hpp>
+#include <mmu/bindings/pr_dirich_multn.hpp>
 #include <mmu/bindings/pr_multn_loglike.hpp>
 #include <mmu/bindings/utils.hpp>
 #include <mmu/core/common.hpp>
@@ -60,6 +61,9 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
 
     pr::bind_multn_chi2_score(m);
     pr::bind_multn_chi2_scores(m);
+
+    pr::bind_neg_log_dirich_multn_pdf(m);
+    pr::bind_neg_log_dirich_multn_pdf_mt(m);
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
     // lep_bvn
