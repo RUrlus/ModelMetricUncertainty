@@ -31,6 +31,29 @@ f64arr precision_recall(const i64arr& conf_mat, const double fill) {
     return metrics;
 }
 
+/* Compute the precision-recall given a single probability matrix.
+ *
+ * --- Parameters ---
+ * - probas : filled probabilities of the confusion matrix
+ * - fill : values to set when divide by zero is encountered
+ *
+ * --- Returns ---
+ * - metrics
+ */
+f64arr precision_recall_probas(const f64arr& probas, const double fill) {
+    // condition checks
+    if (!npy::is_well_behaved(probas)) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
+    }
+    auto metrics = py::array_t<double>(2);
+    double* const metrics_ptr = npy::get_data(metrics);
+
+    // compute metrics
+    core::precision_recall_probas(npy::get_data(probas), metrics_ptr, fill);
+    return metrics;
+}
+
 /* Compute the precision, recall given N confusion matrices.
  *
  * --- Parameters ---
@@ -59,6 +82,40 @@ f64arr precision_recall_2d(const i64arr& conf_mat, const double fill) {
 #pragma omp parallel for shared(cm_ptr, metrics_ptr, n_obs, fill) default(none)
     for (int64_t i = 0; i < n_obs; i++) {
         core::precision_recall(cm_ptr + (i * 4), metrics_ptr + (i * 2), fill);
+    }
+    return metrics;
+}
+
+/* Compute the precision, recall given N probability matrices.
+ *
+ * --- Parameters ---
+ * - probas : filled probabilities of the confusion matrix
+ * - fill : values to set when divide by zero is encountered
+ *
+ * --- Returns ---
+ * - metrics
+ */
+f64arr precision_recall_probas_2d(const f64arr& probas, const double fill) {
+    // condition checks
+    if ((!npy::is_aligned(probas)) || (!npy::is_c_contiguous(probas))) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
+    }
+    if (probas.ndim() != 2 || probas.shape(1) != 4) {
+        throw std::runtime_error("`conf_mat` should have shape (N, 4)");
+    }
+
+    const int64_t n_obs = probas.shape(0);
+    auto metrics = py::array_t<double>({n_obs, static_cast<int64_t>(2)});
+
+    double* const proba_ptr = npy::get_data(probas);
+    double* const metrics_ptr = npy::get_data(metrics);
+// compute metrics
+#pragma omp parallel for shared( \
+    proba_ptr, metrics_ptr, n_obs, fill) default(none)
+    for (int64_t i = 0; i < n_obs; i++) {
+        core::precision_recall_probas(
+            proba_ptr + (i * 4), metrics_ptr + (i * 2), fill);
     }
     return metrics;
 }
