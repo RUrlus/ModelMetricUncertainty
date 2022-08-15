@@ -32,6 +32,8 @@ f64arr binary_metrics_flattened(const i64arr& conf_mat, const double fill);
 f64arr precision_recall(const i64arr& conf_mat, const double fill);
 f64arr precision_recall_2d(const i64arr& conf_mat, const double fill);
 f64arr precision_recall_flattened(const i64arr& conf_mat, const double fill);
+f64arr precision_recall_probas(const f64arr& probas, const double fill);
+f64arr precision_recall_probas_2d(const f64arr& probas, const double fill);
 
 f64arr ROC(const i64arr& conf_mat, const double fill);
 f64arr ROC_2d(const i64arr& conf_mat, const double fill);

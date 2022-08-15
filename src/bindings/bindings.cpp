@@ -30,6 +30,8 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     // metrics
     bind_precision_recall(m);
     bind_precision_recall_2d(m);
+    bind_precision_recall_probas(m);
+    bind_precision_recall_probas_2d(m);
     bind_precision_recall_flattened(m);
     bind_binary_metrics(m);
     bind_binary_metrics_2d(m);

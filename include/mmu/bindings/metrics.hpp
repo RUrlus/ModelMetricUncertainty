@@ -19,7 +19,9 @@ void bind_binary_metrics_2d(py::module& m);
 void bind_binary_metrics_flattened(py::module& m);
 
 void bind_precision_recall(py::module& m);
+void bind_precision_recall_probas(py::module& m);
 void bind_precision_recall_2d(py::module& m);
+void bind_precision_recall_probas_2d(py::module& m);
 void bind_precision_recall_flattened(py::module& m);
 
 void bind_ROC(py::module& m);

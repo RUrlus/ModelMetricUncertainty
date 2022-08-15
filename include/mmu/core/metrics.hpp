@@ -115,6 +115,45 @@ inline void ROC(
 
 }  // ROC
 
+inline void precision_recall_probas(
+    const double* __restrict const probas,
+    double* __restrict const metrics,
+    const double fill = 0.) {
+    // real true/positive observations [FN + TP]
+    const double tp = probas[3];
+    const double P = probas[2] + tp;
+    const bool P_nonzero = P > std::numeric_limits<double>::epsilon();
+
+    const double tp_fp = tp + probas[1];
+    const bool tp_fp_nonzero = tp_fp > std::numeric_limits<double>::epsilon();
+
+    // metrics[0]  - pos.precision aka Positive Predictive Value (PPV)
+    metrics[0] = tp_fp_nonzero ? tp / tp_fp : fill;
+
+    // metrics[1]  - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+    metrics[1] = P_nonzero ? tp / P : fill;
+}  // precision_recall_probas
+
+inline void precision_recall_probas(
+    const double* __restrict const probas,
+    double& prec,
+    double& rec,
+    const double fill = 0.) {
+    // real true/positive observations [FN + TP]
+    const double tp = probas[3];
+    const double P = probas[2] + tp;
+    const bool P_nonzero = P > std::numeric_limits<double>::epsilon();
+
+    const double tp_fp = tp + probas[1];
+    const bool tp_fp_nonzero = tp_fp > std::numeric_limits<double>::epsilon();
+
+    // metrics[0]  - pos.precision aka Positive Predictive Value (PPV)
+    prec = tp_fp_nonzero ? tp / tp_fp : fill;
+
+    // metrics[1]  - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+    rec = P_nonzero ? tp / P : fill;
+}  // precision_recall_probas
+
 /* Sets the following values at metrics index:
  *    0 - neg.precision aka Negative Predictive Value
  *    1 - pos.precision aka Positive Predictive Value

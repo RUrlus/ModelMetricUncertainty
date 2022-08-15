@@ -35,6 +35,31 @@ void bind_precision_recall(py::module& m) {
         py::arg("fill") = 1.);
 }
 
+void bind_precision_recall_probas(py::module& m) {
+    m.def(
+        "precision_recall_probas",
+        &api::precision_recall_probas,
+        R"pbdoc(Compute Precision and Recall.
+
+            0 - pos.precision aka Positive Predictive Value (PPV)
+            1 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+
+        Parameters
+        ----------
+        probas : np.ndarray[int64]
+            the confusion matrix probabilities with flattened order: TN, FP, FN, TP
+        fill : double, optional
+            value to fill when a metric is not defined, e.g. divide by zero.
+            Default is 0.
+
+        Returns
+        -------
+        metrics : np.array[np.float64]
+        )pbdoc",
+        py::arg("probas"),
+        py::arg("fill") = 1.);
+}
+
 void bind_precision_recall_2d(py::module& m) {
     m.def(
         "precision_recall_2d",
@@ -59,6 +84,33 @@ void bind_precision_recall_2d(py::module& m) {
         metrics : np.array[np.float64]
         )pbdoc",
         py::arg("conf_mat"),
+        py::arg("fill") = 1.);
+}
+
+void bind_precision_recall_probas_2d(py::module& m) {
+    m.def(
+        "precision_recall_probas_2d",
+        &api::precision_recall_probas_2d,
+        R"pbdoc(Compute precision and recall.
+
+        Computes the following metrics:
+            0 - pos.precision aka Positive Predictive Value (PPV)
+            1 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+
+        Parameters
+        ----------
+        probas : np.ndarray[float64]
+            the confusion matrix probalities with with column order: TN, FP, FN, TP.
+            The array should be C-contiguous and have shape (N, 4)
+        fill : double, optional
+            value to fill when a metric is not defined, e.g. divide by zero.
+            Default is 0.
+
+        Returns
+        -------
+        metrics : np.array[np.float64]
+        )pbdoc",
+        py::arg("probas"),
         py::arg("fill") = 1.);
 }
 
