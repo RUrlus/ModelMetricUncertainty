@@ -20,10 +20,12 @@ pybind11_add_module(${MODNAME}
         ${MMU_BINDINGS_PATH}/bvn_error.cpp
         ${MMU_API_PATH}/pr_bvn_grid.cpp
         ${MMU_BINDINGS_PATH}/pr_bvn_grid.cpp
-        ${MMU_API_PATH}/roc_bvn_grid.cpp
-        ${MMU_BINDINGS_PATH}/roc_bvn_grid.cpp
         ${MMU_API_PATH}/pr_multn_loglike.cpp
         ${MMU_BINDINGS_PATH}/pr_multn_loglike.cpp
+        ${MMU_API_PATH}/pr_dirich_multn.cpp
+        ${MMU_BINDINGS_PATH}/pr_dirich_multn.cpp
+        ${MMU_API_PATH}/roc_bvn_grid.cpp
+        ${MMU_BINDINGS_PATH}/roc_bvn_grid.cpp
         ${MMU_API_PATH}/roc_multn_loglike.cpp
         ${MMU_BINDINGS_PATH}/roc_multn_loglike.cpp
 )
