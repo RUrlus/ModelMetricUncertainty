@@ -32,7 +32,7 @@
 namespace mmu {
 namespace core {
 
-// fill value for the chi2 scres, this values results
+// fill value for the chi2 scores, this values results
 // p-values very close to 1
 // chi2.ppf(1-1e-14) --> 64.47398179869367
 constexpr double MULT_DEFAULT_CHI2_SCORE = 65.0;
