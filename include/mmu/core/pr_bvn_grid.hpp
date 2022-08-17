@@ -56,6 +56,8 @@ namespace mmu {
 namespace core {
 namespace pr {
 
+constexpr double BVN_DEFAULT_CHI2_SCORE = 65.0;
+
 inline double bvn_chi2_score(
     const double prec,
     const double rec,
@@ -137,8 +139,19 @@ inline void bvn_chi2_scores_mt(
     const double rho = prec_rec_cov[3] / (prec_simga * rec_simga);
     const double rho_rhs = std::sqrt(1 - std::pow(rho, 2));
 
-#pragma omp parallel shared( \
-    precs, recs, prec_mu, rec_mu, prec_simga, rec_simga, rho, rho_rhs, scores)
+#pragma omp parallel default(none) shared( \
+    precs,                                 \
+    recs,                                  \
+    prec_mu,                               \
+    rec_mu,                                \
+    prec_simga,                            \
+    rec_simga,                             \
+    rho,                                   \
+    rho_rhs,                               \
+    scores,                                \
+    epsilon,                               \
+    n_points,                              \
+    max_val)
     {
 #pragma omp for
         for (int64_t i = 0; i < n_points; ++i) {
@@ -168,7 +181,8 @@ inline void bvn_grid_error(
     const double epsilon = 1e-4) {
     // give scores a high enough initial value that the chi2 p-values will be
     // close to zero
-    std::fill(scores, scores + n_prec_bins * n_rec_bins, 1e4);
+    std::fill(
+        scores, scores + n_prec_bins * n_rec_bins, BVN_DEFAULT_CHI2_SCORE);
     // -- memory allocation --
     std::array<int64_t, 4> bounds;
     int64_t* idx_bounds = bounds.data();
@@ -235,7 +249,8 @@ inline void bvn_grid_curve_error(
     const double epsilon = 1e-4) {
     // give scores a high enough initial value that the chi2 p-values will be
     // close to zero
-    std::fill(scores, scores + n_prec_bins * n_rec_bins, 1e4);
+    std::fill(
+        scores, scores + n_prec_bins * n_rec_bins, BVN_DEFAULT_CHI2_SCORE);
 
     // -- memory allocation --
     auto z1_sq = std::unique_ptr<double[]>(new double[n_rec_bins]);
@@ -314,17 +329,21 @@ inline void bvn_grid_curve_error_mt(
 
     // give scores a high enough initial value that the chi2 p-values will be
     // close to zero
-    std::fill(thread_scores.get(), thread_scores.get() + t_elem, 1e4);
-#pragma omp parallel num_threads(n_threads) shared( \
-    n_prec_bins,                                    \
-    n_rec_bins,                                     \
-    n_conf_mats,                                    \
-    prec_grid,                                      \
-    rec_grid,                                       \
-    conf_mat,                                       \
-    n_sigmas,                                       \
-    epsilon,                                        \
-    thread_scores,                                  \
+    std::fill(
+        thread_scores.get(),
+        thread_scores.get() + t_elem,
+        BVN_DEFAULT_CHI2_SCORE);
+#pragma omp parallel num_threads(n_threads) default(none) shared( \
+    n_prec_bins,                                                  \
+    n_rec_bins,                                                   \
+    n_conf_mats,                                                  \
+    prec_grid,                                                    \
+    rec_grid,                                                     \
+    conf_mat,                                                     \
+    n_sigmas,                                                     \
+    epsilon,                                                      \
+    thread_scores,                                                \
+    n_elem,                                                       \
     prec_rec_cov)
     {
         double* thread_block
@@ -397,7 +416,7 @@ inline void bvn_grid_curve_error_mt(
     // for each point in the grid we check which thread
     // has the lowest score
     for (int64_t i = 0; i < n_elem; i++) {
-        double min_score = 1e4;
+        double min_score = BVN_DEFAULT_CHI2_SCORE;
         for (int64_t j = 0; j < n_threads; j++) {
             double tscore = thread_scores[i + offsets[j]];
             if (tscore < min_score) {
