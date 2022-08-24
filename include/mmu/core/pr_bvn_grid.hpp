@@ -74,7 +74,7 @@ inline double bvn_chi2_score(
     const double prec_simga = std::sqrt(prec_rec_cov[2]);
     const double rec_simga = std::sqrt(prec_rec_cov[5]);
     const double rho = prec_rec_cov[3] / (prec_simga * rec_simga);
-    const double rho_rhs = std::sqrt(1 - std::pow(rho, 2));
+    const double rho_rhs = std::sqrt(1 - (rho * rho));
 
     // compute Z1
     const double z1
@@ -82,7 +82,7 @@ inline double bvn_chi2_score(
     const double prec_score
         = (details::clamp(prec, epsilon, max_val) - prec_mu) / prec_simga;
     const double z2 = (prec_score - rho * z1) / rho_rhs;
-    return std::pow(z1, 2) + std::pow(z2, 2);
+    return (z1 * z1) + (z2 * z2);
 }  // bvn_chi2_score
 
 inline void bvn_chi2_scores(
@@ -103,20 +103,20 @@ inline void bvn_chi2_scores(
     const double prec_simga = std::sqrt(prec_rec_cov[2]);
     const double rec_simga = std::sqrt(prec_rec_cov[5]);
     const double rho = prec_rec_cov[3] / (prec_simga * rec_simga);
-    const double rho_rhs = std::sqrt(1 - std::pow(rho, 2));
+    const double rho_rhs = std::sqrt(1 - (rho * rho));
 
     // compute Z1
     for (int64_t i = 0; i < n_points; ++i) {
         double z1
             = (details::clamp(recs[i], epsilon, max_val) - rec_mu) / rec_simga;
         double rho_z1 = rho * z1;
-        double z1_sq = std::pow(z1, 2);
+        double z1_sq = z1 * z1;
 
         double prec_score
             = (details::clamp(precs[i], epsilon, max_val) - prec_mu)
               / prec_simga;
         double z2 = (prec_score - rho_z1) / rho_rhs;
-        scores[i] = z1_sq + std::pow(z2, 2);
+        scores[i] = z1_sq + (z2 * z2);
     }
 }  // bvn_chi2_scores
 
@@ -137,7 +137,7 @@ inline void bvn_chi2_scores_mt(
     const double prec_simga = std::sqrt(prec_rec_cov[2]);
     const double rec_simga = std::sqrt(prec_rec_cov[5]);
     const double rho = prec_rec_cov[3] / (prec_simga * rec_simga);
-    const double rho_rhs = std::sqrt(1 - std::pow(rho, 2));
+    const double rho_rhs = std::sqrt(1 - (rho * rho));
 
 #pragma omp parallel default(none) shared( \
     precs,                                 \
@@ -158,13 +158,13 @@ inline void bvn_chi2_scores_mt(
             double z1 = (details::clamp(recs[i], epsilon, max_val) - rec_mu)
                         / rec_simga;
             double rho_z1 = rho * z1;
-            double z1_sq = std::pow(z1, 2);
+            double z1_sq = z1 * z1;
 
             double prec_score
                 = (details::clamp(precs[i], epsilon, max_val) - prec_mu)
                   / prec_simga;
             double z2 = (prec_score - rho_z1) / rho_rhs;
-            scores[i] = z1_sq + std::pow(z2, 2);
+            scores[i] = z1_sq + (z2 * z2);
         }
     }  // omp parallel
 }  // bvn_chi2_scores_mt
@@ -210,7 +210,7 @@ inline void bvn_grid_error(
     const double prec_simga = std::sqrt(prec_rec_cov[2]);
     const double rec_simga = std::sqrt(prec_rec_cov[5]);
     const double rho = prec_rec_cov[3] / (prec_simga * rec_simga);
-    const double rho_rhs = std::sqrt(1 - std::pow(rho, 2));
+    const double rho_rhs = std::sqrt(1 - (rho * rho));
 
     auto z1_sq = std::unique_ptr<double[]>(new double[n_rec_bins]);
     auto rho_z1 = std::unique_ptr<double[]>(new double[n_rec_bins]);
@@ -218,7 +218,7 @@ inline void bvn_grid_error(
         // compute Z1
         double z_tmp = (rec_grid[i] - rec_mu) / rec_simga;
         rho_z1[i] = rho * z_tmp;
-        z1_sq[i] = std::pow(z_tmp, 2);
+        z1_sq[i] = z_tmp * z_tmp;
     }
 
     for (int64_t i = prec_idx_min; i < prec_idx_max; i++) {
@@ -226,7 +226,7 @@ inline void bvn_grid_error(
         double prec_score = (prec_grid[i] - prec_mu) / prec_simga;
         for (int64_t j = rec_idx_min; j < rec_idx_max; j++) {
             double z2 = (prec_score - rho_z1[j]) / rho_rhs;
-            double score = z1_sq[j] + std::pow(z2, 2);
+            double score = z1_sq[j] + (z2 * z2);
             int64_t idx = odx + j;
             // log likelihoods and thus always positive
             if (score < scores[idx]) {
@@ -281,14 +281,14 @@ inline void bvn_grid_curve_error(
         }
 
         double rho = prec_rec_cov[3] / (prec_simga * rec_simga);
-        double rho_rhs = std::sqrt(1 - std::pow(rho, 2));
+        double rho_rhs = std::sqrt(1 - rho * rho);
 
         // compute Z1 and variants of it
         for (int64_t i = bounds.rec_idx_min; i < bounds.rec_idx_max; i++) {
             // compute Z1
             double z_tmp = (rec_grid[i] - rec_mu) / rec_simga;
             rho_z1[i] = rho * z_tmp;
-            z1_sq[i] = std::pow(z_tmp, 2);
+            z1_sq[i] = z_tmp * z_tmp;
         }
 
         for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max; i++) {
@@ -296,7 +296,7 @@ inline void bvn_grid_curve_error(
             double prec_score = (prec_grid[i] - prec_mu) / prec_simga;
             for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max; j++) {
                 double z2 = (prec_score - rho_z1[j]) / rho_rhs;
-                double score = z1_sq[j] + std::pow(z2, 2);
+                double score = z1_sq[j] + z2 * z2;
                 int64_t idx = odx + j;
                 // log likelihoods and thus always positive
                 if (score < scores[idx]) {
@@ -377,14 +377,14 @@ inline void bvn_grid_curve_error_mt(
                 continue;
             }
             double rho = prc_ptr[3] / (prec_simga * rec_simga);
-            double rho_rhs = std::sqrt(1 - std::pow(rho, 2));
+            double rho_rhs = std::sqrt(1 - rho * rho);
 
             // compute Z1 and variants of it
             for (int64_t i = bounds.rec_idx_min; i < bounds.rec_idx_max; i++) {
                 // compute Z1
                 z_tmp = (rec_grid[i] - rec_mu) / rec_simga;
                 rho_z1[i] = rho * z_tmp;
-                z1_sq[i] = std::pow(z_tmp, 2);
+                z1_sq[i] = z_tmp * z_tmp;
             }
 
             for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max;
@@ -394,7 +394,7 @@ inline void bvn_grid_curve_error_mt(
                 for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max;
                      j++) {
                     double z2 = (prec_score - rho_z1[j]) / rho_rhs;
-                    double score = z1_sq[j] + std::pow(z2, 2);
+                    double score = z1_sq[j] + z2 * z2;
                     int64_t idx = odx + j;
                     // log likelihoods and thus always positive
                     if (score < thread_block[idx]) {

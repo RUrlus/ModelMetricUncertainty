@@ -107,7 +107,7 @@ inline void bvn_cov(
     if (itp != itp_fp && itp != itp_fn) {
         metrics[3] = metrics[4]
             = (static_cast<double>(itp * conf_mat[1] * conf_mat[2])
-               / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2)));
+               / ((tp_fp * tp_fp) * (tp_fn * tp_fn)));
     } else {
         metrics[3] = metrics[4] = 0.0;
     }
@@ -206,7 +206,7 @@ inline void bvn_error(
     // covariance
     metrics[7] = metrics[8]
         = (static_cast<double>(itp * conf_mat[1] * conf_mat[2])
-           / (std::pow(tp_fp, 2) * std::pow(tp_fn, 2)));
+           / ((tp_fp * tp_fp) * (tp_fn * tp_fn)));
 }  // bvn_error
 
 template <typename T, isInt<T> = true>
