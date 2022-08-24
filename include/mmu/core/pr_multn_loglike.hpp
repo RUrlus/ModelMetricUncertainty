@@ -97,10 +97,10 @@ inline void constrained_fit_cmp(
     probas[0] = std::max(1. - probas[1] - probas[2] - probas[3], 0.0);
 }  // constrained_fit_cmp
 
-typedef struct s_prof_loglike_t {
+struct prof_loglike_t {
     int64_t in;
-    double n3;
     double n;
+    double n3;
     double x_tn;
     double x_fp;
     double x_fn;
@@ -110,32 +110,32 @@ typedef struct s_prof_loglike_t {
     double p_fn;
     double p_tp;
     double nll_h0;
-} prof_loglike_t;
+};
 
 inline void set_prof_loglike_store(
     const int64_t* __restrict conf_mat,
-    prof_loglike_t* store) {
+    prof_loglike_t& store) {
     // total number of entries in the confusion matrix
     const int64_t in3 = conf_mat[1] + conf_mat[2] + conf_mat[3];
-    store->n3 = static_cast<double>(in3);
-    store->in = conf_mat[0] + in3;
-    store->n = static_cast<double>(store->in);
+    store.n3 = static_cast<double>(in3);
+    store.in = conf_mat[0] + in3;
+    store.n = static_cast<double>(store.in);
 
-    store->x_tn = static_cast<double>(conf_mat[0]);
-    store->x_fp = static_cast<double>(conf_mat[1]);
-    store->x_fn = static_cast<double>(conf_mat[2]);
-    store->x_tp = static_cast<double>(conf_mat[3]);
+    store.x_tn = static_cast<double>(conf_mat[0]);
+    store.x_fp = static_cast<double>(conf_mat[1]);
+    store.x_fn = static_cast<double>(conf_mat[2]);
+    store.x_tp = static_cast<double>(conf_mat[3]);
 
-    store->p_tn = store->x_tn / store->n;
-    store->p_fp = store->x_fp / store->n;
-    store->p_fn = store->x_fn / store->n;
-    store->p_tp = store->x_tp / store->n;
+    store.p_tn = store.x_tn / store.n;
+    store.p_fp = store.x_fp / store.n;
+    store.p_fn = store.x_fn / store.n;
+    store.p_tp = store.x_tp / store.n;
 
-    store->nll_h0 = -2
-                    * (details::xlogy(store->x_tn, store->p_tn)
-                       + details::xlogy(store->x_fp, store->p_fp)
-                       + details::xlogy(store->x_fn, store->p_fn)
-                       + details::xlogy(store->x_tp, store->p_tp));
+    store.nll_h0 = -2
+                   * (details::xlogy(store.x_tn, store.p_tn)
+                      + details::xlogy(store.x_fp, store.p_fp)
+                      + details::xlogy(store.x_fn, store.p_fn)
+                      + details::xlogy(store.x_tp, store.p_tp));
 }
 
 /* Compute -2logp of multinomial distribution given a precision and recall.
@@ -150,15 +150,15 @@ inline void set_prof_loglike_store(
 inline double prof_loglike(
     const double prec,
     const double rec,
-    prof_loglike_t* store,
+    prof_loglike_t& store,
     double* __restrict p_h0) {
-    constrained_fit_cmp(prec, rec, store->n3, store->n, p_h0);
+    constrained_fit_cmp(prec, rec, store.n3, store.n, p_h0);
     const double nll_h1 = -2
-                          * (details::xlogy(store->x_tn, p_h0[0])
-                             + details::xlogy(store->x_fp, p_h0[1])
-                             + details::xlogy(store->x_fn, p_h0[2])
-                             + details::xlogy(store->x_tp, p_h0[3]));
-    return nll_h1 - store->nll_h0;
+                          * (details::xlogy(store.x_tn, p_h0[0])
+                             + details::xlogy(store.x_fp, p_h0[1])
+                             + details::xlogy(store.x_fn, p_h0[2])
+                             + details::xlogy(store.x_tp, p_h0[3]));
+    return nll_h1 - store.nll_h0;
 }  // prof_loglike
 
 /* Compute -2logp of multinomial distribution given a precision and recall.
@@ -231,8 +231,7 @@ inline void multn_chi2_scores(
     double* p = probas.data();
 
     auto nll_store = prof_loglike_t();
-    prof_loglike_t* nll_ptr = &nll_store;
-    set_prof_loglike_store(conf_mat, nll_ptr);
+    set_prof_loglike_store(conf_mat, nll_store);
     // -- memory allocation --
 
     const double max_val = 1.0 - epsilon;
@@ -240,7 +239,7 @@ inline void multn_chi2_scores(
         scores[i] = prof_loglike(
             details::clamp(precs[i], epsilon, max_val),
             details::clamp(recs[i], epsilon, max_val),
-            nll_ptr,
+            nll_store,
             p);
     }
 }  // multn_chi2_scores
@@ -258,19 +257,18 @@ inline void multn_chi2_scores_mt(
     std::array<double, 4> probas;
     double* p = probas.data();
     auto nll_store = prof_loglike_t();
-    prof_loglike_t* nll_ptr = &nll_store;
-    set_prof_loglike_store(conf_mat, nll_ptr);
+    set_prof_loglike_store(conf_mat, nll_store);
     // -- memory allocation --
     const double max_val = 1.0 - epsilon;
 
-#pragma omp parallel shared(precs, recs, nll_ptr, scores)
+#pragma omp parallel shared(precs, recs, nll_store, scores)
     {
 #pragma omp for
         for (int64_t i = 0; i < n_points; ++i) {
             scores[i] = prof_loglike(
                 details::clamp(precs[i], epsilon, max_val),
                 details::clamp(recs[i], epsilon, max_val),
-                nll_ptr,
+                nll_store,
                 p);
         }
     }  // omp parallel
@@ -299,14 +297,13 @@ inline void multn_error(
         = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
 
     auto nll_store = prof_loglike_t();
-    prof_loglike_t* nll_ptr = &nll_store;
-    set_prof_loglike_store(conf_mat, nll_ptr);
+    set_prof_loglike_store(conf_mat, nll_store);
 
     int64_t idx = 0;
     for (int64_t i = 0; i < n_bins; i++) {
         double prec = prec_start + (static_cast<double>(i) * prec_delta);
         for (int64_t j = 0; j < n_bins; j++) {
-            result[idx] = prof_loglike(prec, rec_grid[j], nll_ptr, p);
+            result[idx] = prof_loglike(prec, rec_grid[j], nll_store, p);
             idx++;
         }
     }
@@ -330,9 +327,8 @@ inline void multn_error_mt(
         = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
 
     auto nll_store = prof_loglike_t();
-    prof_loglike_t* nll_ptr = &nll_store;
-    set_prof_loglike_store(conf_mat, nll_ptr);
-#pragma omp parallel num_threads(n_threads) shared(rec_grid, nll_ptr, result)
+    set_prof_loglike_store(conf_mat, nll_store);
+#pragma omp parallel num_threads(n_threads) shared(rec_grid, nll_store, result)
     {
         // -- memory allocation --
         // memory to be used by constrained_fit_cmp
@@ -347,7 +343,7 @@ inline void multn_error_mt(
             prec = prec_start + (static_cast<double>(i) * prec_delta);
             idx = i * n_bins;
             for (int64_t j = 0; j < n_bins; j++) {
-                result[idx + j] = prof_loglike(prec, rec_grid[j], nll_ptr, p);
+                result[idx + j] = prof_loglike(prec, rec_grid[j], nll_store, p);
             }
         }
     }  // omp parallel
@@ -376,7 +372,6 @@ inline void multn_grid_error(
     int64_t* idx_bounds = bounds.data();
 
     auto nll_store = prof_loglike_t();
-    prof_loglike_t* nll_ptr = &nll_store;
     // -- memory allocation --
 
     // obtain the indexes over which to loop
@@ -395,7 +390,7 @@ inline void multn_grid_error(
     const int64_t rec_idx_min = idx_bounds[2];
     const int64_t rec_idx_max = idx_bounds[3];
 
-    set_prof_loglike_store(conf_mat, nll_ptr);
+    set_prof_loglike_store(conf_mat, nll_store);
 
     double score;
     int64_t idx;
@@ -403,7 +398,7 @@ inline void multn_grid_error(
         double prec = prec_grid[i];
         int64_t odx = i * n_rec_bins;
         for (int64_t j = rec_idx_min; j < rec_idx_max; j++) {
-            score = prof_loglike(prec, rec_grid[j], nll_ptr, p);
+            score = prof_loglike(prec, rec_grid[j], nll_store, p);
             idx = odx + j;
             // log likelihoods and thus always positive
             if (score < scores[idx]) {
@@ -434,7 +429,6 @@ inline void multn_grid_curve_error(
     double* p = probas.data();
 
     auto nll_store = prof_loglike_t();
-    prof_loglike_t* nll_ptr = &nll_store;
 
     auto bounds = GridBounds(
         n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
@@ -446,13 +440,13 @@ inline void multn_grid_curve_error(
 
     for (int64_t k = 0; k < n_conf_mats; k++) {
         // update to new conf_mat
-        set_prof_loglike_store(conf_mat, nll_ptr);
+        set_prof_loglike_store(conf_mat, nll_store);
         bounds.compute_bounds(conf_mat);
 
         for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max; i++) {
             prec = prec_grid[i];
             for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max; j++) {
-                score = prof_loglike(prec, rec_grid[j], nll_ptr, p);
+                score = prof_loglike(prec, rec_grid[j], nll_store, p);
                 idx = (i * n_rec_bins) + j;
                 if (score < scores[idx]) {
                     scores[idx] = score;
@@ -505,8 +499,6 @@ inline void multn_grid_curve_error_mt(
         double* p = probas.data();
 
         auto nll_store = prof_loglike_t();
-        prof_loglike_t* nll_ptr = &nll_store;
-
         auto bounds = GridBounds(
             n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
 
@@ -516,7 +508,7 @@ inline void multn_grid_curve_error_mt(
         for (int64_t k = 0; k < n_conf_mats; k++) {
             const int64_t* lcm = conf_mat + (k * 4);
             // update to new conf_mat
-            set_prof_loglike_store(lcm, nll_ptr);
+            set_prof_loglike_store(lcm, nll_store);
             bounds.compute_bounds(lcm);
 
             for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max;
@@ -525,7 +517,8 @@ inline void multn_grid_curve_error_mt(
                 int64_t odx = i * n_rec_bins;
                 for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max;
                      j++) {
-                    double score = prof_loglike(prec, rec_grid[j], nll_ptr, p);
+                    double score
+                        = prof_loglike(prec, rec_grid[j], nll_store, p);
                     int64_t idx = odx + j;
                     if (score < thread_block[idx]) {
                         thread_block[idx] = score;
@@ -606,12 +599,12 @@ inline double prof_loglike_simulation_cov(
         checks += prof_loglike(
                       prec,
                       rec,
-                      sim_store.n,
+                      static_cast<double>(sim_store.n),
                       sim_store.mult_ptr,
                       sim_store.p_sim_ptr)
                   < nll_obs;
     }
-    return static_cast<double>(checks) / sim_store.n_sims;
+    return static_cast<double>(checks) / static_cast<double>(sim_store.n_sims);
 }  // prof_loglike_simulation_cov
 
 inline void multn_sim_error(
@@ -645,9 +638,8 @@ inline void multn_sim_error(
     // struct used to store the elements used in the computation
     // of the profile log-likelihood
     auto nll_store = prof_loglike_t();
-    prof_loglike_t* nll_ptr = &nll_store;
-    set_prof_loglike_store(conf_mat, nll_ptr);
-    const int64_t n = nll_ptr->in;
+    set_prof_loglike_store(conf_mat, nll_store);
+    const int64_t n = nll_store.in;
 
     // struct with parameters used in the simulations
     auto sim_store = simulation_store(rng, n_sims, n);
@@ -656,16 +648,13 @@ inline void multn_sim_error(
     // close to zero i.e. ppf(1-1e-14) --> 64.47398179869367
     std::fill(scores, scores + n_bins * n_bins, MULT_DEFAULT_CHI2_SCORE);
 
-    double rec;
-    double prec;
-    double nll_obs;
     int64_t idx = 0;
     for (int64_t i = 0; i < n_bins; i++) {
-        prec = prec_start + (i * prec_delta);
+        double prec = prec_start + (static_cast<double>(i) * prec_delta);
         for (int64_t j = 0; j < n_bins; j++) {
             // prof_loglike also sets p which we can re-use in prof_loglike sim
-            rec = rec_grid[j];
-            nll_obs = prof_loglike(prec, rec, nll_ptr, sim_store.p);
+            double rec = rec_grid[j];
+            double nll_obs = prof_loglike(prec, rec, nll_store, sim_store.p);
             scores[idx]
                 = prof_loglike_simulation_cov(prec, rec, nll_obs, sim_store);
             idx++;
@@ -713,9 +702,8 @@ inline void multn_sim_error_mt(
         // struct used to store the elements used in the computation
         // of the profile log-likelihood
         auto nll_store = prof_loglike_t();
-        prof_loglike_t* nll_ptr = &nll_store;
-        set_prof_loglike_store(conf_mat, nll_ptr);
-        const int64_t n = nll_ptr->in;
+        set_prof_loglike_store(conf_mat, nll_store);
+        const int64_t n = nll_store.in;
 
         // struct with parameters used in the simulations
         auto sim_store = simulation_store(rng, n_sims, n);
@@ -728,7 +716,8 @@ inline void multn_sim_error_mt(
                 // prof_loglike also sets p which we can re-use in prof_loglike
                 // sim
                 double rec = rec_grid[j];
-                double nll_obs = prof_loglike(prec, rec, nll_ptr, sim_store.p);
+                double nll_obs
+                    = prof_loglike(prec, rec, nll_store, sim_store.p);
                 scores[odx + j] = prof_loglike_simulation_cov(
                     prec, rec, nll_obs, sim_store);
             }
@@ -777,7 +766,6 @@ inline void multn_sim_curve_error_mt(
 
         // -- memory allocation --
         auto nll_store = prof_loglike_t();
-        prof_loglike_t* nll_ptr = &nll_store;
 
         // struct with parameters used in the simulations
         //
@@ -804,7 +792,7 @@ inline void multn_sim_curve_error_mt(
         for (int64_t k = 0; k < n_conf_mats; k++) {
             const int64_t* lcm = conf_mat + (k * 4);
             // update to new conf_mat
-            set_prof_loglike_store(lcm, nll_ptr);
+            set_prof_loglike_store(lcm, nll_store);
             bounds.compute_bounds(lcm);
             sim_store.n = nll_store.in;
 
@@ -815,7 +803,7 @@ inline void multn_sim_curve_error_mt(
                 for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max;
                      j++) {
                     rec = rec_grid[j];
-                    nll_obs = prof_loglike(prec, rec, nll_ptr, sim_store.p);
+                    nll_obs = prof_loglike(prec, rec, nll_store, sim_store.p);
                     score = prof_loglike_simulation_cov(
                         prec, rec, nll_obs, sim_store);
                     idx = odx + j;
