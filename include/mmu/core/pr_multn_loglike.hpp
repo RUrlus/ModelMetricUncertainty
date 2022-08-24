@@ -41,18 +41,14 @@ namespace details {
 
 template <typename T, isFloat<T> = true>
 inline double xlogy(T x, T y) {
-    if ((x <= std::numeric_limits<T>::epsilon()) && (!std::isnan(y))) {
-        return 0.0;
-    }
-    return x * std::log(y);
+    static constexpr double epsilon = std::numeric_limits<T>::epsilon();
+    return x > epsilon ? x * std::log(y) : 0.0;
 }
 
 template <typename T, isInt<T> = true>
 inline double xlogy(T x, T y) {
-    if (x == 0) {
-        return 0.0;
-    }
-    return static_cast<double>(x) * std::log(static_cast<double>(y));
+    return x > 0 ? static_cast<double>(x) * std::log(static_cast<double>(y))
+                 : 0.0;
 }
 }  // namespace details
 
