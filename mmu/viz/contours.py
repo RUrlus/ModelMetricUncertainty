@@ -6,12 +6,12 @@ from mmu.viz.utils import _create_pr_legend
 from mmu.viz.utils import _create_pr_legend_scatter
 
 
-def _plot_pr_curve_contours(
-    precision,
-    recall,
+def _plot_curve_contours(
+    y,
+    x,
     scores,
-    prec_grid,
-    rec_grid,
+    y_grid,
+    x_grid,
     levels,
     labels,
     cmap,
@@ -20,6 +20,8 @@ def _plot_pr_curve_contours(
     legend_loc,
     equal_aspect,
     limit_axis,
+    y_label='',
+    x_label='',
 ):
     if cmap is None:
         cmap = "Blues"
@@ -33,16 +35,16 @@ def _plot_pr_curve_contours(
         fig = ax.get_figure()
 
     # create meshgrid for plotting
-    RX, PY = np.meshgrid(rec_grid, prec_grid)
+    RX, PY = np.meshgrid(x_grid, y_grid)
     colors = _get_color_hexes(cmap, n_colors=len(labels), keep_alpha=True)
 
     levels = [0.0] + levels.tolist()
     # create contours
     ax.contourf(RX, PY, scores, levels=levels, colors=colors, alpha=alpha)  # type: ignore
     # plot precision recall
-    ax.plot(recall, precision, c="black", alpha=0.6, zorder=10)  # type: ignore
-    ax.set_xlabel("Recall", fontsize=14)  # type: ignore
-    ax.set_ylabel("Precision", fontsize=14)  # type: ignore
+    ax.plot(x, y, c="black", alpha=0.6, zorder=10)  # type: ignore
+    ax.set_xlabel(x_label, fontsize=14)  # type: ignore
+    ax.set_ylabel(y_label, fontsize=14)  # type: ignore
     ax.tick_params(labelsize=12)  # type: ignore
     if limit_axis:
         ylim_lb, ylim_ub = ax.get_ylim()  # type: ignore
@@ -63,10 +65,10 @@ def _plot_pr_curve_contours(
     return ax, handles
 
 
-def _plot_pr_contours(
+def _plot_contours(
     n_bins,
-    precision,
-    recall,
+    y,
+    x,
     scores,
     bounds,
     levels,
@@ -77,6 +79,8 @@ def _plot_pr_contours(
     legend_loc,
     equal_aspect,
     limit_axis,
+    y_label='',
+    x_label='',
 ):
     if cmap is None:
         cmap = "Blues"
@@ -90,9 +94,9 @@ def _plot_pr_contours(
         fig = ax.get_figure()
 
     # create meshgrid for plotting
-    prec_grid = np.linspace(bounds[0], bounds[1], num=n_bins)
-    rec_grid = np.linspace(bounds[2], bounds[3], num=n_bins)
-    RX, PY = np.meshgrid(rec_grid, prec_grid)
+    y_grid = np.linspace(bounds[0], bounds[1], num=n_bins)
+    x_grid = np.linspace(bounds[2], bounds[3], num=n_bins)
+    RX, PY = np.meshgrid(x_grid, y_grid)
     colors, c_marker = _get_color_hexes(
         cmap, n_colors=len(labels), return_marker=True, keep_alpha=True
     )
@@ -103,16 +107,16 @@ def _plot_pr_contours(
     ax.contourf(RX, PY, scores, levels=levels, colors=colors, alpha=alpha)  # type: ignore
     # plot precision recall
     ax.scatter(  # type: ignore
-        recall,
-        precision,
+        x,
+        y,
         color=c_marker,
         marker="x",
         s=50,
         lw=2,
         zorder=len(labels) + 1,
     )
-    ax.set_xlabel("Recall", fontsize=14)  # type: ignore
-    ax.set_ylabel("Precision", fontsize=14)  # type: ignore
+    ax.set_xlabel(x_label, fontsize=14)  # type: ignore
+    ax.set_ylabel(y_label, fontsize=14)  # type: ignore
     ax.tick_params(labelsize=12)  # type: ignore
 
     if limit_axis:
@@ -129,7 +133,7 @@ def _plot_pr_contours(
     if equal_aspect:
         ax.set_aspect("equal")  # type: ignore
     # create custom legend with the correct colours and labels
-    handles = _create_pr_legend_scatter(colors, c_marker, labels, (precision, recall))
+    handles = _create_pr_legend_scatter(colors, c_marker, labels, (y, x))
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
     fig.tight_layout()
     return ax, handles

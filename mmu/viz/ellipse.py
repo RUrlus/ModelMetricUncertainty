@@ -33,9 +33,9 @@ def _get_radii_and_angle(cov_mat):
     return precision_r, recall_r, angle
 
 
-def _plot_pr_ellipse(
-    precision,
-    recall,
+def _plot_ellipse(
+    y,
+    x,
     cov_mat,
     scales,
     labels,
@@ -45,6 +45,8 @@ def _plot_pr_ellipse(
     legend_loc,
     equal_aspect,
     limit_axis,
+    y_label='',
+    x_label='',
 ):
     if cmap is None:
         cmap = "Blues"
@@ -68,7 +70,7 @@ def _plot_pr_ellipse(
     n_levels = scales.size
     for c, s in zip(colors[::-1], scales[::-1]):
         ellipse = Ellipse(
-            (recall, precision),
+            (x, y),
             width=s * rec_rad,
             height=s * prec_rad,
             angle=angle,
@@ -78,7 +80,7 @@ def _plot_pr_ellipse(
         ax.add_patch(ellipse)  # type: ignore
 
     ax.scatter(  # type: ignore
-        recall, precision, color=c_marker, marker="x", s=50, lw=2, zorder=n_levels + 1
+        x, y, color=c_marker, marker="x", s=50, lw=2, zorder=n_levels + 1
     )
 
     if limit_axis:
@@ -97,14 +99,14 @@ def _plot_pr_ellipse(
         ax.spines["right"].set_visible(False)  # type: ignore
         ax.spines["top"].set_visible(False)  # type: ignore
 
-    ax.set_xlabel("Recall", fontsize=14)  # type: ignore
-    ax.set_ylabel("Precision", fontsize=14)  # type: ignore
+    ax.set_xlabel(x_label, fontsize=14)  # type: ignore
+    ax.set_ylabel(y_label, fontsize=14)  # type: ignore
     ax.tick_params(labelsize=12)  # type: ignore
 
     if equal_aspect:
         ax.set_aspect("equal")  # type: ignore
     # create custom legend with the correct colours and labels
-    handles = _create_pr_legend_scatter(colors, c_marker, labels, (precision, recall))
+    handles = _create_pr_legend_scatter(colors, c_marker, labels, (y, x))
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
     fig.tight_layout()
 
