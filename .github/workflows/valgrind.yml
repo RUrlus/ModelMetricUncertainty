@@ -56,7 +56,7 @@ jobs:
 
       - name: Install packages
         run: |
-          CMAKE_ARGS="-DMMU_ENABLE_INTERNAL_TESTS=ON -DMMU_VALGRIND_MODE=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo" python -m pip install -e . -v
+          CMAKE_ARGS="-DMMU_ENABLE_INTERNAL_TESTS=ON -DMMU_VALGRIND_MODE=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo" python -m pip install . -v
 
       - name: Test
         run: |
