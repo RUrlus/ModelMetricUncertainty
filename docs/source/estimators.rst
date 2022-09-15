@@ -33,12 +33,14 @@ To help with this the curve methods provide functionality to overlay threshold u
 .. autoapiclass:: mmu.PRU
 
 .. autoapiclass:: mmu.PrecisionRecallUncertainty
+    :show-inheritance:
     :members:
     :inherited-members:
 
 .. autoapiclass:: mmu.PRCU
 
 .. autoapiclass:: mmu.PrecisionRecallCurveUncertainty
+    :show-inheritance:
     :members:
     :inherited-members:
 
@@ -47,5 +49,6 @@ Note though that the simulation is very compute intensive, each grid point is si
 Hence, you will perform ``n_bins`` * ``n_bins`` * ``n_simulations`` simulations in total.
 
 .. autoapiclass:: mmu.PrecisionRecallSimulatedUncertainty
+    :show-inheritance:
     :members:
     :inherited-members:
