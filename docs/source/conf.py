@@ -78,3 +78,4 @@ html_static_path = []
 master_doc = 'index'
 
 # -- Extension configuration -------------------------------------------------
+autodoc_inherit_docstrings = True
