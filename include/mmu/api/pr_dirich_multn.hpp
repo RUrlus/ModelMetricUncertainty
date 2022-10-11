@@ -27,6 +27,13 @@ py::tuple dirich_multn_error(
     const double n_sigmas,
     const double epsilon);
 
+// py::tuple dirich_multn_error(
+//     const int64_t n_bins,
+//     const i64arr& conf_mat,
+//     const f64arr& ref_samples,
+//     const double n_sigmas,
+//     const double epsilon);
+
 }  // namespace pr
 }  // namespace api
 }  // namespace mmu

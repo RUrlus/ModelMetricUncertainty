@@ -4,6 +4,7 @@ with Dirichlet-Multinomial prior. Copyright 2022 Max Baak, Ralph Urlus
 #ifndef INCLUDE_MMU_CORE_PR_DIRICHLET_HPP_
 #define INCLUDE_MMU_CORE_PR_DIRICHLET_HPP_
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -127,6 +128,62 @@ inline void dirich_multn_error(
         }
     }
 }  // dirich_multn_error
+
+// Implementation missing the Chi2 ppf
+
+// inline void dirich_multn_error(
+//     const int64_t n_samples,
+//     const int64_t n_bins,
+//     const int64_t* __restrict conf_mat,
+//     const double* __restrict ref_samples,
+//     double* __restrict result,
+//     double* __restrict bounds,
+//     const double n_sigmas = 6.0,
+//     const double epsilon = 1e-4) {
+//     // -- memory allocation --
+//     // memory to be used by constrained_fit_cmp
+//     std::array<double, 4> alphas;
+//     auto ref_x = std::unique_ptr<double[]>(new double[n_samples]);
+//     auto ref_x_ptr = ref_x.get();
+//     auto ref_y = std::unique_ptr<double[]>(new double[n_samples]);
+//     auto ref_y_ptr = ref_y.get();
+//     auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
+//     // -- memory allocation --
+
+//     alphas[0] = static_cast<double>(conf_mat[0]) + 0.5;
+//     alphas[1] = static_cast<double>(conf_mat[1]) + 0.5;
+//     alphas[2] = static_cast<double>(conf_mat[2]) + 0.5;
+//     alphas[3] = static_cast<double>(conf_mat[3]) + 0.5;
+
+//     auto nsamples = static_cast<double>(n_samples);
+//     for (int64_t i = 0; i < n_samples; i++) {
+//         ref_y_ptr[i] = (static_cast<double>(i) + 0.5) / nsamples;
+//     }
+//     // computes the ref_x scores
+//     neg_log_dirich_multn_pdf(n_samples, ref_samples, alphas.data(),
+//     ref_x_ptr);
+//     // sort the ref_x scores
+//     std::sort(ref_x_ptr, ref_x_ptr + n_samples);
+//     auto interp = LinearInterp<double>(
+//         static_cast<int>(n_samples), 0.0, 100.0, ref_x_ptr, ref_y_ptr);
+
+//     auto pdf = NegLogDirichMultnPdf<double>(alphas.data());
+
+//     // obtain prec_start, prec_end, rec_start, rec_end
+//     get_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
+//     details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
+//     const double prec_start = bounds[0];
+//     const double prec_delta
+//         = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
+
+//     for (int64_t i = 0; i < n_bins; i++) {
+//         double prec = prec_start + (static_cast<double>(i) * prec_delta);
+//         for (int64_t j = 0; j < n_bins; j++) {
+//             *result = interp(pdf(prec, rec_grid[j]));
+//             result++;
+//         }
+//     }
+// }  // dirich_multn_error
 
 }  // namespace pr
 }  // namespace core
