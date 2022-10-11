@@ -65,6 +65,8 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     pr::bind_neg_log_dirich_multn_pdf(m);
     pr::bind_neg_log_dirich_multn_pdf_mt(m);
 
+    pr::bind_dirich_multn_error(m);
+
 #ifdef MMU_HAS_OPENMP_SUPPORT
     // lep_bvn
     pr::bind_bvn_grid_curve_error_mt(m);

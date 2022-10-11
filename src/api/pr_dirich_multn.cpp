@@ -53,6 +53,28 @@ f64arr neg_log_dirich_multn_pdf_mt(
     return neg_log_likes;
 }
 
+py::tuple dirich_multn_error(
+    const int64_t n_bins,
+    const i64arr& conf_mat,
+    const double n_sigmas,
+    const double epsilon) {
+    if (!npy::is_well_behaved(conf_mat)) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
+    }
+    auto result = f64arr({n_bins, n_bins});
+    auto bounds = f64arr({2, 2});
+
+    core::pr::dirich_multn_error(
+        n_bins,
+        npy::get_data(conf_mat),
+        npy::get_data(result),
+        npy::get_data(bounds),
+        n_sigmas,
+        epsilon);
+    return py::make_tuple(result, bounds);
+}  // dirich_multn_error
+
 }  // namespace pr
 }  // namespace api
 }  // namespace mmu
