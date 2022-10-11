@@ -108,7 +108,131 @@ inline bool equal_tol(
     return std::abs(a - b) <= (atol + rtol * b);
 }
 
+inline int _linear_search(
+    const double key,
+    const double* arr,
+    const int len,
+    const int i0) {
+    int i;
+    for (i = i0; i < len && key >= arr[i]; i++)
+        ;
+    return i - 1;
+}
 
+template <typename T, isFloat<T> = true>
+class LinearInterp {
+    const int size;
+    int j = 0;
+    T left;
+    T right;
+    const T* dx;
+    const T* dy;
+    std::unique_ptr<T[]> slopes;
+
+    // binary_search_with_guess(x_val, dx, lenxp, j);
+
+    // adapted from numpy
+    // https://github.com/numpy/numpy/blob/main/numpy/core/src/multiarray/compiled_base.c
+    int binary_search_with_guess(const double key, int guess) {
+        constexpr int LIKELY_IN_CACHE_SIZE = 8;
+        int imin = 0;
+        int imax = size;
+
+        /* Handle keys outside of the arr range first */
+        if (key > dx[size - 1]) {
+            return size;
+        } else if (key < dx[0]) {
+            return -1;
+        }
+
+        /*
+         * If len <= 4 use linear search.
+         * From above we know key >= arr[0] when we start.
+         */
+        if (size <= 4) {
+            return _linear_search(key, dx, size, 1);
+        }
+
+        if (guess > size - 3) {
+            guess = size - 3;
+        }
+        if (guess < 1) {
+            guess = 1;
+        }
+
+        /* check most likely values: guess - 1, guess, guess + 1 */
+        if (key < dx[guess]) {
+            if (key < dx[guess - 1]) {
+                imax = guess - 1;
+                /* last attempt to restrict search to items in cache */
+                if (guess > LIKELY_IN_CACHE_SIZE
+                    && key >= dx[guess - LIKELY_IN_CACHE_SIZE]) {
+                    imin = guess - LIKELY_IN_CACHE_SIZE;
+                }
+            } else {
+                /* key >= arr[guess - 1] */
+                return guess - 1;
+            }
+        } else {
+            /* key >= arr[guess] */
+            if (key < dx[guess + 1]) {
+                return guess;
+            } else {
+                /* key >= arr[guess + 1] */
+                if (key < dx[guess + 2]) {
+                    return guess + 1;
+                } else {
+                    /* key >= arr[guess + 2] */
+                    imin = guess + 2;
+                    /* last attempt to restrict search to items in cache */
+                    if (guess < size - LIKELY_IN_CACHE_SIZE - 1
+                        && key < dx[guess + LIKELY_IN_CACHE_SIZE]) {
+                        imax = guess + LIKELY_IN_CACHE_SIZE;
+                    }
+                }
+            }
+        }
+
+        /* finally, find index by bisection */
+        while (imin < imax) {
+            const int imid = imin + ((imax - imin) >> 1);
+            if (key >= dx[imid]) {
+                imin = imid + 1;
+            } else {
+                imax = imid;
+            }
+        }
+        return imin - 1;
+    }
+
+   public:
+    LinearInterp(int size, T left, T right, T* x, T* y)
+        : size{size},
+          left{left},
+          right{right},
+          dx{x},
+          dy{y},
+          slopes{std::unique_ptr<T[]>(new T[size - 1])} {
+        for (int i = 0; i < size - 1; ++i) {
+            slopes[i] = (dy[i + 1] - dy[i]) / (dx[i + 1] - dx[i]);
+        }
+    };
+
+    T operator()(T x_val) {
+        T res;
+        j = binary_search_with_guess(x_val, j);
+        if (j == -1) {
+            res = left;
+        } else if (j == size) {
+            res = right;
+        } else if (j == size - 1) {
+            res = dy[j];
+        } else {
+            res = slopes[j] * (x_val - dx[j]) + dy[j];
+        }
+        return res;
+    }
+};
 
 }  // namespace core
 }  // namespace mmu
