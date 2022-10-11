@@ -16,6 +16,29 @@ namespace core {
 namespace pr {
 
 template <typename T, isFloat<T> = 0>
+class NegLogDirichMultnPdf {
+    const T alpha_sum;
+    const T alpha_1_m1;
+    const T alpha_2_m1;
+
+   public:
+    explicit NegLogDirichMultnPdf(const T* __restrict alphas)
+        : alpha_sum{alphas[0] + alphas[1] + alphas[2] + alphas[3]},
+          alpha_1_m1{alphas[1] - 1.0},
+          alpha_2_m1{alphas[2] - 1.0} {}
+
+    T operator()(const T prec, const T rec) {
+        const T inv_gamma = 1. / (-1. + (1. / rec) + (1. / prec));
+        const T log_fact = -2. * (std::log(rec) + std::log(prec));
+        const T log_pow_prec = alpha_1_m1 * std::log((1. - prec) / prec);
+        const T log_pow_rec = alpha_2_m1 * std::log((1. - rec) / rec);
+        const T log_pow_inv_gamma = alpha_sum * std::log(inv_gamma);
+        return -2.
+               * (log_fact + log_pow_prec + log_pow_rec + log_pow_inv_gamma);
+    }
+};
+
+template <typename T, isFloat<T> = 0>
 inline void neg_log_dirich_multn_pdf(
     const int64_t size,
     const T* __restrict probas,
