@@ -81,6 +81,7 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     pr::bind_multn_chi2_scores(m);
     pr::bind_neg_log_dirich_multn_pdf(m);
     pr::bind_neg_log_dirich_multn_pdf_mt(m);
+    pr::bind_dirich_multn_error(m);
 
     // roc_multn_loglike
     roc::bind_multn_error(m);

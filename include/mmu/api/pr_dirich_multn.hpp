@@ -21,6 +21,12 @@ f64arr neg_log_dirich_multn_pdf_mt(
     const f64arr& alphas,
     const int n_threads);
 
+py::tuple dirich_multn_error(
+    const int64_t n_bins,
+    const i64arr& conf_mat,
+    const double n_sigmas,
+    const double epsilon);
+
 }  // namespace pr
 }  // namespace api
 }  // namespace mmu

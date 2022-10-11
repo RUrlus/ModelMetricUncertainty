@@ -57,6 +57,37 @@ void bind_neg_log_dirich_multn_pdf_mt(py::module& m) {
         py::arg("n_threads"));
 }
 
+void bind_dirich_multn_error(py::module& m) {
+    m.def(
+        "pr_dirich_multn_error",
+        &api::pr::dirich_multn_error,
+        R"pbdoc(Compute joint Dirichlet-multinomial uncertainty on precision-recall.
+
+        Parameters
+        ----------
+        n_bins : int,
+            number of bins in one axis for the precision and recall grid
+        conf_mat : np.ndarray[int64]
+            the confusion matrix with flattened order: TN, FP, FN, TP
+        n_sigmas : double, default=6.0
+            number std deviations of the marginal distributions to use as
+            grid boundaries
+        epsilon : double, default=1e-4
+            epsilon used to clip recall or precision at the 0, 1 boundaries
+
+        Returns
+        -------
+        chi2 : np.array[np.float64]
+            chi2 score of the NLL of the PR posterior pdf
+        bounds : np.array[np.float64]
+            the lower and upper bound of the grids for precision and recall respectively
+        )pbdoc",
+        py::arg("n_bins"),
+        py::arg("conf_mat"),
+        py::arg("n_sigmas") = 6.0,
+        py::arg("epsilon") = 1e-4);
+}
+
 }  // namespace pr
 }  // namespace bindings
 }  // namespace mmu

@@ -9,6 +9,7 @@ with Dirichlet-Multinomial prior. Copyright 2022 Max Baak, Ralph Urlus
 #include <cstdint>
 
 #include <mmu/core/common.hpp>
+#include <mmu/core/grid_bounds.hpp>
 #include <mmu/core/metrics.hpp>
 
 namespace mmu {
@@ -23,7 +24,7 @@ class NegLogDirichMultnPdf {
 
    public:
     explicit NegLogDirichMultnPdf(const T* __restrict alphas)
-        : alpha_sum{alphas[0] + alphas[1] + alphas[2] + alphas[3]},
+        : alpha_sum{alphas[1] + alphas[2] + alphas[3]},
           alpha_1_m1{alphas[1] - 1.0},
           alpha_2_m1{alphas[2] - 1.0} {}
 
@@ -90,6 +91,42 @@ inline void neg_log_dirich_multn_pdf_mt(
             = -2. * (log_fact + log_pow_prec + log_pow_rec + log_pow_inv_gamma);
     }
 }  // neg_log_dirich_multn_pdf_mt
+
+inline void dirich_multn_error(
+    const int64_t n_bins,
+    const int64_t* __restrict conf_mat,
+    double* __restrict result,
+    double* __restrict bounds,
+    const double n_sigmas = 6.0,
+    const double epsilon = 1e-4) {
+    // -- memory allocation --
+    // memory to be used by constrained_fit_cmp
+    std::array<double, 4> alphas;
+    auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
+    // -- memory allocation --
+
+    alphas[0] = static_cast<double>(conf_mat[0]) + 0.5;
+    alphas[1] = static_cast<double>(conf_mat[1]) + 0.5;
+    alphas[2] = static_cast<double>(conf_mat[2]) + 0.5;
+    alphas[3] = static_cast<double>(conf_mat[3]) + 0.5;
+
+    auto pdf = NegLogDirichMultnPdf<double>(alphas.data());
+
+    // obtain prec_start, prec_end, rec_start, rec_end
+    get_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
+    details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
+    const double prec_start = bounds[0];
+    const double prec_delta
+        = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
+
+    for (int64_t i = 0; i < n_bins; i++) {
+        double prec = prec_start + (static_cast<double>(i) * prec_delta);
+        for (int64_t j = 0; j < n_bins; j++) {
+            *result = pdf(prec, rec_grid[j]);
+            result++;
+        }
+    }
+}  // dirich_multn_error
 
 }  // namespace pr
 }  // namespace core
