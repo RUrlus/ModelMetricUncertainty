@@ -12,6 +12,8 @@ from mmu.metrics.confmat import confusion_matrices
 from mmu.lib._mmu_core import pr_bvn_error
 from mmu.lib._mmu_core import pr_bvn_error_runs
 
+# TODO: to refactor, into a class to be able to inherit the doc, make the ROC part.
+# Should we put these functions in the existing PrecisionRecallUncertainty class?
 
 def precision_recall_bvn_uncertainty(
     y, yhat=None, scores=None, threshold=None, alpha=0.95, return_df=False

@@ -19,6 +19,7 @@ from mmu.metrics import confusion_matrices_to_dataframe
 from mmu.metrics import metrics_to_dataframe
 from mmu.metrics import precision_recall
 from mmu.metrics import precision_recall_curve
+from mmu.metrics import ROC_curve
 
 # aliases
 bmetrics = binary_metrics
@@ -43,6 +44,12 @@ from mmu.methods import PRCU
 from mmu.methods import PrecisionRecallUncertainty
 from mmu.methods import PrecisionRecallSimulatedUncertainty
 from mmu.methods import PrecisionRecallCurveUncertainty
+
+from mmu.methods import ROCU
+from mmu.methods import ROCCU
+from mmu.methods import ROCUncertainty
+from mmu.methods import ROCSimulatedUncertainty
+from mmu.methods import ROCCurveUncertainty
 
 from mmu.commons.utils import generate_data
 
@@ -69,12 +76,20 @@ __all__ = [
     "precision_recall",
     "pr_curve",
     "precision_recall_curve",
+    "ROC_curve",
+
     # classes
     "PRU",
     "PRCU",
     "PrecisionRecallUncertainty",
     "PrecisionRecallSimulatedUncertainty",
     "PrecisionRecallCurveUncertainty",
+
+    "ROCU",
+    "ROCCU",
+    "ROCUncertainty",
+    "ROCSimulatedUncertainty",
+    "ROCCurveUncertainty",
     # modules
     "metrics",
     "methods",

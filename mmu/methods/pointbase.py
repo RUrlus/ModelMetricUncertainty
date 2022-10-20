@@ -19,15 +19,15 @@ from mmu.lib import _MMU_MT_SUPPORT
 
 
 class BaseUncertainty:
-    """Compute joint uncertainty for a point.
+    """Compute joint uncertainty for a point like Precision-Recall or TPR-FPR.
 
     The joint statistical uncertainty can be computed using:
 
     Multinomial method:
 
     Model's the uncertainty using profile log-likelihoods between
-    the observed and most conservative confusion matrix for that point
-    (e.g. precision-recall). Unlike the Bivariate-Normal/Elliptical approach,
+    the observed and most conservative confusion matrix for that point.
+    Unlike the Bivariate-Normal/Elliptical approach,
     this approach is valid for relatively low statistic samples and
     at the edges of the curve. However, it does not allow one to
     add the training sample uncertainty to it.
@@ -36,7 +36,7 @@ class BaseUncertainty:
 
     Model's the linearly propogated errors of the confusion matrix as a
     bivariate Normal distribution. Note that this method is not valid
-    for low statistic sets or for y/x (e.g. precision/recall) close to 1.0/0.0.
+    for low statistic sets or for points close to (y=1.0, x=0.0).
     In these scenarios the Multinomial method should be used.
 
     Attributes
@@ -46,9 +46,11 @@ class BaseUncertainty:
         [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP
         A DataFrame can be obtained by calling `get_conf_mat`.
     y : float
-        For example precision aka Positive Predictive Value
+        - Precision in Precision-Recall
+        - TPR       in ROC
     x : float
-        For example positive recall aka True Positive Rate aka Sensitivity aka positive recall
+        - Recall in Precision-Recall
+        - FPR    in ROC
     threshold : float, optional
         the inclusive threshold used to determine the confusion matrix.
         Is None when the class is instantiated with `from_predictions` or
@@ -56,30 +58,29 @@ class BaseUncertainty:
     cov_mat : np.ndarray[float64], optional
         the covariance matrix of with layout
         [0, 0] = V[y], [0, 1] = COV[y, x], [1, 0] = COV[y, x], [1, 1] = V[x]
-        For example for precision and recall:
+        For example for Precision-Recall:
         [0, 0] = V[P], [0, 1] = COV[P, R], [1, 0] = COV[P, R], [1, 1] = V[R]
         A DataFrame can be obtained by calling `get_cov_mat`.
         **Only set when Bivariate/Elliptical method is used.**
     chi2_scores : np.ndarray[float64], optional
         the chi2 scores for the grid with shape (`n_bins`, `n_bins`) and
-        bounds y_bounds on the y-axis (e.g. precision), x_bounds on the x-axis (e.g. recall)
+        bounds y_bounds on the y-axis, x_bounds on the x-axis
         **Only set when Multinomial method is used.**
     y_bounds : np.ndarray[float64], optional
-        the lower and upper bound for which y (e.g. precision) was evaluated, equal
+        the lower and upper bound for which y was evaluated, equal
         to y +- `n_sigmas` * sigma(y)
         **Only set when Multinomial method is used.**
     x_bounds : np.ndarray[float64], optional
-        the lower and upper bound for which x (e.g. recall) was evaluated, equal
+        the lower and upper bound for which x was evaluated, equal
         to x +- `n_sigmas` * sigma(x)
         **Only set when Multinomial method is used.**
     n_sigmas : int, float, optional
         the number of marginal standard deviations used to determine the
-        bounds of the grid which is evaluated for each observed y (e.g. precision) and
-        x (e.g. recall).
+        bounds of the grid which is evaluated for each observed y and x.
         **Only set when Multinomial method is used.**
     epsilon : float, optional
-        the value used to prevent the bounds from reaching y/x (e.g. precision/recall)
-        1.0/0.0 which would result in NaNs.
+        the value used to prevent the bounds from reaching
+        the point (y=1.0, x=0.0) which would result in NaNs.
         **Only set when Multinomial method is used.**
     y_label : str
         the label of the y-avis.
@@ -231,7 +232,7 @@ class BaseUncertainty:
         epsilon: float = 1e-12,
         n_threads: Optional[int] = None,
     ):
-        """Compute joint-uncertainty (e.g. on precision and recall).
+        """Compute joint-uncertainty for a point.
 
         Parameters
         ----------
@@ -250,7 +251,7 @@ class BaseUncertainty:
             {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
             {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
         n_bins : int, default=100
-            the number of bins in the y/x (e.g. precision/recall) grid for which the
+            the number of bins in the y/x grid for which the
             uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
             array.
             Ignored when method is not the Multinomial approach.
@@ -259,8 +260,8 @@ class BaseUncertainty:
             bounds of the grid which is evaluated.
             Ignored when method is not the Multinomial approach.
         epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching y/x (e.g. precision/recall)
-            1.0/0.0 which would result in NaNs.
+            the value used to prevent the bounds from reaching
+            the point (y=1.0, x=0.0) which would result in NaNs.
             Ignored when method is not the Multinomial approach.
         n_threads : int, default=None
             number of threads to use in the computation of multinomial.
@@ -286,7 +287,7 @@ class BaseUncertainty:
         epsilon: float = 1e-12,
         n_threads: Optional[int] = None,
     ):
-        """Compute joint-uncertainty (e.g. on precision and recall).
+        """Compute joint-uncertainty for a point.
 
         Parameters
         ----------
@@ -299,7 +300,7 @@ class BaseUncertainty:
             {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
             {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
         n_bins : int, default=100
-            the number of bins in the y/x (e.g. precision/recall) grid for which the
+            the number of bins in the y/x grid for which the
             uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
             array.
             Ignored when method is not the Multinomial approach.
@@ -308,8 +309,8 @@ class BaseUncertainty:
             bounds of the grid which is evaluated.
             Ignored when method is not the Multinomial approach.
         epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching y/x (e.g. precision/recall)
-            1.0/0.0 which would result in NaNs.
+            the value used to prevent the bounds from reaching
+            the point (y=1.0, x=0.0) which would result in NaNs.
             Ignored when method is not the Multinomial approach.
         n_threads : int, default=None
             number of threads to use in the computation of multinomial.
@@ -333,7 +334,7 @@ class BaseUncertainty:
         epsilon: float = 1e-12,
         n_threads: Optional[int] = None,
     ):
-        """Compute joint-uncertainty (e.g. on precision and recall).
+        """Compute joint-uncertainty for a point.
 
         Parameters
         ----------
@@ -346,7 +347,7 @@ class BaseUncertainty:
             {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
             {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
         n_bins : int, default=100
-            the number of bins in the y/x (e.g. precision/recall) grid for which the
+            the number of bins in the y/x grid for which the
             uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
             array.
             Ignored when method is not the Multinomial approach.
@@ -355,8 +356,8 @@ class BaseUncertainty:
             bounds of the grid which is evaluated.
             Ignored when method is not the Multinomial approach.
         epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching y/x (e.g. precision/recall)
-            1.0/0.0 which would result in NaNs.
+            the value used to prevent the bounds from reaching
+            the point (y=1.0, x=0.0) which would result in NaNs.
             Ignored when method is not the Multinomial approach.
         n_threads : int, default=None
             number of threads to use in the computation of multinomial.
@@ -385,7 +386,7 @@ class BaseUncertainty:
         epsilon: float = 1e-12,
         n_threads: Optional[int] = None,
     ):
-        """Compute joint-uncertainty (e.g. on precision and recall).
+        """Compute joint-uncertainty for a point.
 
         Parameters
         ----------
@@ -404,7 +405,7 @@ class BaseUncertainty:
             {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
             {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
         n_bins : int, default=100
-            the number of bins in the y/x (e.g. precision/recall) grid for which the
+            the number of bins in the y/x grid for which the
             uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
             array.
             Ignored when method is not the Multinomial approach.
@@ -413,8 +414,8 @@ class BaseUncertainty:
             bounds of the grid which is evaluated.
             Ignored when method is not the Multinomial approach.
         epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching y/x (e.g. precision/recall)
-            1.0/0.0 which would result in NaNs.
+            the value used to prevent the bounds from reaching
+            the point (y=1.0, x=0.0) which would result in NaNs.
             Ignored when method is not the Multinomial approach.
         n_threads : int, default=None
             number of threads to use in the computation of multinomial.
@@ -481,7 +482,7 @@ class BaseUncertainty:
         x: Union[float, np.ndarray],
         epsilon: float = 1e-12,
     ) -> float:
-        """Compute score for a given y(s) (e.g. precision) and x (e.g recall).
+        """Compute score for a given y(s) and x(s).
         If method is `bvn` the sum of squared Z scores is computed, if method
         is 'mult' the profile loglikelihood is computed. Both follow a chi2
         distribution with 2 degrees of freedom.
@@ -489,12 +490,18 @@ class BaseUncertainty:
         Parameters
         ----------
         y : float, np.ndarray[float64, float32]
-            e.g. the precision(s) to evaluate
+            value(s) to evaluate
+
+            - Precision in Precision-Recall
+            - TPR       in ROC
         x : float, np.ndarray[float64, float32]
-            e.g. the recall(s) to evaluate
+            value(s) to evaluate
+
+            - Recall in Precision-Recall
+            - FPR    in ROC
         epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching y/x (e.g. precision/recall)
-            1.0/0.0 which would result in NaNs.
+            the value used to prevent the bounds from reaching
+            the point (y=1.0, x=0.0) which would result in NaNs.
 
         Returns
         -------
@@ -542,7 +549,7 @@ class BaseUncertainty:
         x: Union[float, np.ndarray],
         epsilon: float = 1e-12,
     ) -> Union[float, np.ndarray]:
-        """Compute p-value(s) for a given y(s) (e.g. precision) and x(s) (e.g. recall).
+        """Compute p-value(s) for a given y(s) and x(s).
         If method is `bvn` the sum of squared Z scores is computed, if method
         is 'mult' the profile loglikelihood is computed. Both follow are chi2
         distribution with 2 degrees of freedom.
@@ -550,13 +557,19 @@ class BaseUncertainty:
         Parameters
         ----------
         y : float, np.ndarray[float64, float32]
-            e.g. the precision(s) to evaluate
+            value(s) to evaluate
+
+            - Precision in Precision-Recall
+            - TPR       in ROC
         x : float, np.ndarray[float64, float32]
-            e.g. the recall(s) to evaluate
+            value(s) to evaluate
+
+            - Recall in Precision-Recall
+            - FPR    in ROC
         level : int, float
         epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching y/x (e.g. precision/recall)
-            1.0/0.0 which would result in NaNs.
+            the value used to prevent the bounds from reaching
+            the point (y=1.0, x=0.0) which would result in NaNs.
             Ignored when method is not the Multinomial approach.
 
         Returns
@@ -624,7 +637,7 @@ class BaseUncertainty:
         other,
         other_kwargs,
     ):
-        """Plot elliptical confidence interval(s) for the point (e.g. precision and recall)."""
+        """Plot elliptical confidence interval(s) for the point."""
         if self.cov_mat is None:
             raise RuntimeError("the class needs to be initialised with from_*")
 
@@ -688,7 +701,7 @@ class BaseUncertainty:
         other,
         other_kwargs,
     ):
-        """Plot confidence interval(s) for the point (e.g. precision and recall)."""
+        """Plot confidence interval(s) for the point."""
         if self.chi2_scores is None:
             raise RuntimeError("the class needs to be initialised with from_*")
 
@@ -761,7 +774,7 @@ class BaseUncertainty:
         ] = None,
         other_kwargs: Union[Dict, List[Dict], None] = None,
     ):
-        """Plot confidence interval(s) (e.g. for precision and recall).
+        """Plot confidence interval(s).
 
         Parameters
         ----------
@@ -829,7 +842,7 @@ class BaseSimulatedUncertainty:
 
     Model's the uncertainty using profile log-likelihoods between
     the observed and most conservative confusion matrix for that point
-    (e.g. precision-recall) and checks how often random multinomial given the observed
+    and checks how often random multinomial given the observed
     probabilities of the confusion matrix result in lower profile
     log-likelihoods.
 
@@ -844,9 +857,11 @@ class BaseSimulatedUncertainty:
         [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP
         A DataFrame can be obtained by calling `get_conf_mat`.
     y : float
-        For example precision aka Positive Predictive Value
+        - Precision in Precision-Recall
+        - TPR       in ROC
     x : float
-        For example positive recall aka True Positive Rate aka Sensitivity aka positive recall
+        - Recall in Precision-Recall
+        - FPR    in ROC
     threshold : float, optional
         the inclusive threshold used to determine the confusion matrix.
         Is None when the class is instantiated with `from_predictions` or
@@ -854,19 +869,19 @@ class BaseSimulatedUncertainty:
     coverage : np.ndarray[float64]
         the percentage of simulations with a lower profile loglikelihood
         for the grid with shape (`n_bins`, `n_bins`) and
-        bounds y_bounds on the y-axis (e.g. precision), x_bounds on the x-axis (e.g. recall)
+        bounds y_bounds on the y-axis, x_bounds on the x-axis
     y_bounds : np.ndarray[float64]
-        the lower and upper bound for which y (e.g. precision) was evaluated, equal
+        the lower and upper bound for which y was evaluated, equal
         to y +- `n_sigmas` * sigma(y)
     x_bounds : np.ndarray[float64]
-        the lower and upper bound for which x (e.g. recall) was evaluated, equal
+        the lower and upper bound for which x was evaluated, equal
         to x +- `n_sigmas` * sigma(x)
     n_sigmas : int, float
         the number of marginal standard deviations used to determine the
         bounds of the grid which is evaluated for each observed point.
     epsilon : float
-        the value used to prevent the bounds from reaching y/x (e.g. precision/recall)
-        1.0/0.0 which would result in NaNs.
+        the value used to prevent the bounds from reaching
+        the point (y=1.0, x=0.0) which would result in NaNs.
     n_simulations : int
         the number of simulations performed per grid point
 
@@ -969,7 +984,7 @@ class BaseSimulatedUncertainty:
         epsilon: float = 1e-12,
         n_threads: Optional[int] = None,
     ):
-        """Compute joint-uncertainty on precision and recall.
+        """Compute joint-uncertainty for a point.
 
         Parameters
         ----------
@@ -988,7 +1003,7 @@ class BaseSimulatedUncertainty:
             total number of simulations is (n_bins ** 2 * n_simulations)
             It is advised ``n_simulations`` >= 10000
         n_bins : int, default=100
-            the number of bins in the y/x (e.g. precision/recall) grid for which the
+            the number of bins in the y/x grid for which the
             uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
             array.
             Ignored when method is not the Multinomial approach.
@@ -997,8 +1012,8 @@ class BaseSimulatedUncertainty:
             bounds of the grid which is evaluated.
             Ignored when method is not the Multinomial approach.
         epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching y/x (e.g. precision/recall)
-            1.0/0.0 which would result in NaNs.
+            the value used to prevent the bounds from reaching
+            the point (y=1.0, x=0.0) which would result in NaNs.
             Ignored when method is not the Multinomial approach.
         n_threads : int, default=None
             number of threads to use in the computation. If mmu installed from a
@@ -1023,7 +1038,7 @@ class BaseSimulatedUncertainty:
         epsilon: float = 1e-12,
         n_threads: Optional[int] = None,
     ):
-        """Compute joint-uncertainty on precision and recall.
+        """Compute joint-uncertainty for a point.
 
         Parameters
         ----------
@@ -1036,7 +1051,7 @@ class BaseSimulatedUncertainty:
             total number of simulations is (n_bins ** 2 * n_simulations)
             It is advised ``n_simulations`` >= 10000
         n_bins : int, default=100
-            the number of bins in the y/x (e.g. precision/recall) grid for which the
+            the number of bins in the y/x grid for which the
             uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
             array.
             Ignored when method is not the Multinomial approach.
@@ -1045,8 +1060,8 @@ class BaseSimulatedUncertainty:
             bounds of the grid which is evaluated.
             Ignored when method is not the Multinomial approach.
         epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching y/x (e.g. precision/recall)
-            1.0/0.0 which would result in NaNs.
+            the value used to prevent the bounds from reaching
+            the point (y=1.0, x=0.0) which would result in NaNs.
             Ignored when method is not the Multinomial approach.
         n_threads : int, default=None
             number of threads to use in the computation. If mmu installed from a
@@ -1069,7 +1084,7 @@ class BaseSimulatedUncertainty:
         epsilon: float = 1e-12,
         n_threads: Optional[int] = None,
     ):
-        """Compute joint-uncertainty (e.g. on precision and recall).
+        """Compute joint-uncertainty for a point.
 
         Parameters
         ----------
@@ -1082,7 +1097,7 @@ class BaseSimulatedUncertainty:
             total number of simulations is (n_bins ** 2 * n_simulations)
             It is advised ``n_simulations`` >= 10000
         n_bins : int, default=100
-            the number of bins in the y/x (e.g. precision/recall) grid for which the
+            the number of bins in the y/x grid for which the
             uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
             array.
             Ignored when method is not the Multinomial approach.
@@ -1091,8 +1106,8 @@ class BaseSimulatedUncertainty:
             bounds of the grid which is evaluated.
             Ignored when method is not the Multinomial approach.
         epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching y/x (e.g. precision/recall)
-            1.0/0.0 which would result in NaNs.
+            the value used to prevent the bounds from reaching
+            the point (y=1.0, x=0.0) which would result in NaNs.
             Ignored when method is not the Multinomial approach.
         n_threads : int, default=None
             number of threads to use in the computation. If mmu installed from a
@@ -1120,7 +1135,7 @@ class BaseSimulatedUncertainty:
         epsilon: float = 1e-12,
         n_threads: Optional[int] = None,
     ):
-        """Compute joint-uncertainty (e.g. on precision and recall).
+        """Compute joint-uncertainty for a point.
 
         Parameters
         ----------
@@ -1139,7 +1154,7 @@ class BaseSimulatedUncertainty:
             total number of simulations is (n_bins ** 2 * n_simulations)
             It is advised ``n_simulations`` >= 10000
         n_bins : int, default=100
-            the number of bins in the y/x (e.g. precision/recall) grid for which the
+            the number of bins in the y/x grid for which the
             uncertainty is computed. `scores` will be a `n_bins` by `n_bins`
             array.
             Ignored when method is not the Multinomial approach.
@@ -1148,8 +1163,8 @@ class BaseSimulatedUncertainty:
             bounds of the grid which is evaluated.
             Ignored when method is not the Multinomial approach.
         epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching y/x (e.g. precision/recall)
-            1.0/0.0 which would result in NaNs.
+            the value used to prevent the bounds from reaching
+            the point (y=1.0, x=0.0) which would result in NaNs.
             Ignored when method is not the Multinomial approach.
         n_threads : int, default=None
             number of threads to use in the computation. If mmu installed from a
@@ -1231,7 +1246,7 @@ class BaseSimulatedUncertainty:
         ] = None,
         other_kwargs: Union[Dict, List[Dict], None] = None,
     ):
-        """Plot confidence interval(s) (e.g. for precision and recall).
+        """Plot confidence interval(s) a point.
 
         Parameters
         ----------

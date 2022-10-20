@@ -21,7 +21,7 @@ from mmu.methods.pointbase import BaseUncertainty
 
 
 class BaseCurveUncertainty:
-    """Compute joint uncertainty for a curve.
+    """Compute joint uncertainty for a curve like Precision-Recall or ROC.
 
     The joint statistical uncertainty can be computed using:
 
@@ -48,8 +48,14 @@ class BaseCurveUncertainty:
         A DataFrame can be obtained by calling `get_conf_mat`.
     y : np.ndarray[float64]
         y coordinates of the curve
+
+        - Precision in Precision-Recall
+        - TPR       in ROC
     x : np.ndarray[float64]
         x coordinates of the curve
+
+        - Recall in Precision-Recall
+        - FPR    in ROC
     chi2_scores : np.ndarray[float64]
         the sum of squared z scores which follow a chi2 distribution with
         two degrees of freedom. Has shape (`n_bins`, `n_bins`) with bounds
@@ -66,8 +72,8 @@ class BaseCurveUncertainty:
         the number of marginal standard deviations used to determine the
         bounds of the grid which is evaluated for each observed y and x.
     epsilon : float
-        the value used to prevent the bounds from reaching y/x
-        1.0/0.0 which would result in NaNs.
+        the value used to prevent the bounds from reaching
+        the point (y=1.0, x=0.0) which would result in NaNs.
     cov_mats : np.ndarray[float64], optional
         flattened covariance matrices for each threshold.
         **Only set when method is bivariate/elliptical.**
@@ -287,17 +293,17 @@ class BaseCurveUncertainty:
             {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
             {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
         n_bins : int, array-like[int], default=1000
-            the number of bins in the (e.g. precision/recall) grid for which the
+            the number of bins in the y/x grid for which the
             uncertainty is computed. If an int the `chi2_scores` will be a
             `n_bins` by `n_bins` array. If list-like it must be of length two
             where the first values determines the number of bins for
-            y-axis (e.g. precision) and the second the x-axis (e.g. recall)
+            y-axis and the second the x-axis
         n_sigmas : int, float, default=6.0
             the number of marginal standard deviations used to determine the
             bounds of the grid which is evaluated.
         epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching (e.g. precision/recall)
-            1.0/0.0 which would result in NaNs.
+            the value used to prevent the bounds from reaching
+            the point (y=1.0, x=0.0) which would result in NaNs.
         auto_max_steps : int, default=None
             the maximum number of thresholds for `auto_thresholds`, is ignored
             if `thresholds` is not None.
@@ -346,17 +352,17 @@ class BaseCurveUncertainty:
             {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
             {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
         n_bins : int, array-like[int], default=1000
-            the number of bins in the (e.g. precision/recall) grid for which the
+            the number of bins in the y/x grid for which the
             uncertainty is computed. If an int the `chi2_scores` will be a
             `n_bins` by `n_bins` array. If list-like it must be of length two
             where the first values determines the number of bins for
-            y-axis (e.g. precision) and the second the x-axis (e.g. recall)
+            y-axis and the second the x-axis
         n_sigmas : int, float, default=6.0
             the number of marginal standard deviations used to determine the
             bounds of the grid which is evaluated.
         epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching (e.g. precision/recall)
-            1.0/0.0 which would result in NaNs.
+            the value used to prevent the bounds from reaching
+            the point (y=1.0, x=0.0) which would result in NaNs.
         n_threads : int, default=None
             the number of threads to use when computing the scores. By default
             we use 4 threads if OpenMP was found, otherwise the computation
@@ -414,17 +420,17 @@ class BaseCurveUncertainty:
             {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
             {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
         n_bins : int, array-like[int], default=1000
-            the number of bins in the (e.g. precision/recall) grid for which the
+            the number of bins in the y/x grid for which the
             uncertainty is computed. If an int the `chi2_scores` will be a
             `n_bins` by `n_bins` array. If list-like it must be of length two
             where the first values determines the number of bins for
-            y-axis (e.g. precision) and the second the x-axis (e.g. recall)
+            y-axis and the second the x-axis
         n_sigmas : int, float, default=6.0
             the number of marginal standard deviations used to determine the
             bounds of the grid which is evaluated.
         epsilon : float, default=1e-12
-            the value used to prevent the bounds from reaching (e.g. precision/recall)
-            1.0/0.0 which would result in NaNs.
+            the value used to prevent the bounds from reaching
+            the point (y=1.0, x=0.0) which would result in NaNs.
         auto_max_steps : int, default=None
             the maximum number of thresholds for `auto_thresholds`, is ignored
             if `thresholds` is not None.
