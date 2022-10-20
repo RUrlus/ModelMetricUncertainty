@@ -22,8 +22,8 @@ namespace py = pybind11;
 
 namespace mmu {
 namespace api {
-namespace pr {
 
+namespace pr {
 f64arr bvn_error(const i64arr& conf_mat, double alpha);
 f64arr bvn_error_runs(const i64arr& conf_mat, double alpha);
 f64arr curve_bvn_error(const i64arr& conf_mat, double alpha);
@@ -31,8 +31,18 @@ f64arr curve_bvn_error(const i64arr& conf_mat, double alpha);
 f64arr bvn_cov(const i64arr& conf_mat);
 f64arr bvn_cov_runs(const i64arr& conf_mat);
 f64arr curve_bvn_cov(const i64arr& conf_mat);
-
 }  // namespace pr
+
+namespace roc {
+f64arr bvn_error(const i64arr& conf_mat, double alpha);
+f64arr bvn_error_runs(const i64arr& conf_mat, double alpha);
+f64arr curve_bvn_error(const i64arr& conf_mat, double alpha);
+
+f64arr bvn_cov(const i64arr& conf_mat);
+f64arr bvn_cov_runs(const i64arr& conf_mat);
+f64arr curve_bvn_cov(const i64arr& conf_mat);
+}  // namespace roc
+
 }  // namespace api
 }  // namespace mmu
 

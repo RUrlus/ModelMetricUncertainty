@@ -193,5 +193,86 @@ void bind_binary_metrics_flattened(py::module& m) {
         py::arg("fill") = 1.);
 }
 
+
+void bind_ROC(py::module& m) {
+    m.def(
+        "ROC",
+        &api::ROC,
+        R"pbdoc(Compute ROC classification metrics.
+
+        Computes the following metrics:
+            0 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+            1 - False Positive Rate (FPR)
+
+        Parameters
+        ----------
+        conf_mat : np.ndarray[int64]
+            the confusion matrix with flattened order: TN, FP, FN, TP
+        fill : double, optional
+            value to fill when a metric is not defined, e.g. divide by zero.
+            Default is 0.
+
+        Returns
+        -------
+        metrics : np.array[np.float64]
+        )pbdoc",
+        py::arg("conf_mat"),
+        py::arg("fill") = 1.);
+}
+
+void bind_ROC_2d(py::module& m) {
+    m.def(
+        "ROC_2d",
+        &api::ROC_2d,
+        R"pbdoc(Compute ROC classification metrics.
+
+        Computes the following metrics:
+            0 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+            1 - False Positive Rate (FPR)
+
+        Parameters
+        ----------
+        conf_mat : np.ndarray[int64]
+            the confusion matrix with with column order: TN, FP, FN, TP.
+            The array should be C-contiguous and have shape (N, 4)
+        fill : double, optional
+            value to fill when a metric is not defined, e.g. divide by zero.
+            Default is 0.
+
+        Returns
+        -------
+        metrics : np.array[np.float64]
+        )pbdoc",
+        py::arg("conf_mat"),
+        py::arg("fill") = 1.);
+}
+
+void bind_ROC_flattened(py::module& m) {
+    m.def(
+        "ROC_flattened",
+        &api::ROC_flattened,
+        R"pbdoc(Compute ROC classification metrics.
+
+        Computes the following metrics:
+            0 - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+            1 - False Positive Rate (FPR)
+
+        Parameters
+        ----------
+        conf_mat : np.ndarray[int64]
+            the confusion matrix with with column order: TN, FP, FN, TP.
+            The array should be C-contiguous and should be 1D with size (N * 4)
+        fill : double, optional
+            value to fill when a metric is not defined, e.g. divide by zero.
+            Default is 0.
+
+        Returns
+        -------
+        metrics : np.array[np.float64]
+        )pbdoc",
+        py::arg("conf_mat"),
+        py::arg("fill") = 1.);
+}
+
 }  // namespace bindings
 }  // namespace mmu

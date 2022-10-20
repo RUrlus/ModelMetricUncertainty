@@ -7,7 +7,9 @@
 #include <mmu/bindings/confusion_matrix.hpp>
 #include <mmu/bindings/metrics.hpp>
 #include <mmu/bindings/pr_bvn_grid.hpp>
+#include <mmu/bindings/roc_bvn_grid.hpp>
 #include <mmu/bindings/pr_multn_loglike.hpp>
+#include <mmu/bindings/roc_multn_loglike.hpp>
 #include <mmu/bindings/utils.hpp>
 #include <mmu/core/common.hpp>
 
@@ -32,43 +34,79 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_binary_metrics(m);
     bind_binary_metrics_2d(m);
     bind_binary_metrics_flattened(m);
+    bind_ROC(m);
+    bind_ROC_2d(m);
+    bind_ROC_flattened(m);
     // npy
     bind_all_finite(m);
     bind_is_well_behaved_finite(m);
-    // lep_bvn
 
+    // pr bvn_error
     pr::bind_bvn_error(m);
     pr::bind_bvn_error_runs(m);
     pr::bind_curve_bvn_error(m);
-
     pr::bind_bvn_cov(m);
     pr::bind_bvn_cov_runs(m);
     pr::bind_curve_bvn_cov(m);
 
+    // roc bvn_error
+    roc::bind_bvn_error(m);
+    roc::bind_bvn_error_runs(m);
+    roc::bind_curve_bvn_error(m);
+    roc::bind_bvn_cov(m);
+    roc::bind_bvn_cov_runs(m);
+    roc::bind_curve_bvn_cov(m);
+
+    // pr_bvn_grid
     pr::bind_bvn_grid_error(m);
     pr::bind_bvn_grid_curve_error(m);
-
     pr::bind_bvn_chi2_score(m);
     pr::bind_bvn_chi2_scores(m);
-    // multn_loglike
+
+    // roc_bvn_grid
+    roc::bind_bvn_grid_error(m);
+    roc::bind_bvn_grid_curve_error(m);
+    roc::bind_bvn_chi2_score(m);
+    roc::bind_bvn_chi2_scores(m);
+
+    // pr_multn_loglike
     pr::bind_multn_error(m);
     pr::bind_multn_grid_error(m);
     pr::bind_multn_grid_curve_error(m);
     pr::bind_multn_sim_error(m);
-
     pr::bind_multn_chi2_score(m);
     pr::bind_multn_chi2_scores(m);
 
+    // roc_multn_loglike
+    roc::bind_multn_error(m);
+    roc::bind_multn_grid_error(m);
+    roc::bind_multn_grid_curve_error(m);
+    roc::bind_multn_sim_error(m);
+    roc::bind_multn_chi2_score(m);
+    roc::bind_multn_chi2_scores(m);
+
 #ifdef MMU_HAS_OPENMP_SUPPORT
-    // lep_bvn
+    // pr_bvn_grid
     pr::bind_bvn_grid_curve_error_mt(m);
     pr::bind_bvn_chi2_scores_mt(m);
-    // multn_loglike
+
+    // roc_bvn_grid
+    roc::bind_bvn_grid_curve_error_mt(m);
+    roc::bind_bvn_chi2_scores_mt(m);
+
+    // pr_multn_loglike
     pr::bind_multn_error_mt(m);
     pr::bind_multn_grid_curve_error_mt(m);
     pr::bind_multn_sim_error_mt(m);
     pr::bind_multn_sim_curve_error_mt(m);
     pr::bind_multn_chi2_scores_mt(m);
+
+    // roc_multn_loglike
+    roc::bind_multn_error_mt(m);
+    roc::bind_multn_grid_curve_error_mt(m);
+    roc::bind_multn_sim_error_mt(m);
+    roc::bind_multn_sim_curve_error_mt(m);
+    roc::bind_multn_chi2_scores_mt(m);
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
 #ifndef OS_WIN
