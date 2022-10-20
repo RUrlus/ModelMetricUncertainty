@@ -4,6 +4,10 @@ with Dirichlet-Multinomial prior. Copyright 2022 Max Baak, Ralph Urlus
 #ifndef INCLUDE_MMU_CORE_PR_DIRICHLET_HPP_
 #define INCLUDE_MMU_CORE_PR_DIRICHLET_HPP_
 
+#if defined(MMU_HAS_OPENMP_SUPPORT)
+#include <omp.h>
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -16,6 +20,8 @@ with Dirichlet-Multinomial prior. Copyright 2022 Max Baak, Ralph Urlus
 namespace mmu {
 namespace core {
 namespace pr {
+
+constexpr double DIRICH_MULT_DEFAULT_CHI2_SCORE = 10000.0;
 
 template <typename T, isFloat<T> = 0>
 class NegLogDirichMultnPdf {
@@ -127,7 +133,143 @@ inline void dirich_multn_error(
             result++;
         }
     }
-}  // dirich_multn_error
+}  // dirich_multn_error_mt
+
+#ifdef MMU_HAS_OPENMP_SUPPORT
+inline void dirich_multn_error_mt(
+    const int64_t n_bins,
+    const int64_t* __restrict conf_mat,
+    double* __restrict result,
+    double* __restrict bounds,
+    const double n_sigmas = 6.0,
+    const double epsilon = 1e-4,
+    const int n_threads = 4) {
+    // -- memory allocation --
+    // memory to be used by constrained_fit_cmp
+    std::array<double, 4> alphas;
+    auto rec_grid = std::unique_ptr<double[]>(new double[n_bins]);
+    // -- memory allocation --
+
+    alphas[0] = static_cast<double>(conf_mat[0]) + 0.5;
+    alphas[1] = static_cast<double>(conf_mat[1]) + 0.5;
+    alphas[2] = static_cast<double>(conf_mat[2]) + 0.5;
+    alphas[3] = static_cast<double>(conf_mat[3]) + 0.5;
+
+    auto global_pdf = NegLogDirichMultnPdf<double>(alphas.data());
+
+    // obtain prec_start, prec_end, rec_start, rec_end
+    get_grid_bounds(conf_mat, bounds, n_sigmas, epsilon);
+    details::linspace(bounds[2], bounds[3], n_bins, rec_grid.get());
+    const double prec_start = bounds[0];
+    const double prec_delta
+        = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
+
+#pragma omp parallel num_threads(n_threads) shared(rec_grid, global_pdf, result)
+    {
+        auto pdf = global_pdf;
+#pragma omp for
+        for (int64_t i = 0; i < n_bins; i++) {
+            double prec = prec_start + (static_cast<double>(i) * prec_delta);
+            int64_t idx = i * n_bins;
+            for (int64_t j = 0; j < n_bins; j++) {
+                result[idx + j] = pdf(prec, rec_grid[j]);
+            }
+        }
+    }  // omp parallel
+}  // dirich_multn_error_mt
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
+#ifdef MMU_HAS_OPENMP_SUPPORT
+inline void dirich_multn_grid_curve_error_mt(
+    const int64_t n_prec_bins,
+    const int64_t n_rec_bins,
+    const int64_t n_conf_mats,
+    const double* __restrict prec_grid,
+    const double* __restrict rec_grid,
+    const int64_t* __restrict conf_mat,
+    double* __restrict scores,
+    const double n_sigmas = 6.0,
+    const double epsilon = 1e-4,
+    const int64_t n_threads = 4) {
+    const int64_t n_elem = n_prec_bins * n_rec_bins;
+    const int64_t t_elem = n_elem * n_threads;
+    auto thread_scores = std::unique_ptr<double[]>(new double[t_elem]);
+
+    // give scores a high enough initial value that the chi2 p-values will be
+    // close to zero
+    std::fill(
+        thread_scores.get(),
+        thread_scores.get() + t_elem,
+        DIRICH_MULT_DEFAULT_CHI2_SCORE);
+#pragma omp parallel num_threads(n_threads) shared( \
+    n_prec_bins,                                    \
+    n_rec_bins,                                     \
+    n_conf_mats,                                    \
+    prec_grid,                                      \
+    rec_grid,                                       \
+    conf_mat,                                       \
+    n_sigmas,                                       \
+    epsilon)
+    {
+        double* thread_block
+            = thread_scores.get() + (omp_get_thread_num() * n_elem);
+
+        // -- memory allocation --
+        // memory to be used by constrained_fit_cmp
+        std::array<double, 4> alphas;
+        auto bounds = GridBounds(
+            n_prec_bins, n_rec_bins, n_sigmas, epsilon, prec_grid, rec_grid);
+        // -- memory allocation --
+
+#pragma omp for
+        for (int64_t k = 0; k < n_conf_mats; k++) {
+            const int64_t* lcm = conf_mat + (k * 4);
+            alphas[0] = static_cast<double>(conf_mat[0]) + 0.5;
+            alphas[1] = static_cast<double>(conf_mat[1]) + 0.5;
+            alphas[2] = static_cast<double>(conf_mat[2]) + 0.5;
+            alphas[3] = static_cast<double>(conf_mat[3]) + 0.5;
+
+            auto pdf = NegLogDirichMultnPdf<double>(alphas.data());
+
+            // update to new conf_mat
+            bounds.compute_bounds(lcm);
+
+            for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max;
+                 i++) {
+                double prec = prec_grid[i];
+                int64_t odx = i * n_rec_bins;
+                for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max;
+                     j++) {
+                    double score = pdf(prec, rec_grid[j]);
+                    int64_t idx = odx + j;
+                    if (score < thread_block[idx]) {
+                        thread_block[idx] = score;
+                    }
+                }
+            }
+        }
+    }  // omp parallel
+
+    // collect the scores
+    auto offsets = std::unique_ptr<int64_t[]>(new int64_t[n_threads]);
+    for (int64_t j = 0; j < n_threads; j++) {
+        offsets[j] = j * n_elem;
+    }
+
+    for (int64_t i = 0; i < n_elem; i++) {
+        // give scores a high enough initial value that the chi2 p-values will
+        // be close to zero i.e. ppf(1-1e-14) --> 64.47398179869367
+        double min_score = DIRICH_MULT_DEFAULT_CHI2_SCORE;
+        for (int64_t j = 0; j < n_threads; j++) {
+            double tscore = thread_scores[i + offsets[j]];
+            if (tscore < min_score) {
+                min_score = tscore;
+            }
+        }
+        scores[i] = min_score;
+    }
+}  // multn_grid_curve_error_mt
+#endif  // MMU_HAS_OPENMP_SUPPORT
 
 // Implementation missing the Chi2 ppf
 

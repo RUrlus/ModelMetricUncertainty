@@ -19,6 +19,8 @@ namespace pr {
 void bind_neg_log_dirich_multn_pdf(py::module& m);
 void bind_neg_log_dirich_multn_pdf_mt(py::module& m);
 void bind_dirich_multn_error(py::module& m);
+void bind_dirich_multn_error_mt(py::module& m);
+void bind_dirich_multn_grid_curve_error_mt(py::module& m);
 
 }  // namespace pr
 }  // namespace bindings

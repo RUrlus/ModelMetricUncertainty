@@ -63,8 +63,6 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     pr::bind_multn_chi2_scores(m);
 
     pr::bind_neg_log_dirich_multn_pdf(m);
-    pr::bind_neg_log_dirich_multn_pdf_mt(m);
-
     pr::bind_dirich_multn_error(m);
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
@@ -77,6 +75,10 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     pr::bind_multn_sim_error_mt(m);
     pr::bind_multn_sim_curve_error_mt(m);
     pr::bind_multn_chi2_scores_mt(m);
+
+    pr::bind_neg_log_dirich_multn_pdf_mt(m);
+    pr::bind_dirich_multn_error_mt(m);
+    pr::bind_dirich_multn_grid_curve_error_mt(m);
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
 #ifndef OS_WIN
