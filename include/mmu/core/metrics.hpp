@@ -34,7 +34,7 @@ inline void precision_recall(
 
     // metrics[1]  - pos.recall aka True Positive Rate (TPR) aka Sensitivity
     metrics[1] = P_nonzero ? tp / P : fill;
-}  // binary_metrics
+}  // precision_recall
 
 inline void precision_recall_ecc(
     const int64_t* __restrict const conf_mat,
@@ -66,7 +66,59 @@ inline void precision_recall_ecc(
         // recall == 0.0
         metrics[1] = 0.0;
     }
-}  // binary_metrics
+}  // precision_recall_ecc
+
+/* Sets the following values at metrics index:
+ *    3 - pos.recall aka True Positive Rate aka Sensitivity
+ *    6 - False Positive Rate
+ */
+template <class T, std::enable_if_t<std::is_integral<T>::value, int> = 0>
+inline void ROC(
+    T* __restrict const conf_mat,
+    double* __restrict const metrics,
+    const double fill = 0.) {
+    // total observations
+    const auto K = static_cast<double>(
+        conf_mat[0] + conf_mat[1] + conf_mat[2] + conf_mat[3]);
+
+    /*
+     *                  pred
+     *                0     1
+     *  actual  0    TN    FP
+     *          1    FN    TP
+     *
+     *  Flattened we have:
+     *  0 TN
+     *  1 FP
+     *  2 FN
+     *  3 TP
+     *
+     */
+
+    // real true/positive observations [FN + TP]
+    const int64_t iP = conf_mat[2] + conf_mat[3];
+    const bool P_nonzero = iP > 0;  // Keep
+    const auto P = static_cast<double>(iP);  // Keep
+    // real false/negative observations [TN + FP]
+    const int64_t iN = conf_mat[0] + conf_mat[1];
+    const bool N_nonzero = iN > 0;  // Keep
+    const auto N = static_cast<double>(iN);  // Keep
+
+    const auto tn = static_cast<double>(conf_mat[0]);  // Keep
+    const auto tp = static_cast<double>(conf_mat[3]);  // Keep
+
+    double itm = 0.0;  // Keep
+
+    // metrics[1]  - False positive Rate (FPR)
+    itm = tn / N;
+    metrics[1] = N_nonzero ? (1 - itm) : 1.0;
+
+    // metrics[0]  - pos.recall aka True Positive Rate (TPR) aka Sensitivity
+    itm = tp / P;
+    metrics[0] = P_nonzero ? itm : fill;
+
+}  // ROC
+
 
 /* Sets the following values at metrics index:
  *    0 - neg.precision aka Negative Predictive Value

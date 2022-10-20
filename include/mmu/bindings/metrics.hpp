@@ -22,6 +22,10 @@ void bind_precision_recall(py::module& m);
 void bind_precision_recall_2d(py::module& m);
 void bind_precision_recall_flattened(py::module& m);
 
+void bind_ROC(py::module& m);
+void bind_ROC_2d(py::module& m);
+void bind_ROC_flattened(py::module& m);
+
 }  // namespace bindings
 }  // namespace mmu
 

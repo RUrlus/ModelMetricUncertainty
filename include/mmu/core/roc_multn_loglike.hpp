@@ -1,8 +1,8 @@
-/* pr_multn_loglike.hpp -- Implementation Multinomial uncertainty over
- * Precision-Recall using Wilk's theorem Copyright 2022 Ralph Urlus
+/* roc_multn_loglike.hpp -- Implementation Multinomial uncertainty over
+ * TPR-FPR using Wilk's theorem Copyright 2022 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_CORE_PR_MULTN_LOGLIKE_HPP_
-#define INCLUDE_MMU_CORE_PR_MULTN_LOGLIKE_HPP_
+#ifndef INCLUDE_MMU_CORE_ROC_MULTN_LOGLIKE_HPP_
+#define INCLUDE_MMU_CORE_ROC_MULTN_LOGLIKE_HPP_
 
 #if defined(MMU_HAS_OPENMP_SUPPORT)
 #include <omp.h>
@@ -31,39 +31,39 @@
 
 namespace mmu {
 namespace core {
-namespace pr {
+namespace roc {
 /* Compute the most conservative probabilities for a given confusion matrix
- * constrained by precision and recall. For single function call.
+ * constrained by TPR and FPR. For single function call.
  *
  * Parameters
  * ----------
- *  prec : precision
- *  rec : recall
+ *  tpr : True Positive Rate
+ *  fpr : False Positive Rate
  *  conf_mat : confusion matrix with order TN, FP, FN, TP
  *  probas : result array
  */
 inline void constrained_fit_cmp(
-    const double prec,
-    const double rec,
+    const double tpr,
+    const double fpr,
     const int64_t* __restrict conf_mat,
     double* __restrict probas) {
-    // n3 = TP + FP + FN
-    const int64_t in3 = conf_mat[1] + conf_mat[2] + conf_mat[3];
-    const auto n4 = static_cast<double>(conf_mat[0] + in3);
-    const auto n3 = static_cast<double>(in3);
+    // n2 = FN + TP
+    const int64_t in2 = conf_mat[2] + conf_mat[3];
+    const auto n4 = static_cast<double>(conf_mat[0] + conf_mat[1] + in2);
+    const auto n2 = static_cast<double>(in2);
 
     // guard against divide by zero
     constexpr double ratio_fill = (1.0 - 1e-12) / 1e-12;
-    const double rec_ratio = rec > std::numeric_limits<double>::epsilon()
-                                 ? (1.0 - rec) / rec
+    const double tpr_ratio = tpr > std::numeric_limits<double>::epsilon()
+                                 ? (1.0 - tpr) / tpr
                                  : ratio_fill;
-    const double prec_ratio = prec > std::numeric_limits<double>::epsilon()
-                                  ? (1.0 - prec) / prec
-                                  : ratio_fill;
-    const double alpha = 1 + prec_ratio + rec_ratio;
-    const double p_tp = (n3 / n4) * (1. / alpha);
-    const double p_fn = rec_ratio * p_tp;
-    const double p_fp = prec_ratio * p_tp;
+    constexpr double inv_fill = 1.0 / 1e-12;
+    const double tpr_inv = tpr > std::numeric_limits<double>::epsilon()
+                                  ? 1.0 / tpr
+                                  : inv_fill;
+    const double p_tp = (tpr * n2) / n4;
+    const double p_fn = tpr_ratio * p_tp;
+    const double p_fp = (fpr*(tpr-p_tp)) * tpr_inv;
     // guard against floating point noise resulting in negative probabilities
     const double p_tn = std::max(1. - p_fn - p_fp - p_tp, 0.0);
     probas[0] = p_tn;
@@ -73,33 +73,33 @@ inline void constrained_fit_cmp(
 }  // constrained_fit_cmp
 
 /* Compute the most conservative probabilities for a given confusion matrix
- * constrained by precision and recall. Called in loops.
+ * constrained by TPR and FPR. Called in loops.
  *
  * Parameters
  * ----------
- *  prec : precision
- *  rec : recall
+ *  tpr : True Positive Rate
+ *  fpr : False Positive Rate
  *  conf_mat : confusion matrix with order TN, FP, FN, TP
  *  probas : result array
  */
 inline void constrained_fit_cmp(
-    const double prec,
-    const double rec,
-    const double n3,
+    const double tpr,
+    const double fpr,
+    const double n2, // Remark this parameter is n3 in precision-recall
     const double n4,
     double* __restrict probas) {
-    const double rec_ratio = (1.0 - rec) / rec;
-    const double prec_ratio = (1.0 - prec) / prec;
-    probas[3] = (n3 / n4) * (1. / (1. + prec_ratio + rec_ratio));
-    probas[2] = rec_ratio * probas[3];
-    probas[1] = prec_ratio * probas[3];
+    const double tpr_ratio = (1.0 - tpr) / tpr;
+    const double tpr_inv = 1.0 / tpr;
+    probas[3] = (tpr * n2) / n4;
+    probas[2] = tpr_ratio * probas[3];
+    probas[1] = (fpr*(tpr-probas[3])) * tpr_inv;
     // guard against floating point noise resulting in negative probabilities
     probas[0] = std::max(1. - probas[1] - probas[2] - probas[3], 0.0);
 }  // constrained_fit_cmp
 
 typedef struct s_prof_loglike_t {
     int64_t in;
-    double n3;
+    double n2;
     double n;
     double x_tn;
     double x_fp;
@@ -116,9 +116,10 @@ inline void set_prof_loglike_store(
     const int64_t* __restrict conf_mat,
     prof_loglike_t* store) {
     // total number of entries in the confusion matrix
-    const int64_t in3 = conf_mat[1] + conf_mat[2] + conf_mat[3];
-    store->n3 = static_cast<double>(in3);
-    store->in = conf_mat[0] + in3;
+    const int64_t in2 = conf_mat[2] + conf_mat[3];
+    // Remark n2 (n3 for precision-recall) is set here:
+    store->n2 = static_cast<double>(in2);
+    store->in = conf_mat[0] + conf_mat[1] + in2;
     store->n = static_cast<double>(store->in);
 
     store->x_tn = static_cast<double>(conf_mat[0]);
@@ -132,27 +133,28 @@ inline void set_prof_loglike_store(
     store->p_tp = store->x_tp / store->n;
 
     store->nll_h0 = -2
-                    * (details::xlogy(store->x_tn, store->p_tn)
+                    * (mmu::core::details::xlogy(store->x_tn, store->p_tn)
                        + details::xlogy(store->x_fp, store->p_fp)
                        + details::xlogy(store->x_fn, store->p_fn)
                        + details::xlogy(store->x_tp, store->p_tp));
 }
 
-/* Compute -2logp of multinomial distribution given a precision and recall.
+/* Compute -2logp of multinomial distribution given a Y and X.
  * Called in loops.
  *
  * Step 1: fit with all parameters free
- * Step 2: fit multinomial with fixed recall and precision
+ * Step 2: fit multinomial with fixed Y and X
  * Step 3: compute -2ln(L_h0 / L_h1)
  *
  * We compute -2ln(L_h0) + 2ln(L_h1))
  */
+// TODO: this function is exactly the same, it just need to call a different constrained_fit_cmp()
 inline double prof_loglike(
     const double prec,
     const double rec,
     prof_loglike_t* store,
     double* __restrict p_h0) {
-    constrained_fit_cmp(prec, rec, store->n3, store->n, p_h0);
+    constrained_fit_cmp(prec, rec, store->n2, store->n, p_h0);
     const double nll_h1 = -2
                           * (details::xlogy(store->x_tn, p_h0[0])
                              + details::xlogy(store->x_fp, p_h0[1])
@@ -161,22 +163,23 @@ inline double prof_loglike(
     return nll_h1 - store->nll_h0;
 }  // prof_loglike
 
-/* Compute -2logp of multinomial distribution given a precision and recall.
+/* Compute -2logp of multinomial distribution given a TPR and FPR.
  * For single function call.
  *
  * Step 1: fit with all parameters free
- * Step 2: fit multinomial with fixed recall and precision
+ * Step 2: fit multinomial with fixed TPR and FPR
  * Step 3: compute -2ln(L_h0 / L_h1)
  *
  * We compute -2ln(L_h0) + 2ln(L_h1))
  */
+// TODO argument where not renamed
 inline double prof_loglike(
     const double prec,
     const double rec,
     const double n,
     const int64_t* __restrict conf_mat,
     double* __restrict p_h0) {
-    const auto n3 = n - static_cast<double>(conf_mat[0]);
+    const auto n2 = static_cast<double>(conf_mat[2] + conf_mat[3]); // note that n2 is computed here
     const auto x_tn = static_cast<double>(conf_mat[0]);
     const auto x_fp = static_cast<double>(conf_mat[1]);
     const auto x_fn = static_cast<double>(conf_mat[2]);
@@ -188,7 +191,7 @@ inline double prof_loglike(
           * (details::xlogy(x_tn, x_tn / n) + details::xlogy(x_fp, x_fp / n)
              + details::xlogy(x_fn, x_fn / n) + details::xlogy(x_tp, x_tp / n));
 
-    constrained_fit_cmp(prec, rec, n3, n, p_h0);
+    constrained_fit_cmp(prec, rec, n2, n, p_h0);
 
     const double nll_h1
         = -2.
@@ -197,6 +200,7 @@ inline double prof_loglike(
     return nll_h1 - nll_h0;
 }  // prof_loglike
 
+// TODO: to refactor, it wasn't changed
 inline double multn_chi2_score(
     const double prec,
     const double rec,
@@ -218,6 +222,7 @@ inline double multn_chi2_score(
         p);
 }  // multn_chi2_score
 
+// TODO: to refactor, it wasn't changed
 inline void multn_chi2_scores(
     const int64_t n_points,
     const double* precs,
@@ -246,6 +251,7 @@ inline void multn_chi2_scores(
 }  // multn_chi2_scores
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
+// TODO: to refactor, it wasn't changed
 inline void multn_chi2_scores_mt(
     const int64_t n_points,
     const double* precs,
@@ -277,6 +283,7 @@ inline void multn_chi2_scores_mt(
 }  // multn_chi2_scores_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
+// TODO: to refactor, it wasn't changed
 inline void multn_error(
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,
@@ -313,6 +320,7 @@ inline void multn_error(
 }  // multn_error
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
+// TODO: to refactor, it wasn't changed
 inline void multn_error_mt(
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,
@@ -354,6 +362,7 @@ inline void multn_error_mt(
 }  // multn_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
+// TODO: to refactor, it wasn't changed
 inline void multn_grid_error(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
@@ -413,6 +422,7 @@ inline void multn_grid_error(
     }
 }  // multn_grid_error
 
+// TODO: to refactor, it wasn't changed
 inline void multn_grid_curve_error(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
@@ -465,6 +475,7 @@ inline void multn_grid_curve_error(
 }  // multn_grid_curve_error
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
+// TODO: to refactor, it wasn't changed
 inline void multn_grid_curve_error_mt(
     const int64_t n_prec_bins,
     const int64_t n_rec_bins,
@@ -586,6 +597,7 @@ struct simulation_store {
           mult_ptr(mult.data()) {}
 };
 
+// TODO: to refactor, it wasn't changed
 inline double prof_loglike_simulation_cov(
     const double prec,
     const double rec,
@@ -614,6 +626,7 @@ inline double prof_loglike_simulation_cov(
     return static_cast<double>(checks) / sim_store.n_sims;
 }  // prof_loglike_simulation_cov
 
+// TODO: to refactor, it wasn't changed
 inline void multn_sim_error(
     const int64_t n_sims,
     const int64_t n_bins,
@@ -674,6 +687,7 @@ inline void multn_sim_error(
 }  // multn_sim_error
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
+// TODO: to refactor, it wasn't changed
 inline void multn_sim_error_mt(
     const int64_t n_sims,
     const int64_t n_bins,
@@ -738,6 +752,7 @@ inline void multn_sim_error_mt(
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
+// TODO: to refactor, it wasn't changed
 inline void multn_sim_curve_error_mt(
     const int64_t n_sims,
     const int64_t n_prec_bins,
@@ -846,8 +861,8 @@ inline void multn_sim_curve_error_mt(
 }  // multn_sim_curve_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-}  // namespace pr
+}  // namespace roc
 }  // namespace core
 }  // namespace mmu
 
-#endif  // INCLUDE_MMU_CORE_PR_MULTN_LOGLIKE_HPP_
+#endif  // INCLUDE_MMU_CORE_ROC_MULTN_LOGLIKE_HPP_

@@ -33,6 +33,10 @@ f64arr precision_recall(const i64arr& conf_mat, const double fill);
 f64arr precision_recall_2d(const i64arr& conf_mat, const double fill);
 f64arr precision_recall_flattened(const i64arr& conf_mat, const double fill);
 
+f64arr ROC(const i64arr& conf_mat, const double fill);
+f64arr ROC_2d(const i64arr& conf_mat, const double fill);
+f64arr ROC_flattened(const i64arr& conf_mat, const double fill);
+
 }  // namespace api
 }  // namespace mmu
 

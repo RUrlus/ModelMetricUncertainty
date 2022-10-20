@@ -34,7 +34,20 @@ typedef SSIZE_T ssize_t;
 #include <pcg_random.hpp>
 
 namespace mmu {
+
+template <typename T>
+using isInt = std::enable_if_t<std::is_integral<T>::value, bool>;
+
+template <typename T>
+using isFloat = std::enable_if_t<std::is_floating_point<T>::value, bool>;
+
 namespace core {
+
+// fill value for the chi2 scres, this values results
+// p-values very close to 1
+// chi2.ppf(1-1e-14) --> 64.47398179869367
+constexpr double MULT_DEFAULT_CHI2_SCORE = 65.0;
+
 namespace random {
 
 typedef pcg_engines::setseq_dxsm_128_64 pcg64_dxsm;
@@ -48,6 +61,22 @@ namespace details {
 template <typename T>
 inline const T& clamp(const T& v, const T& lo, const T& hi) {
     return v < lo ? lo : v > hi ? hi : v;
+}
+
+template <typename T, isFloat<T> = true>
+inline double xlogy(T x, T y) {
+    if ((x <= std::numeric_limits<T>::epsilon()) && (!std::isnan(y))) {
+        return 0.0;
+    }
+    return x * std::log(y);
+}
+
+template <typename T, isInt<T> = true>
+inline double xlogy(T x, T y) {
+    if (x == 0) {
+        return 0.0;
+    }
+    return static_cast<double>(x) * std::log(static_cast<double>(y));
 }
 
 }  // namespace details
@@ -65,12 +94,6 @@ inline void zero_array(T* ptr) {
 }
 
 }  // namespace core
-
-template <typename T>
-using isInt = std::enable_if_t<std::is_integral<T>::value, bool>;
-
-template <typename T>
-using isFloat = std::enable_if_t<std::is_floating_point<T>::value, bool>;
 
 }  // namespace mmu
 
