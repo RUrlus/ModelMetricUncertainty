@@ -130,3 +130,17 @@ def compute_reference_metrics(y, yhat=None, proba=None, threshold=None, fill=1.0
     metrics[8] = skm.accuracy_score(y, yhat)
     metrics[9] = skm.matthews_corrcoef(y, yhat)
     return skm.confusion_matrix(y, yhat), metrics
+
+
+def PRCU_skm(y, yhat):
+    prec, rec, _, _ = skm.precision_recall_fscore_support(
+        y, yhat, zero_division=0.0  # type: ignore
+    )
+    return prec, rec
+
+
+def ROCCU_skm(y, yhat):
+    fpr, tpr, _ = skm.roc_curve(
+        y, yhat
+    )
+    return tpr, fpr

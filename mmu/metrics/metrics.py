@@ -719,3 +719,135 @@ def precision_recall_curve(y, scores, thresholds=None, fill=1.0, return_df=False
         df["thresholds"] = thresholds
         return df
     return metrics[:, 0].copy(), metrics[:, 1].copy()
+
+
+def ROC(
+    y, yhat=None, scores=None, threshold=None, fill=1.0, return_df=False
+):
+    r"""Compute TPR and FPR.
+
+    Parameters
+    ----------
+    y : np.ndarray[bool, int32, int64, float32, float64]
+        true labels for observations
+    yhat : np.ndarray[bool, int32, int64, float32, float64], default=None
+        the predicted labels, the same dtypes are supported as y. Can be `None`
+        if `scores` is not `None`, if both are provided, `scores` is ignored.
+    scores : np.ndarray[float32, float64], default=None
+        the classifier scores to be evaluated against the `threshold`, i.e.
+        `yhat` = `scores` >= `threshold`. Can be `None` if `yhat` is not `None`,
+        if both are provided, this parameter is ignored.
+    threshold : float, default=0.5
+        the classification threshold to which the classifier scores is evaluated,
+        is inclusive.
+    fill : float, default=1.0
+        value to fill when a metric is not defined, e.g. divide by zero.
+    return_df : bool, default=False
+        return confusion matrix as pd.DataFrame
+
+    Returns
+    -------
+    confusion_matrix : np.ndarray, pd.DataFrame
+        the confusion_matrix with layout
+        [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP
+    TPR_FPR : np.ndarray, pd.DataFrame
+        the True Positive Rate (Recall) and
+        the False Positive Rate
+
+    """
+    if not isinstance(fill, float):
+        raise TypeError("`fill` must be a float.")
+
+    y = check_array(y, max_dim=1, dtype_check=_convert_to_ext_types)
+
+    if scores is not None:
+        scores = check_array(
+            scores,
+            max_dim=1,
+            dtype_check=_convert_to_float,
+        )
+        if not isinstance(threshold, float):
+            raise TypeError("`threshold` must be a float if scores is not None")
+        if scores.size != y.size:
+            raise ValueError("`scores` and `y` must have equal length.")
+        conf_mat = _core.confusion_matrix_score(y, scores, threshold)
+
+    elif yhat is not None:
+        yhat = check_array(
+            yhat,
+            max_dim=1,
+            dtype_check=_convert_to_ext_types,
+        )
+        if yhat.size != y.size:
+            raise ValueError("`yhat` and `y` must have equal length.")
+        conf_mat = _core.confusion_matrix(y, yhat)
+    else:
+        raise TypeError("`yhat` must not be None if `scores` is None")
+
+    TPR_FPR = _core.ROC(conf_mat, fill)
+
+    if return_df:
+        return (
+            confusion_matrix_to_dataframe(conf_mat),
+            pd.DataFrame(TPR_FPR, index=["True Positive Rate (Recall)", "False Positive Rate"]).T,
+        )
+    return conf_mat, TPR_FPR
+
+
+def ROC_curve(y, scores, thresholds=None, fill=1.0, return_df=False):
+    """Compute True Positive Rate (Recall) and False Positive Rate over the thresholds.
+
+    Parameters
+    ----------
+    y : np.ndarray[bool, int32, int64, float32, float64]
+        true labels for observations
+    scores : np.ndarray[float32, float64]
+        the classifier scores to be evaluated against the `threshold`, i.e.
+        `yhat` = `scores` >= `threshold`
+    threshold : np.ndarray[float32, float64]
+        the classification thresholds to which the classifier scores is evaluated,
+        is inclusive.
+    fill : float, default=1.0
+        value to fill when a metric is not defined, e.g. divide by zero.
+    return_df : bool, default=False
+        return confusion matrix as pd.DataFrame
+
+    Returns
+    -------
+    TPR : np.ndarray[float64]
+        the True Positive Rate (Recall) for each threshold
+    FPR : np.ndarray[float64]
+        the False Positive Rate for each threshold
+
+    """
+    if not isinstance(fill, float):
+        raise TypeError("`fill` must be a float.")
+
+    y = check_array(
+        y,
+        max_dim=1,
+        dtype_check=_convert_to_ext_types,
+    )
+
+    scores = check_array(
+        scores,
+        max_dim=1,
+        dtype_check=_convert_to_float,
+    )
+
+    thresholds = check_array(
+        thresholds,
+        max_dim=1,
+        dtype_check=_convert_to_float,
+    )
+
+    if scores.size != y.size:
+        raise ValueError("`scores` and `y` must have equal length.")
+    conf_mat = _core.confusion_matrix_thresholds(y, scores, thresholds)
+    metrics = _core.ROC_2d(conf_mat, fill)
+
+    if return_df:
+        df = pd.DataFrame(metrics, columns=["True Positive Rate (Recall)", "False Positive Rate"])
+        df["thresholds"] = thresholds
+        return df
+    return metrics[:, 0].copy(), metrics[:, 1].copy()
