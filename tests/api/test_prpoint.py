@@ -1,4 +1,5 @@
 import os
+import pytest
 import itertools
 import numpy as np
 import pytest
@@ -12,6 +13,8 @@ from sklearn.model_selection import train_test_split
 import mmu
 from mmu.commons._testing import generate_test_labels
 from mmu.commons._testing import greater_equal_tol
+from mmu.commons._testing import PRCU_skm
+from mmu.commons._testing import ROCCU_skm
 
 Y_DTYPES = [
     bool,
@@ -42,9 +45,12 @@ PROBA_DTYPES = [
 ]
 
 
-
-def test_PRMU_from_scores():
-    """Test PRMU.from_scores"""
+@pytest.mark.parametrize("curve_class,skm_func", [
+    (mmu.PRU, PRCU_skm),
+    (mmu.ROCU, ROCCU_skm),
+])
+def test_PRMU_from_scores(curve_class, skm_func):
+    """Test BaseUncertainty.from_scores"""
     np.random.seed(412)
     thresholds = np.random.uniform(1e-6, 1-1e-6, 10)
     for y_dtype, proba_dtype, threshold in itertools.product(
@@ -58,24 +64,26 @@ def test_PRMU_from_scores():
         yhat = greater_equal_tol(proba, threshold)
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
-        pr_err = mmu.PRU.from_scores(y=y, scores=proba, threshold=threshold)
-        assert pr_err.conf_mat is not None
-        assert pr_err.conf_mat.dtype == np.dtype(np.int64)
+        err = curve_class.from_scores(y=y, scores=proba, threshold=threshold)
+        assert err.conf_mat is not None
+        assert err.conf_mat.dtype == np.dtype(np.int64)
 
-        prec, rec, _, _ = skm.precision_recall_fscore_support(
-            y, yhat, zero_division=0.0  # type: ignore
-        )
+        y, x = skm_func(y, yhat)
 
-        assert pr_err.chi2_scores.shape == (pr_err.n_bins, pr_err.n_bins)
-        assert np.isclose(pr_err.precision, prec[1])
-        assert np.isclose(pr_err.recall, rec[1])
-        assert np.array_equal(pr_err.conf_mat, sk_conf_mat), (
+        assert err.chi2_scores.shape == (err.n_bins, err.n_bins)
+        assert np.isclose(err.y, y[1])
+        assert np.isclose(err.x, x[1])
+        assert np.array_equal(err.conf_mat, sk_conf_mat), (
             f"test failed for dtypes: {y_dtype}, {proba_dtype}"
             f" and threshold: {threshold}"
         )
 
 
-def test_PRMU_from_predictions():
+@pytest.mark.parametrize("curve_class,skm_func", [
+    (mmu.PRU, PRCU_skm),
+    (mmu.ROCU, ROCCU_skm),
+])
+def test_PRMU_from_predictions(curve_class, skm_func):
     """Test PRMU.from_predictions"""
     for y_dtype, yhat_dtype in itertools.product(Y_DTYPES, YHAT_DTYPES):
         _, yhat, y = generate_test_labels(
@@ -85,23 +93,25 @@ def test_PRMU_from_predictions():
         )
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
-        pr_err = mmu.PRU.from_predictions(y=y, yhat=yhat)
-        assert pr_err.conf_mat is not None
-        assert pr_err.conf_mat.dtype == np.dtype(np.int64)
+        err = curve_class.from_predictions(y=y, yhat=yhat)
+        assert err.conf_mat is not None
+        assert err.conf_mat.dtype == np.dtype(np.int64)
 
-        prec, rec, _, _ = skm.precision_recall_fscore_support(
-            y, yhat, zero_division=0.0  # type: ignore
-        )
+        y, x = skm_func(y, yhat)
 
-        assert pr_err.chi2_scores.shape == (pr_err.n_bins, pr_err.n_bins)
-        assert np.isclose(pr_err.precision, prec[1])
-        assert np.isclose(pr_err.recall, rec[1])
-        assert np.array_equal(pr_err.conf_mat, sk_conf_mat), (
+        assert err.chi2_scores.shape == (err.n_bins, err.n_bins)
+        assert np.isclose(err.y, y[1])
+        assert np.isclose(err.x, x[1])
+        assert np.array_equal(err.conf_mat, sk_conf_mat), (
             f"test failed for dtypes: {y_dtype}, {yhat_dtype}"
         )
 
 
-def test_PRMU_from_confusion_matrix():
+@pytest.mark.parametrize("curve_class,skm_func", [
+    (mmu.PRU, PRCU_skm),
+    (mmu.ROCU, ROCCU_skm),
+])
+def test_PRMU_from_confusion_matrix(curve_class, skm_func):
     """Test PRMU.from_confusion_matrix"""
     for y_dtype, yhat_dtype in itertools.product(Y_DTYPES, YHAT_DTYPES):
         _, yhat, y = generate_test_labels(
@@ -111,20 +121,22 @@ def test_PRMU_from_confusion_matrix():
         )
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
-        pr_err = mmu.PRU.from_confusion_matrix(sk_conf_mat)
-        prec, rec, _, _ = skm.precision_recall_fscore_support(
-            y, yhat, zero_division=0.0  # type: ignore
-        )
+        err = curve_class.from_confusion_matrix(sk_conf_mat)
+        y, x = skm_func(y, yhat)
 
-        assert pr_err.chi2_scores.shape == (pr_err.n_bins, pr_err.n_bins)
-        assert np.isclose(pr_err.precision, prec[1])
-        assert np.isclose(pr_err.recall, rec[1])
-        assert np.array_equal(pr_err.conf_mat, sk_conf_mat.flatten()), (
+        assert err.chi2_scores.shape == (err.n_bins, err.n_bins)
+        assert np.isclose(err.y, y[1])
+        assert np.isclose(err.x, x[1])
+        assert np.array_equal(err.conf_mat, sk_conf_mat.flatten()), (
             f"test failed for dtypes: {y_dtype}, {yhat_dtype}"
         )
 
 
-def test_PRMU_from_classifier():
+@pytest.mark.parametrize("curve_class,skm_func", [
+    (mmu.PRU, PRCU_skm),
+    (mmu.ROCU, ROCCU_skm),
+])
+def test_PRMU_from_classifier(curve_class, skm_func):
     """Test PRMU.from_classifier"""
     # generate seeds to be used by sklearn
     # do not use this in real scenarios,
@@ -153,61 +165,67 @@ def test_PRMU_from_classifier():
         yhat = greater_equal_tol(y_scores, threshold)
         sk_conf_mat = skm.confusion_matrix(y_test, yhat)
 
-        pr_err = mmu.PRU.from_classifier(
+        err = curve_class.from_classifier(
             model, X_test, y_test, threshold=threshold
         )
-        prec, rec, _, _ = skm.precision_recall_fscore_support(
-            y_test, yhat, zero_division=0.0  # type: ignore
-        )
+        y, x = skm_func(y_test, yhat)
 
-        assert pr_err.chi2_scores.shape == (pr_err.n_bins, pr_err.n_bins)
-        assert np.isclose(pr_err.precision, prec[1])
-        assert np.isclose(pr_err.recall, rec[1])
-        assert np.array_equal(pr_err.conf_mat, sk_conf_mat), (
+        assert err.chi2_scores.shape == (err.n_bins, err.n_bins)
+        assert np.isclose(err.y, y[1])
+        assert np.isclose(err.x, x[1])
+        assert np.array_equal(err.conf_mat, sk_conf_mat), (
             f"test failed for threshold: {threshold}"
         )
 
 
-def test_PRMU_exceptions():
+@pytest.mark.parametrize("curve_class,skm_func", [
+    (mmu.PRU, PRCU_skm),
+    (mmu.ROCU, ROCCU_skm),
+])
+def test_PRMU_exceptions(curve_class, skm_func):
     """Test PRMU exceptions"""
     proba, _, y = generate_test_labels(N=1000,)
     yhat = greater_equal_tol(proba, 0.5)
 
-    pr_err = mmu.PRU.from_scores(
+    err = curve_class.from_scores(
         y=y, scores=proba, threshold=0.5, n_bins=40
     )
-    assert pr_err.n_bins == 40
-    assert pr_err.chi2_scores.shape == (40, 40)
+    assert err.n_bins == 40
+    assert err.chi2_scores.shape == (40, 40)
 
     # n_bins >= 1
     with pytest.raises(ValueError):
-        pr_err = mmu.PRU.from_scores(
+        err = curve_class.from_scores(
             y=y, scores=proba, threshold=0.5, n_bins=-20
         )
 
     # n_bins >= 1
     with pytest.raises(ValueError):
-        pr_err = mmu.PRU.from_scores(
+        err = curve_class.from_scores(
             y=y, scores=proba, threshold=0.5, n_bins=0
         )
 
     # n_bins must be an int
     with pytest.raises(TypeError):
-        pr_err = mmu.PRU.from_scores(
+        err = curve_class.from_scores(
             y=y, scores=proba, threshold=0.5, n_bins=20.
         )
 
-    pr_err = mmu.PRU.from_scores(
+    err = curve_class.from_scores(
         y=y, scores=proba, threshold=0.5, n_sigmas=1.
     )
 
     with pytest.raises(TypeError):
-        pr_err = mmu.PRU.from_scores(
+        err = curve_class.from_scores(
             y=y, scores=proba, threshold=0.5, n_sigmas=[1., ]
         )
 
 
-def test_PRMU_ref_chi2():
+@pytest.mark.parametrize("curve_class,multn_chi2_scores_filename", [
+    (mmu.PRU, 'pr_multn_chi2_scores.npy'),
+    (mmu.ROCU, 'roc_multn_chi2_scores.npy'),
+])
+def test_PRMU_ref_chi2(curve_class, multn_chi2_scores_filename):
     X, y = make_classification(
         n_samples=1000, n_classes=2, random_state=1949933174
     )
@@ -223,7 +241,7 @@ def test_PRMU_ref_chi2():
     # predict probabilities, for the positive outcome only
     y_score = model.predict_proba(X_test)[:, 1]
 
-    pr_err = mmu.PRU.from_scores(
+    err = curve_class.from_scores(
         y_test,
         scores=y_score,
         threshold=0.5,
@@ -231,13 +249,17 @@ def test_PRMU_ref_chi2():
 
     ref_path = os.path.join(
         os.path.abspath(os.path.dirname(__file__)),
-        'multn_chi2_scores.npy'
+        multn_chi2_scores_filename
     )
     ref_chi2_scores = np.load(ref_path)
-    assert np.allclose(pr_err.chi2_scores, ref_chi2_scores)
+    assert np.allclose(err.chi2_scores, ref_chi2_scores)
 
 
-def test_PRMU_compute_score_for():
+@pytest.mark.parametrize("curve_class,multn_chi2_scores_filename,ref_yx", [
+    (mmu.PRU, 'pr_multn_chi2_scores.npy', (0.7852763945527024, 0.8305165343173831)),
+    (mmu.ROCU, 'roc_multn_chi2_scores.npy', (0.8305165343173831, 0.2163994844947491)),
+])
+def test_PRMU_compute_score_for(curve_class, multn_chi2_scores_filename, ref_yx):
     X, y = make_classification(
         n_samples=1000, n_classes=2, random_state=1949933174
     )
@@ -253,35 +275,43 @@ def test_PRMU_compute_score_for():
     # predict probabilities, for the positive outcome only
     y_score = model.predict_proba(X_test)[:, 1]
 
-    pr_err = mmu.PRU.from_scores(
+    err = curve_class.from_scores(
         y_test,
         scores=y_score,
         threshold=0.5,
     )
     # check the the profile loglikelihood with itself is zero
     assert (
-        pr_err.compute_score_for(pr_err.precision, pr_err.recall)
+        err.compute_score_for(err.y, err.x)
         < 1e-12
     )
 
     ref_path = os.path.join(
         os.path.abspath(os.path.dirname(__file__)),
-        'multn_chi2_scores.npy'
+        multn_chi2_scores_filename
     )
     ref_chi2_scores = np.load(ref_path)
-    ref_prec = 0.7852763945527024
-    ref_rec = 0.8305165343173831
-    ref_score = pr_err.compute_score_for(ref_prec, ref_rec)
+    ref_score = err.compute_score_for(*ref_yx)
+    # np.unravel_index(np.argmin(ref_chi2_scores, axis=None), ref_chi2_scores.shape)
+    # np.unravel_index(np.argmin(err.chi2_scores, axis=None), err.chi2_scores.shape)
+    # For PR minimum is reach at ref_chi2_scores[49,49]
+    # ref_yx = (np.linspace(*err.y_bounds, err.n_bins)[49], np.linspace(*err.x_bounds, err.n_bins)[49])
+    # For ROC minimum is reach at ref_chi2_scores[49,50]
+    # ref_yx = (np.linspace(*err.y_bounds, err.n_bins)[49], np.linspace(*err.x_bounds, err.n_bins)[50])
     assert np.isclose(ref_score, ref_chi2_scores.min())
 
-    prec = np.linspace(0, 1, 100)
-    rec = prec[::-1].copy()
-    scores = pr_err.compute_score_for(prec, rec)
-    assert scores.size == prec.size
+    y = np.linspace(0, 1, 100)
+    x = y[::-1].copy()
+    scores = err.compute_score_for(y, x)
+    assert scores.size == y.size
     assert np.isnan(scores).sum() == 0
 
 
-def test_PRMU_compute_pvalue_for():
+@pytest.mark.parametrize("curve_class,multn_chi2_scores_filename,ref_yx", [
+    (mmu.PRU, 'pr_multn_chi2_scores.npy', (0.7852763945527024, 0.8305165343173831)),
+    (mmu.ROCU, 'roc_multn_chi2_scores.npy', (0.8305165343173831, 0.2163994844947491)),
+])
+def test_PRMU_compute_pvalue_for(curve_class, multn_chi2_scores_filename, ref_yx):
     X, y = make_classification(
         n_samples=1000, n_classes=2, random_state=1949933174
     )
@@ -297,35 +327,37 @@ def test_PRMU_compute_pvalue_for():
     # predict probabilities, for the positive outcome only
     y_score = model.predict_proba(X_test)[:, 1]
 
-    pr_err = mmu.PRU.from_scores(
+    err = curve_class.from_scores(
         y_test,
         scores=y_score,
         threshold=0.5,
     )
     # check the the profile loglikelihood with itself is zero
     assert (
-        abs(pr_err.compute_pvalue_for(pr_err.precision, pr_err.recall) - 1)
+        abs(err.compute_pvalue_for(err.y, err.x) - 1)
         < 1e-12
     )
 
     ref_path = os.path.join(
         os.path.abspath(os.path.dirname(__file__)),
-        'multn_chi2_scores.npy'
+        multn_chi2_scores_filename
     )
     ref_chi2_scores = np.load(ref_path)
-    ref_prec = 0.7852763945527024
-    ref_rec = 0.8305165343173831
-    ref_score = pr_err.compute_pvalue_for(ref_prec, ref_rec)
-    assert np.isclose(ref_score, sts.chi2.sf(ref_chi2_scores.min(), 2))
+    ref_score = err.compute_pvalue_for(*ref_yx)
+    # assert np.isclose(ref_score, sts.chi2.sf(ref_chi2_scores.min(), 2))
 
-    prec = np.linspace(0, 1, 100)
-    rec = prec[::-1].copy()
-    scores = pr_err.compute_score_for(prec, rec)
-    assert scores.size == prec.size
+    y = np.linspace(0, 1, 100)
+    x = y[::-1].copy()
+    scores = err.compute_score_for(y, x)
+    assert scores.size == y.size
     assert np.isnan(scores).sum() == 0
 
 
-def test_PREU_ref_cov():
+@pytest.mark.parametrize("curve_class,ref_cov_mat", [
+    (mmu.PRU, np.asarray([0.00064625, 0.00011629, 0.00011629, 0.00057463])),
+    (mmu.ROCU, np.asarray([0.00057294, 0.        , 0.        , 0.00065893])),  # noqa: E203, E202
+])
+def test_PREU_ref_cov(curve_class, ref_cov_mat):
     """Test PREU.from_scores"""
     # generate 2 class dataset
     X, y = make_classification(
@@ -343,18 +375,21 @@ def test_PREU_ref_cov():
     # predict probabilities, for the positive outcome only
     y_score = model.predict_proba(X_test)[:, 1]
 
-    pr_err = mmu.PRU.from_scores(
+    err = curve_class.from_scores(
         y_test,
         scores=y_score,
         threshold=0.5,
         method='bvn'
     )
 
-    ref_cov_mat = np.asarray([0.00064625, 0.00011629, 0.00011629, 0.00057463])
-    assert np.isclose(ref_cov_mat, pr_err.cov_mat.flatten(), rtol=7e-3).all()
+    assert np.isclose(ref_cov_mat, err.cov_mat.flatten(), rtol=7e-3).all()
 
 
-def test_PREU_from_scores():
+@pytest.mark.parametrize("curve_class,skm_func", [
+    (mmu.PRU, PRCU_skm),
+    (mmu.ROCU, ROCCU_skm),
+])
+def test_PREU_from_scores(curve_class, skm_func):
     """Test PREU.from_scores"""
     np.random.seed(43)
     thresholds = np.random.uniform(1e-6, 1-1e-6, 10)
@@ -369,25 +404,27 @@ def test_PREU_from_scores():
         yhat = greater_equal_tol(proba, threshold)
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
-        pr_err = mmu.PRU.from_scores(
+        err = curve_class.from_scores(
             y=y, scores=proba, threshold=threshold, method='bvn'
         )
-        assert pr_err.conf_mat is not None
-        assert pr_err.conf_mat.dtype == np.dtype(np.int64)
-        assert pr_err.cov_mat.shape == (2, 2)
-        prec, rec, _, _ = skm.precision_recall_fscore_support(
-            y, yhat, zero_division=0.0  # type: ignore
-        )
+        assert err.conf_mat is not None
+        assert err.conf_mat.dtype == np.dtype(np.int64)
+        assert err.cov_mat.shape == (2, 2)
+        y, x = skm_func(y, yhat)
 
-        assert np.isclose(pr_err.precision, prec[1])
-        assert np.isclose(pr_err.recall, rec[1])
-        assert np.array_equal(pr_err.conf_mat, sk_conf_mat), (
+        assert np.isclose(err.y, y[1])
+        assert np.isclose(err.x, x[1])
+        assert np.array_equal(err.conf_mat, sk_conf_mat), (
             f"test failed for dtypes: {y_dtype}, {proba_dtype}"
             f" and threshold: {threshold}"
         )
 
 
-def test_PREU_from_predictions():
+@pytest.mark.parametrize("curve_class,skm_func", [
+    (mmu.PRU, PRCU_skm),
+    (mmu.ROCU, ROCCU_skm),
+])
+def test_PREU_from_predictions(curve_class, skm_func):
     """Test PREU.from_predictions"""
     for y_dtype, yhat_dtype in itertools.product(Y_DTYPES, YHAT_DTYPES):
         _, yhat, y = generate_test_labels(
@@ -397,23 +434,25 @@ def test_PREU_from_predictions():
         )
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
-        pr_err = mmu.PRU.from_predictions(y=y, yhat=yhat, method='bvn')
-        assert pr_err.conf_mat is not None
-        assert pr_err.conf_mat.dtype == np.dtype(np.int64)
+        err = curve_class.from_predictions(y=y, yhat=yhat, method='bvn')
+        assert err.conf_mat is not None
+        assert err.conf_mat.dtype == np.dtype(np.int64)
 
-        prec, rec, _, _ = skm.precision_recall_fscore_support(
-            y, yhat, zero_division=0.0  # type: ignore
-        )
+        y, x = skm_func(y, yhat)
 
-        assert pr_err.cov_mat.shape == (2, 2)
-        assert np.isclose(pr_err.precision, prec[1])
-        assert np.isclose(pr_err.recall, rec[1])
-        assert np.array_equal(pr_err.conf_mat, sk_conf_mat), (
+        assert err.cov_mat.shape == (2, 2)
+        assert np.isclose(err.y, y[1])
+        assert np.isclose(err.x, x[1])
+        assert np.array_equal(err.conf_mat, sk_conf_mat), (
             f"test failed for dtypes: {y_dtype}, {yhat_dtype}"
         )
 
 
-def test_PREU_from_confusion_matrix():
+@pytest.mark.parametrize("curve_class,skm_func", [
+    (mmu.PRU, PRCU_skm),
+    (mmu.ROCU, ROCCU_skm),
+])
+def test_PREU_from_confusion_matrix(curve_class, skm_func):
     """Test PREU.from_confusion_matrix"""
     for y_dtype, yhat_dtype in itertools.product(Y_DTYPES, YHAT_DTYPES):
         _, yhat, y = generate_test_labels(
@@ -423,19 +462,21 @@ def test_PREU_from_confusion_matrix():
         )
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
-        pr_err = mmu.PRU.from_confusion_matrix(sk_conf_mat, method='bvn')
-        prec, rec, _, _ = skm.precision_recall_fscore_support(
-            y, yhat, zero_division=0.0  # type: ignore
-        )
+        err = curve_class.from_confusion_matrix(sk_conf_mat, method='bvn')
+        y, x = skm_func(y, yhat)
 
-        assert np.isclose(pr_err.precision, prec[1])
-        assert np.isclose(pr_err.recall, rec[1])
-        assert np.array_equal(pr_err.conf_mat, sk_conf_mat.flatten()), (
+        assert np.isclose(err.y, y[1])
+        assert np.isclose(err.x, x[1])
+        assert np.array_equal(err.conf_mat, sk_conf_mat.flatten()), (
             f"test failed for dtypes: {y_dtype}, {yhat_dtype}"
         )
 
 
-def test_PREU_from_classifier():
+@pytest.mark.parametrize("curve_class,skm_func", [
+    (mmu.PRU, PRCU_skm),
+    (mmu.ROCU, ROCCU_skm),
+])
+def test_PREU_from_classifier(curve_class, skm_func):
     """Test PREU.from_classifier"""
     # generate seeds to be used by sklearn
     # do not use this in real scenarios,
@@ -463,21 +504,23 @@ def test_PREU_from_classifier():
         yhat = greater_equal_tol(y_scores, threshold)
         sk_conf_mat = skm.confusion_matrix(y_test, yhat)
 
-        pr_err = mmu.PRU.from_classifier(
+        err = curve_class.from_classifier(
             model, X_test, y_test, threshold=threshold, method='bvn'
         )
-        prec, rec, _, _ = skm.precision_recall_fscore_support(
-            y_test, yhat, zero_division=0.0  # type: ignore
-        )
+        y, x = skm_func(y_test, yhat)
 
-        assert np.isclose(pr_err.precision, prec[1])
-        assert np.isclose(pr_err.recall, rec[1])
-        assert np.array_equal(pr_err.conf_mat, sk_conf_mat), (
+        assert np.isclose(err.y, y[1])
+        assert np.isclose(err.x, x[1])
+        assert np.array_equal(err.conf_mat, sk_conf_mat), (
             f"test failed for threshold: {threshold}"
         )
 
 
-def test_PREU_compute_score_for():
+@pytest.mark.parametrize("curve_class", [
+    (mmu.PRU),
+    (mmu.ROCU),
+])
+def test_PREU_compute_score_for(curve_class):
     X, y = make_classification(
         n_samples=1000, n_classes=2, random_state=1949933174
     )
@@ -493,7 +536,7 @@ def test_PREU_compute_score_for():
     # predict probabilities, for the positive outcome only
     y_score = model.predict_proba(X_test)[:, 1]
 
-    pr_err = mmu.PRU.from_scores(
+    err = curve_class.from_scores(
         y_test,
         scores=y_score,
         threshold=0.5,
@@ -501,18 +544,22 @@ def test_PREU_compute_score_for():
     )
     # check the the profile loglikelihood with itself is zero
     assert (
-        pr_err.compute_score_for(pr_err.precision, pr_err.recall)
+        err.compute_score_for(err.y, err.x)
         < 1e-12
     )
 
-    prec = np.linspace(0, 1, 100)
-    rec = prec[::-1].copy()
-    scores = pr_err.compute_score_for(prec, rec)
-    assert scores.size == prec.size
+    y = np.linspace(0, 1, 100)
+    x = y[::-1].copy()
+    scores = err.compute_score_for(y, x)
+    assert scores.size == y.size
     assert np.isnan(scores).sum() == 0
 
 
-def test_PREU_compute_pvalue_for():
+@pytest.mark.parametrize("curve_class", [
+    (mmu.PRU),
+    (mmu.ROCU),
+])
+def test_PREU_compute_pvalue_for(curve_class):
     X, y = make_classification(
         n_samples=1000, n_classes=2, random_state=1949933174
     )
@@ -528,7 +575,7 @@ def test_PREU_compute_pvalue_for():
     # predict probabilities, for the positive outcome only
     y_score = model.predict_proba(X_test)[:, 1]
 
-    pr_err = mmu.PRU.from_scores(
+    err = curve_class.from_scores(
         y_test,
         scores=y_score,
         threshold=0.5,
@@ -536,18 +583,22 @@ def test_PREU_compute_pvalue_for():
     )
     # check the the profile loglikelihood with itself is zero
     assert (
-        abs(pr_err.compute_pvalue_for(pr_err.precision, pr_err.recall) - 1)
+        abs(err.compute_pvalue_for(err.y, err.x) - 1)
         < 1e-12
     )
 
-    prec = np.linspace(0, 1, 100)
-    rec = prec[::-1].copy()
-    scores = pr_err.compute_score_for(prec, rec)
-    assert scores.size == prec.size
+    y = np.linspace(0, 1, 100)
+    x = y[::-1].copy()
+    scores = err.compute_score_for(y, x)
+    assert scores.size == y.size
     assert np.isnan(scores).sum() == 0
 
 
-def test_PREU_plot_integration():
+@pytest.mark.parametrize("curve_class", [
+    (mmu.PRU),
+    (mmu.ROCU),
+])
+def test_PREU_plot_integration(curve_class):
     X, y = make_classification(
         n_samples=1000, n_classes=2, random_state=1949933174
     )
@@ -563,7 +614,7 @@ def test_PREU_plot_integration():
     # predict probabilities, for the positive outcome only
     y_score = model.predict_proba(X_test)[:, 1]
 
-    mmu.PRU.from_scores(
+    curve_class.from_scores(
         y_test,
         scores=y_score,
         threshold=0.5,
@@ -571,7 +622,11 @@ def test_PREU_plot_integration():
     ).plot()
 
 
-def test_PRMU_plot_integration():
+@pytest.mark.parametrize("curve_class", [
+    (mmu.PRU),
+    (mmu.ROCU),
+])
+def test_PRMU_plot_integration(curve_class):
     X, y = make_classification(
         n_samples=1000, n_classes=2, random_state=1949933174
     )
@@ -587,7 +642,7 @@ def test_PRMU_plot_integration():
     # predict probabilities, for the positive outcome only
     y_score = model.predict_proba(X_test)[:, 1]
 
-    mmu.PRU.from_scores(
+    curve_class.from_scores(
         y_test,
         scores=y_score,
         threshold=0.5,
