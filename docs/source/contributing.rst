@@ -153,3 +153,15 @@ For example:
 
 .. _pybind11: https://pybind11.readthedocs.io/en/stable/#
 .. _scikit-build: https://scikit-build.readthedocs.io/en/latest/index.html
+
+Building documentation
+++++++++++++++++++++++
+
+You can build documentation like this:
+
+.. code-block:: bash
+
+   cd docs
+   pip install -r requirements.txt
+   sphinx-build source build
+   open build/index.html
