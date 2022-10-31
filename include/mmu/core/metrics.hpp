@@ -77,10 +77,6 @@ inline void ROC(
     T* __restrict const conf_mat,
     double* __restrict const metrics,
     const double fill = 0.) {
-    // total observations
-    const auto K = static_cast<double>(
-        conf_mat[0] + conf_mat[1] + conf_mat[2] + conf_mat[3]);
-
     /*
      *                  pred
      *                0     1
@@ -97,17 +93,17 @@ inline void ROC(
 
     // real true/positive observations [FN + TP]
     const int64_t iP = conf_mat[2] + conf_mat[3];
-    const bool P_nonzero = iP > 0;  // Keep
-    const auto P = static_cast<double>(iP);  // Keep
+    const bool P_nonzero = iP > 0;
+    const auto P = static_cast<double>(iP);
     // real false/negative observations [TN + FP]
     const int64_t iN = conf_mat[0] + conf_mat[1];
-    const bool N_nonzero = iN > 0;  // Keep
-    const auto N = static_cast<double>(iN);  // Keep
+    const bool N_nonzero = iN > 0;
+    const auto N = static_cast<double>(iN);
 
-    const auto tn = static_cast<double>(conf_mat[0]);  // Keep
-    const auto tp = static_cast<double>(conf_mat[3]);  // Keep
+    const auto tn = static_cast<double>(conf_mat[0]);
+    const auto tp = static_cast<double>(conf_mat[3]);
 
-    double itm = 0.0;  // Keep
+    double itm = 0.0;
 
     // metrics[1]  - False positive Rate (FPR)
     itm = tn / N;
@@ -118,7 +114,6 @@ inline void ROC(
     metrics[0] = P_nonzero ? itm : fill;
 
 }  // ROC
-
 
 /* Sets the following values at metrics index:
  *    0 - neg.precision aka Negative Predictive Value
