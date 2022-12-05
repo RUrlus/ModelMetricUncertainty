@@ -19,8 +19,6 @@ jobs:
       with:
         submodules: true
 
-    - uses: actions/setup-python@v3
-
     - name: Install deps
       run: python -m pip install twine build
 
@@ -43,8 +41,6 @@ jobs:
     - uses: actions/checkout@v3
       with:
         submodules: true
-
-    - uses: actions/setup-python@v3
 
     - name: Install cibuildwheel
       run: python -m pip install cibuildwheel
@@ -85,13 +81,11 @@ jobs:
       with:
         submodules: true
 
-    - uses: actions/setup-python@v3
-
     - name: Install cibuildwheel
-      run: python -m pip install cibuildwheel
+      run: python3 -m pip install cibuildwheel
 
     - name: Build wheel
-      run: python -m cibuildwheel --output-dir wheelhouse
+      run: python3 -m cibuildwheel --output-dir wheelhouse
       env:
         CIBW_ENVIRONMENT: MACOSX_DEPLOYMENT_TARGET="10.13" CMAKE_ARGS="-DMMU_ENABLE_ARCH_FLAGS=OFF -DMMU_CICD_MODE=ON"
         CIBW_BUILD: 'cp37-* cp38-* cp39-* cp310-* cp311-*'
@@ -122,8 +116,6 @@ jobs:
     if: github.event_name == 'release' && github.event.action == 'published'
 
     steps:
-    - uses: actions/setup-python@v3
-
     - uses: actions/download-artifact@v3
       with:
         name: artifact
