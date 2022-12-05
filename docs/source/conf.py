@@ -33,10 +33,10 @@ sys.setrecursionlimit(1500)
 
 project = 'mmu'
 copyright = '2022, R. Urlus'
-author = 'R. Urlus'
+author = 'R. Urlus, M. Baak'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.0'
+release = '0.1.1'
 
 
 # -- General configuration ---------------------------------------------------

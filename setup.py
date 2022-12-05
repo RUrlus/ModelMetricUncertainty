@@ -24,7 +24,7 @@ from skbuild import setup
 
 MAJOR = 0
 REVISION = 1
-PATCH = 0
+PATCH = 1
 # dev should be the dev version number (typically 0) or None if not dev version
 DEV = None
 # rc should be the release candidate version (typically 0) or None if not rc
