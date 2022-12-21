@@ -24,22 +24,23 @@ from skbuild import setup
 
 MAJOR = 0
 REVISION = 1
-PATCH = 1
+PATCH = 2
 # dev should be the dev version number (typically 0) or None if not dev version
 DEV = None
 # rc should be the release candidate version (typically 0) or None if not rc
 RC = None
 
-FULL_VERSION = VERSION = f'{MAJOR}.{REVISION}.{PATCH}'
+FULL_VERSION = VERSION = f"{MAJOR}.{REVISION}.{PATCH}"
 IS_RELEASE = False
 if DEV is not None:
-    FULL_VERSION += f'.dev{int(DEV)}'
+    FULL_VERSION += f".dev{int(DEV)}"
 elif RC is not None:
-    FULL_VERSION += f'.rc{int(RC)}'
+    FULL_VERSION += f".rc{int(RC)}"
 else:
     IS_RELEASE = True
 
-def write_version_py(filename: str = 'mmu/version.py') -> None:
+
+def write_version_py(filename: str = "mmu/version.py") -> None:
     """Write package version to version.py.
 
     This will ensure that the version in version.py is in sync with us.
@@ -57,14 +58,14 @@ def write_version_py(filename: str = 'mmu/version.py') -> None:
         f"version = '{VERSION}'\n"
         f"full_version = '{FULL_VERSION}'\n"
         f"release = {IS_RELEASE}"
-
     )
-    with open(filename, 'w') as version_file:
+    with open(filename, "w") as version_file:
         version_file.write(version_str)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     write_version_py()
-    cmake_args=[
+    cmake_args = [
         f"-DMMU_VERSION_INFO:STRING={VERSION}",
         f"-DPython3_EXECUTABLE:STRING={sys.executable}",
         f"-Dpybind11_DIR:STRING={pybind11.get_cmake_dir()}",
@@ -81,5 +82,5 @@ if __name__ == '__main__':
         name="mmu",
         packages=find_packages(),
         version=FULL_VERSION,
-        cmake_args=cmake_args
+        cmake_args=cmake_args,
     )
