@@ -156,8 +156,9 @@ def check_array(
     if "ensure_2d" not in kwargs:
         kwargs["ensure_2d"] = min_dim == 2
 
-    _, dtype = dtype_check(arr)
-    kwargs["dtype"] = dtype
+    _, kwargs["dtype"] = dtype_check(arr)
+    kwargs["order"] = _ORDER_SH[target_order]
+    arr = sk_check_array(arr, **kwargs)
 
     ndims = 0
     for s in arr.shape:
@@ -167,26 +168,4 @@ def check_array(
     elif ndims < min_dim:
         raise ValueError(f"Array must have at least {min_dim} dimensions.")
 
-    # check if array has assumed layout row, column wise
-    if axis is None:
-        axis = np.argmax(arr.shape)
-    if axis != target_axis:
-        arr = arr.T
-
-    # check if strides match the layout
-    if arr.flags.c_contiguous:
-        order = 0
-    elif arr.flags.f_contiguous:
-        order = 1
-    else:
-        order = -1
-    # the arr is not contiguous or is not aligned, set to target order
-    if (
-        (not arr.flags.aligned)
-        or (order == -1)
-        or (ndims > 1 and order != target_order)
-    ):
-        kwargs["order"] = _ORDER_SH[target_order]
-    else:
-        kwargs["order"] = None
-    return sk_check_array(arr, **kwargs)
+    return arr
