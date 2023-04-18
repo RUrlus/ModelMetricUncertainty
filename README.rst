@@ -30,6 +30,10 @@ MMU - Model-Metric-Uncertainty
 `Documentation <https://mmu.readthedocs.io/en/latest/>`_
 --------------------------------------------------------
 
+This package was developed as part of the paper `Pointwise sampling uncertainties on the Precision-Recall curve <https://proceedings.mlr.press/v206/urlus23a.html>`_.
+If you use this package as part of your research please cite using the CITATION file.
+
+
 Functionality
 -------------
 

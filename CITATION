@@ -1,0 +1,13 @@
+@InProceedings{pmlr-v206-urlus23a,
+  title = 	 {Pointwise sampling uncertainties on the Precision-Recall curve},
+  author =       {Urlus, Ralph E.Q. and Baak, Max and Collot, St\'ephane and Fridman Rojas, Ilan},
+  booktitle = 	 {Proceedings of The 26th International Conference on Artificial Intelligence and Statistics},
+  pages = 	 {8211--8232},
+  year = 	 {2023},
+  editor = 	 {Ruiz, Francisco and Dy, Jennifer and van de Meent, Jan-Willem},
+  series = 	 {Proceedings of Machine Learning Research},
+  month = 	 {25--27 Apr},
+  publisher =    {PMLR},
+  pdf = 	 {https://proceedings.mlr.press/v206/urlus23a/urlus23a.pdf},
+  url = 	 {https://proceedings.mlr.press/v206/urlus23a.html},
+}
