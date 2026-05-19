@@ -90,9 +90,11 @@ inline void constrained_fit_cmp(
     double* __restrict probas) {
     const double rec_ratio = (1.0 - rec) / rec;
     const double prec_ratio = (1.0 - prec) / prec;
-    probas[3] = (n3 / n4) * (1. / (1. + prec_ratio + rec_ratio));
-    probas[2] = rec_ratio * probas[3];
-    probas[1] = prec_ratio * probas[3];
+    const double inv_alpha = 1. / (1. + prec_ratio + rec_ratio);
+    const double p_tp = (n3 / n4) * inv_alpha;
+    probas[3] = p_tp;
+    probas[2] = rec_ratio * p_tp;
+    probas[1] = prec_ratio * p_tp;
     // guard against floating point noise resulting in negative probabilities
     probas[0] = std::max(1. - probas[1] - probas[2] - probas[3], 0.0);
 }  // constrained_fit_cmp
@@ -443,7 +445,6 @@ inline void multn_grid_curve_error(
 
     double prec;
     double score;
-    int64_t idx;
     // -- memory allocation --
 
     for (int64_t k = 0; k < n_conf_mats; k++) {
@@ -453,11 +454,11 @@ inline void multn_grid_curve_error(
 
         for (int64_t i = bounds.prec_idx_min; i < bounds.prec_idx_max; i++) {
             prec = prec_grid[i];
+            const int64_t odx = i * n_rec_bins;
             for (int64_t j = bounds.rec_idx_min; j < bounds.rec_idx_max; j++) {
                 score = prof_loglike(prec, rec_grid[j], nll_ptr, p);
-                idx = (i * n_rec_bins) + j;
-                if (score < scores[idx]) {
-                    scores[idx] = score;
+                if (score < scores[odx + j]) {
+                    scores[odx + j] = score;
                 }
             }
         }
