@@ -253,18 +253,20 @@ inline void multn_chi2_scores_mt(
     const int64_t* __restrict conf_mat,
     double* scores,
     const double epsilon = 1e-4) {
-    // -- memory allocation --
-    // memory to be used by constrained_fit_cmp
-    std::array<double, 4> probas;
-    double* p = probas.data();
+    // -- shared state (read-only after init) --
     auto nll_store = prof_loglike_t();
-    prof_loglike_t* nll_ptr = &nll_store;
-    set_prof_loglike_store(conf_mat, nll_ptr);
-    // -- memory allocation --
+    set_prof_loglike_store(conf_mat, &nll_store);
+    // -- shared state --
     const double max_val = 1.0 - epsilon;
 
-#pragma omp parallel shared(precs, recs, nll_ptr, scores)
+#pragma omp parallel shared(precs, recs, nll_store, scores)
     {
+        // -- thread-private memory --
+        std::array<double, 4> probas;
+        double* p = probas.data();
+        prof_loglike_t* nll_ptr = &nll_store;
+        // -- thread-private memory --
+
 #pragma omp for
         for (int64_t i = 0; i < n_points; ++i) {
             scores[i] = prof_loglike(
@@ -372,7 +374,7 @@ inline void multn_grid_error(
     std::array<double, 4> probas;
     double* p = probas.data();
 
-    std::array<int64_t, 3> bounds;
+    std::array<int64_t, 4> bounds;
     int64_t* idx_bounds = bounds.data();
 
     auto nll_store = prof_loglike_t();
