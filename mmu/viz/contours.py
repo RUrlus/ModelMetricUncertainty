@@ -59,7 +59,7 @@ def _plot_curve_contours(
     if equal_aspect:
         ax.set_aspect("equal")  # type: ignore
     # create custom legend with the correct colours and labels
-    handles = _create_pr_legend(colors, labels)
+    handles = _create_pr_legend(colors, labels, y_label=y_label, x_label=x_label)
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
     fig.tight_layout()
     return ax, handles
@@ -133,7 +133,7 @@ def _plot_contours(
     if equal_aspect:
         ax.set_aspect("equal")  # type: ignore
     # create custom legend with the correct colours and labels
-    handles = _create_pr_legend_scatter(colors, c_marker, labels, (y, x))
+    handles = _create_pr_legend_scatter(colors, c_marker, labels, (y, x), y_label=y_label, x_label=x_label)
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
     fig.tight_layout()
     return ax, handles

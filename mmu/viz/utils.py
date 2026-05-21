@@ -27,24 +27,47 @@ def _get_color_hexes(
     return hexes[n_offset : n_offset + n_colors][::-1]
 
 
-def _create_pr_legend(c_hexes, labels):
-    line = [Line2D([0], [0], color="black", alpha=0.6, label=r"$\hat{P}, \hat{R}$")]
+def _create_pr_legend(c_hexes, labels, y_label='Precision', x_label='Recall'):
+    # Map metric names to their LaTeX symbols
+    label_to_symbol = {
+        'Precision': r'\hat{P}',
+        'Recall': r'\hat{R}',
+        'TPR': r'\widehat{TPR}',
+        'FPR': r'\widehat{FPR}',
+        'PPN': r'\widehat{PPN}',
+    }
+    y_sym = label_to_symbol.get(y_label, rf'\widehat{{{y_label}}}')
+    x_sym = label_to_symbol.get(x_label, rf'\widehat{{{x_label}}}')
+    curve_label = rf"${x_sym}, {y_sym}$"
+
+    line = [Line2D([0], [0], color="black", alpha=0.6, label=curve_label)]
     patches = [
         Patch(facecolor=c, edgecolor=c, label=l) for c, l in zip(c_hexes, labels)
     ]
     return line + patches  # type: ignore
 
 
-def _create_pr_legend_scatter(c_hexes, c_marker, labels, vals):
+def _create_pr_legend_scatter(c_hexes, c_marker, labels, vals, y_label='Precision', x_label='Recall'):
+    # Map metric names to their LaTeX symbols
+    label_to_symbol = {
+        'Precision': r'\hat{P}',
+        'Recall': r'\hat{R}',
+        'TPR': r'\widehat{TPR}',
+        'FPR': r'\widehat{FPR}',
+        'PPN': r'\widehat{PPN}',
+    }
+    y_sym = label_to_symbol.get(y_label, rf'\widehat{{{y_label}}}')
+    x_sym = label_to_symbol.get(x_label, rf'\widehat{{{x_label}}}')
+
     if vals:
         label = (
-            r"$\hat{P}$"
-            + f"={round(vals[0], 3)}, "
-            + r"$\hat{R}$"
-            + f"={round(vals[1], 3)}"
+            rf"${x_sym}$"
+            + f"={round(vals[1], 3)}, "
+            + rf"${y_sym}$"
+            + f"={round(vals[0], 3)}"
         )
     else:
-        label = r"$\hat{P}$, $\hat{R}$"
+        label = rf"${x_sym}$, ${y_sym}$"
 
     line = [
         Line2D(
