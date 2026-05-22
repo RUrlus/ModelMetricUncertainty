@@ -7,6 +7,7 @@
 #include <mmu/bindings/metrics.hpp>
 #include <mmu/bindings/pr_multn_loglike.hpp>
 #include <mmu/bindings/roc_multn_loglike.hpp>
+#include <mmu/bindings/recall_ppn_multn_loglike.hpp>
 #include <mmu/bindings/utils.hpp>
 #include <mmu/core/common.hpp>
 
@@ -52,6 +53,15 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     roc::bind_multn_chi2_score(m);
     roc::bind_multn_chi2_scores(m);
 
+    // recall_ppn_multn_loglike (Wilks)
+    recall_ppn::bind_multn_error(m);
+    recall_ppn::bind_multn_grid_error(m);
+    recall_ppn::bind_multn_grid_curve_error(m);
+    recall_ppn::bind_multn_chi2_score(m);
+    recall_ppn::bind_multn_chi2_scores(m);
+    recall_ppn::bind_recall_ppn(m);
+    recall_ppn::bind_recall_ppn_2d(m);
+
 #ifdef MMU_HAS_OPENMP_SUPPORT
     // pr_multn_loglike MT (KEEP)
     pr::bind_multn_error_mt(m);
@@ -62,6 +72,11 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     roc::bind_multn_error_mt(m);
     roc::bind_multn_grid_curve_error_mt(m);
     roc::bind_multn_chi2_scores_mt(m);
+
+    // recall_ppn_multn_loglike MT
+    recall_ppn::bind_multn_error_mt(m);
+    recall_ppn::bind_multn_grid_curve_error_mt(m);
+    recall_ppn::bind_multn_chi2_scores_mt(m);
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
 #ifndef OS_WIN
