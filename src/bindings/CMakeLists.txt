@@ -20,6 +20,8 @@ pybind11_add_module(${MODNAME}
         ${MMU_BINDINGS_PATH}/pr_multn_loglike.cpp
         ${MMU_API_PATH}/roc_multn_loglike.cpp
         ${MMU_BINDINGS_PATH}/roc_multn_loglike.cpp
+        ${MMU_API_PATH}/recall_ppn_multn_loglike.cpp
+        ${MMU_BINDINGS_PATH}/recall_ppn_multn_loglike.cpp
 )
 
 TARGET_LINK_LIBRARIES(${MODNAME} PUBLIC mmu::mmu)
