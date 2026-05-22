@@ -42,14 +42,17 @@ pr_curve = precision_recall_curve
 from mmu.methods import PRU
 from mmu.methods import PRCU
 from mmu.methods import PrecisionRecallUncertainty
-from mmu.methods import PrecisionRecallSimulatedUncertainty
 from mmu.methods import PrecisionRecallCurveUncertainty
 
 from mmu.methods import ROCU
 from mmu.methods import ROCCU
 from mmu.methods import ROCUncertainty
-from mmu.methods import ROCSimulatedUncertainty
 from mmu.methods import ROCCurveUncertainty
+
+from mmu.methods import RPPNU
+from mmu.methods import RPPNCU
+from mmu.methods import RecallPPNUncertainty
+from mmu.methods import RecallPPNCurveUncertainty
 
 from mmu.commons.utils import generate_data
 
@@ -82,14 +85,18 @@ __all__ = [
     "PRU",
     "PRCU",
     "PrecisionRecallUncertainty",
-    "PrecisionRecallSimulatedUncertainty",
     "PrecisionRecallCurveUncertainty",
 
     "ROCU",
     "ROCCU",
     "ROCUncertainty",
-    "ROCSimulatedUncertainty",
     "ROCCurveUncertainty",
+
+    "RPPNU",
+    "RPPNCU",
+    "RecallPPNUncertainty",
+    "RecallPPNCurveUncertainty",
+
     # modules
     "metrics",
     "methods",
