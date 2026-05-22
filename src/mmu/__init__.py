@@ -1,3 +1,9 @@
+import importlib.metadata
+import os
+
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "True")
+os.environ.setdefault("KMP_INIT_AT_FORK", "FALSE")
+
 import mmu.metrics as metrics
 import mmu.methods as methods
 
@@ -56,9 +62,10 @@ from mmu.methods import RecallPPNCurveUncertainty
 
 from mmu.commons.utils import generate_data
 
-from mmu.version import full_version as __version__
+__version__ = importlib.metadata.version("mmu")
 
 __all__ = [
+    "__version__",
     "_MMU_MT_SUPPORT",
     # funcs
     "auto_thresholds",
