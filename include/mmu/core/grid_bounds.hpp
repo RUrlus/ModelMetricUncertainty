@@ -1,4 +1,4 @@
-/* grid_bounds.hpp -- Utility functions used in *_multn_loglike and *_bvn_grid
+/* grid_bounds.hpp -- Utility functions used in *_multn_loglike
  * Copyright 2022 Ralph Urlus
  */
 #ifndef INCLUDE_MMU_CORE_GRID_BOUNDS_HPP_
@@ -6,8 +6,8 @@
 
 #include <algorithm>
 #include <array>
-#include <mmu/core/bvn_error.hpp>
 #include <mmu/core/common.hpp>
+#include <mmu/core/metric_sigma.hpp>
 
 /* conf_mat layout:
  *  0 TN
