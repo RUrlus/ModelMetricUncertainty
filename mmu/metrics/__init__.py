@@ -18,11 +18,6 @@ from mmu.metrics.metrics import precision_recall_curve
 from mmu.metrics.metrics import ROC_curve
 from mmu.metrics.utils import auto_thresholds
 
-from mmu.metrics.pr_lep import precision_recall_bvn_uncertainty
-from mmu.metrics.pr_lep import precision_recall_bvn_uncertainty_runs
-from mmu.metrics.pr_lep import precision_recall_bvn_uncertainty_confusion_matrix
-from mmu.metrics.pr_lep import precision_recall_bvn_uncertainty_confusion_matrices
-
 __all__ = [
     "auto_thresholds",
     "binary_metrics",
@@ -43,8 +38,4 @@ __all__ = [
     "precision_recall",
     "precision_recall_curve",
     "ROC_curve",
-    "precision_recall_bvn_uncertainty",
-    "precision_recall_bvn_uncertainty_runs",
-    "precision_recall_bvn_uncertainty_confusion_matrix",
-    "precision_recall_bvn_uncertainty_confusion_matrices",
 ]

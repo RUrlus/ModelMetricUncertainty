@@ -23,23 +23,18 @@ from mmu.methods.pointbase import BaseUncertainty
 class BaseCurveUncertainty:
     """Compute joint uncertainty for a curve like Precision-Recall or ROC.
 
-    The joint statistical uncertainty can be computed using:
+    The joint statistical uncertainty is computed using the Multinomial
+    Profile Log-Likelihood method (Wilks' theorem).
 
-    Multinomial method:
-
-    Model's the uncertainty using profile log-likelihoods between
+    This method models the uncertainty using profile log-likelihoods between
     the observed and most conservative confusion matrix for a point.
-    Unlike the Bivariate-Normal/Elliptical approach,
-    this approach is valid for relatively low statistic samples and
-    at the edges of the curve. However, it does not allow one to
-    add the training sample uncertainty to it.
+    Based on Wilks' theorem, the test statistic follows a chi-squared
+    distribution with 2 degrees of freedom.
 
-    Bivariate Normal / Elliptical method:
-
-    Model's the linearly propagated errors of the confusion matrix as a
-    bivariate Normal distribution. Note that this method is not valid
-    for low statistic sets or for points close to 1.0/0.0.
-    In these scenarios the Multinomial method should be used.
+    This approach is valid for:
+    - Low-statistic samples
+    - Edge cases (near y=1.0, x=0.0)
+    - Any confusion matrix counts
 
     Attributes
     ----------
@@ -57,9 +52,9 @@ class BaseCurveUncertainty:
         - Recall in Precision-Recall
         - FPR    in ROC
     chi2_scores : np.ndarray[float64]
-        the sum of squared z scores which follow a chi2 distribution with
-        two degrees of freedom. Has shape (`n_bins`, `n_bins`) with bounds
-        `y_bounds` on the y-axis and `x_bounds` on the x-axis.  # TODO switch
+        the chi2 scores which follow a chi2 distribution with
+        two degrees of freedom. Has shape (`n_y_bins`, `n_x_bins`) with bounds
+        `y_grid` on the y-axis and `x_grid` on the x-axis.
     thresholds : np.ndarray[float64], Optional
         the inclusive classification/discrimination thresholds used to compute
         the confusion matrices. Is None when the class is instantiated with
@@ -74,13 +69,10 @@ class BaseCurveUncertainty:
     epsilon : float
         the value used to prevent the bounds from reaching
         the point (y=1.0, x=0.0) which would result in NaNs.
-    cov_mats : np.ndarray[float64], optional
-        flattened covariance matrices for each threshold.
-        **Only set when method is bivariate/elliptical.**
     y_label : str
-        the label of the y-avis.
+        the label of the y-axis.
     x_label : str
-        the label of the x-avis.
+        the label of the x-axis.
     """
 
     def __init__(self):
@@ -94,62 +86,13 @@ class BaseCurveUncertainty:
         self.n_sigmas = None
         self.epsilon = None
         self.thresholds = None
-        self.cov_mats = None
-        self.total_cov_mats = None
-        self._has_cov = False
-        self._moptions = {
-            "mult": {"mult", "multinomial"},
-            "bvn": {"bvn", "bivariate", "elliptical"},
-        }
-        self.bvn_grid_curve_error_func = None
         self.multn_grid_curve_error_func = None
         self.metric_2d_func = None
-        self.bvn_grid_curve_error_mt_func = None
         self.multn_grid_curve_error_mt_func = None
         self.y_label = None
         self.x_label = None
 
-    def _compute_bvn_scores(self, n_sigmas, epsilon, n_threads):
-        n_threads = _check_n_threads(n_threads)
-
-        # -- validate n_sigmas arg
-        self._parse_n_sigmas(n_sigmas)
-
-        # -- validate epsilon arg
-        self._parse_epsilon(epsilon)
-
-        # compute scores
-        if _MMU_MT_SUPPORT and n_threads > 1:
-            y_x, self.chi2_scores = self.bvn_grid_curve_error_mt_func(
-                self.n_conf_mats,
-                self.y_grid,
-                self.x_grid,
-                conf_mat=self.conf_mats,
-                n_sigmas=self.n_sigmas,
-                epsilon=self.epsilon,
-                n_threads=n_threads,
-            )
-        else:
-            if n_threads > 1:
-                warnings.warn(
-                    "mmu was not compiled with multi-threading enabled,"
-                    " ignoring `n_threads`"
-                )
-            y_x, self.chi2_scores = self.bvn_grid_curve_error_func(
-                self.n_conf_mats,
-                self.y_grid,
-                self.x_grid,
-                conf_mat=self.conf_mats,
-                n_sigmas=self.n_sigmas,
-                epsilon=self.epsilon,
-            )
-
-        # compute precision and recall
-        self.y = y_x[:, 0]
-        self.x = y_x[:, 1]
-        self.cov_mats = y_x[:, 2:]
-
-    def _compute_multn_scores(self, n_sigmas, epsilon, n_threads):
+    def _compute_scores(self, n_sigmas, epsilon, n_threads):
         n_threads = _check_n_threads(n_threads)
 
         # -- validate n_sigmas arg
@@ -186,20 +129,6 @@ class BaseCurveUncertainty:
                 conf_mat=self.conf_mats,
                 n_sigmas=self.n_sigmas,
                 epsilon=self.epsilon,
-            )
-
-    def _parse_method(self, method):
-        if method in self._moptions["mult"]:
-            self.method = method
-            self._compute_scores = self._compute_multn_scores
-        elif method in self._moptions["bvn"]:
-            self._has_cov = True
-            self.method = method
-            self._compute_scores = self._compute_bvn_scores
-        else:
-            raise ValueError(
-                "``method`` must be one of 'multinomial', 'mult', 'elliptical'"
-                ", 'bivariate', 'bvn'"
             )
 
     def _parse_thresholds(self, thresholds, scores, max_steps, seed):
@@ -265,7 +194,6 @@ class BaseCurveUncertainty:
         y: np.ndarray,
         scores: np.ndarray,
         thresholds: Optional[np.ndarray] = None,
-        method: str = "multinomial",
         n_bins: Union[int, Tuple[int], List[int], np.ndarray, None] = 1000,
         n_sigmas: Union[int, float] = 6.0,
         epsilon: float = 1e-12,
@@ -288,10 +216,6 @@ class BaseCurveUncertainty:
             determined such that each thresholds results in a different
             confusion matrix. Note that the maximum number of thresholds can
             be set using `max_steps`.
-        method : str, default='multinomial',
-            which method to use, options are the Multinomial approach
-            {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
-            {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
         n_bins : int, array-like[int], default=1000
             the number of bins in the y/x grid for which the
             uncertainty is computed. If an int the `chi2_scores` will be a
@@ -318,7 +242,6 @@ class BaseCurveUncertainty:
 
         """
         self = cls()
-        self._parse_method(method)
         self._parse_thresholds(thresholds, scores, auto_max_steps, auto_seed)
         self._parse_nbins(n_bins)
         self.conf_mats = confusion_matrices_thresholds(
@@ -332,7 +255,6 @@ class BaseCurveUncertainty:
     def from_confusion_matrices(
         cls,
         conf_mats: np.ndarray,
-        method: str = "multinomial",
         n_bins: Union[int, Tuple[int], List[int], np.ndarray, None] = 1000,
         n_sigmas: Union[int, float] = 6.0,
         epsilon: float = 1e-12,
@@ -347,10 +269,6 @@ class BaseCurveUncertainty:
             confusion matrix as returned by mmu.confusion_matrix, i.e.
             with layout [0, 0] = TN, [0, 1] = FP, [1, 0] = FN, [1, 1] = TP or
             the flattened equivalent.
-        method : str, default='multinomial',
-            which method to use, options are the Multinomial approach
-            {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
-            {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
         n_bins : int, array-like[int], default=1000
             the number of bins in the y/x grid for which the
             uncertainty is computed. If an int the `chi2_scores` will be a
@@ -371,7 +289,6 @@ class BaseCurveUncertainty:
 
         """
         self = cls()
-        self._parse_method(method)
         self.conf_mats = check_array(
             conf_mats,
             min_dim=2,
@@ -393,7 +310,6 @@ class BaseCurveUncertainty:
         X: np.ndarray,
         y: np.ndarray,
         thresholds: Optional[np.ndarray] = None,
-        method: str = "multinomial",
         n_bins: Union[int, Tuple[int], List[int], np.ndarray, None] = 1000,
         n_sigmas: Union[int, float] = 6.0,
         epsilon: float = 1e-12,
@@ -415,10 +331,6 @@ class BaseCurveUncertainty:
         threshold : float, default=0.5
             the classification threshold to which the classifier score is evaluated,
             is inclusive.
-        method : str, default='multinomial',
-            which method to use, options are the Multinomial approach
-            {'multinomial', 'mult'} or the bivariate-normal/elliptical approach
-            {'bvn', 'bivariate', 'elliptical'}. Default is 'multinomial'.
         n_bins : int, array-like[int], default=1000
             the number of bins in the y/x grid for which the
             uncertainty is computed. If an int the `chi2_scores` will be a
@@ -445,7 +357,6 @@ class BaseCurveUncertainty:
 
         """
         self = cls()
-        self._parse_method(method)
         if not hasattr(clf, "predict_proba"):
             raise TypeError("`clf` must have a method `predict_proba`")
         score = clf.predict_proba(X)[:, 1]
@@ -467,31 +378,6 @@ class BaseCurveUncertainty:
             the confusion matrix of the test set
         """
         return confusion_matrices_to_dataframe(self.conf_mats)
-
-    def get_cov_mats(self):
-        """Get the covariance matrices over the thresholds.
-
-        Returns
-        -------
-        cov_df = pd.DataFrame
-            the flattened covariance matrix and the thresholds
-
-        Raises
-        ------
-        NotImplementedError
-            when method is not Bivariate-Normal/Elliptical
-
-        """
-        if not self._has_cov:
-            raise NotImplementedError(
-                "`cov_mats` are not computed when method is not"
-                " Bivariate-Normal/Elliptical."
-            )
-        cov_df = pd.DataFrame(
-            self.cov_mats, columns=[f"var_{self.y_label.lower()}", "cov", "cov", f"var_{self.y_label.lower()}"]
-        )
-        cov_df["thresholds"] = self.thresholds
-        return cov_df
 
     def _get_critical_values_std(self, n_std):
         """Compute the critical values for a chi2 with 2df using the continuity
@@ -589,7 +475,7 @@ class BaseCurveUncertainty:
         Returns
         -------
         ax : matplotlib.axes.Axes
-            the axis with the ellipse added to it
+            the axis with the contour added to it
 
         """
         if self.chi2_scores is None:

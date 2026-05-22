@@ -250,32 +250,9 @@ class RecallPPNUncertainty(BaseUncertainty):
         self.multn_error_mt_func = _recall_ppn_multn_error
         self.multn_chi2_scores_mt_func = _recall_ppn_multn_chi2_scores
 
-        # BVN is not supported for Recall-PPN, set to None
-        self.bvn_cov_func = None
-        self.bvn_chi2_score_func = None
-        self.bvn_chi2_scores_func = None
-        self.bvn_chi2_scores_mt_func = None
-
         self.y_label = "PPN"
         self.x_label = "Recall"
 
-        # Override moptions to only support multinomial
-        self._moptions = {
-            "mult": {"mult", "multinomial"},
-            "bvn": set(),  # BVN not supported
-        }
-
-    def _parse_method(self, method):
-        """Override to only allow multinomial method for Recall-PPN."""
-        if method in self._moptions["mult"]:
-            self.method = method
-            self._compute_scores = self._compute_multn_scores
-        else:
-            msg = (
-                "Only 'multinomial' or 'mult' method is supported for RecallPPNUncertainty. "
-                + "The bivariate-normal/elliptical method is not available for this metric pair."
-            )
-            raise ValueError(msg)
 
     @property
     def recall(self):
@@ -372,29 +349,9 @@ class RecallPPNCurveUncertainty(BaseCurveUncertainty):
         # Use same function for MT version (Python is single-threaded here)
         self.multn_grid_curve_error_mt_func = _recall_ppn_multn_grid_curve_error
 
-        # BVN is not supported for Recall-PPN, set to None
-        self.bvn_grid_curve_error_func = None
-        self.bvn_grid_curve_error_mt_func = None
-
         self.y_label = "PPN"
         self.x_label = "Recall"
 
-        # Override moptions to only support multinomial
-        self._moptions = {
-            "mult": {"mult", "multinomial"},
-            "bvn": set(),  # BVN not supported
-        }
-
-    def _parse_method(self, method):
-        """Override to only allow multinomial method for Recall-PPN."""
-        if method in self._moptions["mult"]:
-            self.method = method
-            self._compute_scores = self._compute_multn_scores
-        else:
-            raise ValueError(
-                "Only 'multinomial' or 'mult' method is supported for RecallPPNCurveUncertainty. "
-                "The bivariate-normal/elliptical method is not available for this metric pair."
-            )
 
     @property
     def recall(self):
