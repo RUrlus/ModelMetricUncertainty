@@ -16,12 +16,6 @@ pybind11_add_module(${MODNAME}
         ${MMU_BINDINGS_PATH}/confusion_matrix.cpp
         ${MMU_API_PATH}/metrics.cpp
         ${MMU_BINDINGS_PATH}/metrics.cpp
-        ${MMU_API_PATH}/bvn_error.cpp
-        ${MMU_BINDINGS_PATH}/bvn_error.cpp
-        ${MMU_API_PATH}/pr_bvn_grid.cpp
-        ${MMU_BINDINGS_PATH}/pr_bvn_grid.cpp
-        ${MMU_API_PATH}/roc_bvn_grid.cpp
-        ${MMU_BINDINGS_PATH}/roc_bvn_grid.cpp
         ${MMU_API_PATH}/pr_multn_loglike.cpp
         ${MMU_BINDINGS_PATH}/pr_multn_loglike.cpp
         ${MMU_API_PATH}/roc_multn_loglike.cpp

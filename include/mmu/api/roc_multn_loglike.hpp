@@ -77,38 +77,6 @@ f64arr multn_grid_curve_error_mt(
     const int64_t n_threads);
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-py::tuple multn_sim_error(
-    const int64_t n_sims,
-    const int64_t n_bins,
-    const i64arr& conf_mat,
-    const double n_sigmas,
-    const double epsilon,
-    const uint64_t seed,
-    const uint64_t stream);
-
-#ifdef MMU_HAS_OPENMP_SUPPORT
-py::tuple multn_sim_error_mt(
-    const int64_t n_sims,
-    const int64_t n_bins,
-    const i64arr& conf_mat,
-    const double n_sigmas,
-    const double epsilon,
-    const uint64_t seed,
-    const int n_threads);
-#endif  // MMU_HAS_OPENMP_SUPPORT
-        //
-#ifdef MMU_HAS_OPENMP_SUPPORT
-f64arr multn_grid_sim_curve_error_mt(
-    const int64_t n_sims,
-    const int64_t n_conf_mats,
-    const f64arr& prec_grid,
-    const f64arr& rec_grid,
-    const i64arr& conf_mat,
-    const double n_sigmas,
-    const double epsilon,
-    const uint64_t seed,
-    const int64_t n_threads);
-#endif  // MMU_HAS_OPENMP_SUPPORT
 
 }  // namespace roc
 }  // namespace api
