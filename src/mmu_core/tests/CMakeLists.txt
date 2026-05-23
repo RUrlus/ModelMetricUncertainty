@@ -4,14 +4,13 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
 #                               PYTHON EXTENSION                               #
 ################################################################################
 SET(MODNAME "_mmu_core_tests")
-SET(MMU_EXTENSION_TEST_PATH "${PROJECT_SOURCE_DIR}/src/tests")
+SET(MMU_EXTENSION_TEST_PATH "${PROJECT_SOURCE_DIR}/src/mmu_core/tests")
 
 MESSAGE(STATUS "MMU: Building tests")
 
 pybind11_add_module(${MODNAME}
     MODULE
         ${MMU_EXTENSION_TEST_PATH}/bindings.cpp
-        ${MMU_EXTENSION_TEST_PATH}/math.cpp
         ${MMU_EXTENSION_TEST_PATH}/numpy.cpp
 )
 
@@ -26,5 +25,5 @@ SET_PROPERTY(TARGET ${MODNAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 if(SKBUILD)
     INSTALL(TARGETS ${MODNAME} LIBRARY DESTINATION "${PROJECT_NAME}/lib")
 ELSE ()
-    INSTALL(TARGETS ${MODNAME} LIBRARY DESTINATION "${PROJECT_SOURCE_DIR}/mmu/lib")
+    INSTALL(TARGETS ${MODNAME} LIBRARY DESTINATION "${PROJECT_SOURCE_DIR}/src/mmu/lib")
 ENDIF ()
