@@ -1,12 +1,10 @@
 /* grid_bounds.hpp -- Template-based grid bounds for multinomial log-likelihood
- * Copyright 2022 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_CORE_MULTN_LOGLIKE_GRID_BOUNDS_HPP_
-#define INCLUDE_MMU_CORE_MULTN_LOGLIKE_GRID_BOUNDS_HPP_
+#pragma once
 
 #include <algorithm>
 #include <array>
-#include <cinttypes>
 #include <cmath>
 #include <stdexcept>
 
@@ -24,7 +22,6 @@
 namespace mmu {
 namespace core {
 
-// Re-export linspace from details namespace (for use in core.hpp)
 namespace details {
 
 inline void linspace(
@@ -52,10 +49,6 @@ inline void linspace(
 
 namespace multn {
 
-// =============================================================================
-// Metric Sigma Computation (for grid bounds)
-// =============================================================================
-
 /**
  * Compute metric value and standard deviation for grid bounds.
  * Uses linear error propagation over Poisson errors.
@@ -66,13 +59,12 @@ namespace multn {
  *   metrics[2] = recall
  *   metrics[3] = recall_sigma
  */
-template<typename Profile>
+template <typename Profile>
 inline void compute_metric_sigma(
     const int64_t* __restrict conf_mat,
     double* __restrict metrics);
 
-// Precision-Recall specialization
-template<>
+template <>
 inline void compute_metric_sigma<PrecisionRecallProfile>(
     const int64_t* __restrict conf_mat,
     double* __restrict metrics) {
@@ -136,16 +128,16 @@ inline void compute_metric_sigma<PrecisionRecallProfile>(
 }
 
 // ROC (TPR-FPR) specialization
-template<>
+template <>
 inline void compute_metric_sigma<ROCProfile>(
     const int64_t* __restrict conf_mat,
     double* __restrict metrics) {
     // Y: TPR = TP / (TP + FN)
-    const int64_t iterm1_Y = conf_mat[3]; // TP
+    const int64_t iterm1_Y = conf_mat[3];  // TP
     const bool term1_Y_nonzero = iterm1_Y > 0;
     auto term1_Y = static_cast<double>(iterm1_Y);
 
-    const int64_t iterm2_Y = conf_mat[2]; // FN
+    const int64_t iterm2_Y = conf_mat[2];  // FN
     const bool term2_Y_nonzero = iterm2_Y > 0;
     auto term2_Y = static_cast<double>(iterm2_Y);
 
@@ -163,11 +155,11 @@ inline void compute_metric_sigma<ROCProfile>(
         / static_cast<double>(std::pow(term1_Y + term2_Y, 3.0)));
 
     // X: FPR = FP / (FP + TN)
-    const int64_t iterm1_X = conf_mat[1]; // FP
+    const int64_t iterm1_X = conf_mat[1];  // FP
     const bool term1_X_nonzero = iterm1_X > 0;
     auto term1_X = static_cast<double>(iterm1_X);
 
-    const int64_t iterm2_X = conf_mat[0]; // TN
+    const int64_t iterm2_X = conf_mat[0];  // TN
     const bool term2_X_nonzero = iterm2_X > 0;
     auto term2_X = static_cast<double>(iterm2_X);
 
@@ -191,11 +183,10 @@ inline void compute_metric_sigma<ROCProfile>(
 }
 
 // Recall-PPN specialization
-template<>
+template <>
 inline void compute_metric_sigma<RecallPPNProfile>(
     const int64_t* __restrict conf_mat,
     double* __restrict metrics) {
-    // Y: PPN = (TN + FN) / N
     const int64_t tn = conf_mat[0];
     const int64_t fp = conf_mat[1];
     const int64_t fn = conf_mat[2];
@@ -203,6 +194,7 @@ inline void compute_metric_sigma<RecallPPNProfile>(
     const int64_t n_total = tn + fp + fn + tp;
     const auto n = static_cast<double>(n_total);
 
+    // Y: PPN = (TN + FN) / N
     const auto ppn = static_cast<double>(tn + fn) / n;
     // PPN sigma using binomial standard error approximation
     const double ppn_sigma = std::sqrt(ppn * (1.0 - ppn) / n);
@@ -219,16 +211,18 @@ inline void compute_metric_sigma<RecallPPNProfile>(
         const auto tp_d = static_cast<double>(tp);
         const auto fn_d = static_cast<double>(fn);
         if (tp > 0 && fn > 0) {
-            recall_sigma = std::sqrt(
-                (tp_d * fn_d) / std::pow(n_pos_d, 3.0));
+            recall_sigma = std::sqrt((tp_d * fn_d) / std::pow(n_pos_d, 3.0));
         } else if (tp == n_pos) {
             // recall == 1
-            const double recall_for_sigma = static_cast<double>(n_pos - 1) / n_pos_d;
-            recall_sigma = std::sqrt((recall_for_sigma * (1 - recall_for_sigma)) / n_pos_d);
+            const double recall_for_sigma
+                = static_cast<double>(n_pos - 1) / n_pos_d;
+            recall_sigma = std::sqrt(
+                (recall_for_sigma * (1 - recall_for_sigma)) / n_pos_d);
         } else {
             // recall == 0
             const double recall_for_sigma = 1.0 / n_pos_d;
-            recall_sigma = std::sqrt((recall_for_sigma * (1 - recall_for_sigma)) / n_pos_d);
+            recall_sigma = std::sqrt(
+                (recall_for_sigma * (1 - recall_for_sigma)) / n_pos_d);
         }
     } else {
         recall = 0.0;
@@ -240,7 +234,6 @@ inline void compute_metric_sigma<RecallPPNProfile>(
     metrics[2] = recall;
     metrics[3] = recall_sigma;
 }
-
 
 // =============================================================================
 // Grid Bounds Functions
@@ -256,13 +249,12 @@ inline void compute_metric_sigma<RecallPPNProfile>(
  * @param n_sigmas   Number of sigmas for grid bounds
  * @param epsilon    Clipping value to avoid boundary issues
  */
-template<typename Profile>
+template <typename Profile>
 inline void get_grid_bounds(
     const int64_t* __restrict conf_mat,
     double* bounds,
-    const double n_sigmas = 6.0,
-    const double epsilon = 1e-4) {
-
+    const double n_sigmas,
+    const double epsilon) {
     double max_y_clip, max_x_clip;
     Profile::get_max_clips(conf_mat, epsilon, max_y_clip, max_x_clip);
 
@@ -293,7 +285,7 @@ inline void get_grid_bounds(
  * @param n_sigmas   Number of sigmas for grid bounds
  * @param epsilon    Clipping value to avoid boundary issues
  */
-template<typename Profile>
+template <typename Profile>
 inline void get_grid_bounds(
     const int64_t n_y_bins,
     const int64_t n_x_bins,
@@ -301,9 +293,8 @@ inline void get_grid_bounds(
     const double* __restrict y_grid,
     const double* __restrict x_grid,
     int64_t* result,
-    const double n_sigmas = 6.0,
-    const double epsilon = 1e-4) {
-
+    const double n_sigmas,
+    const double epsilon) {
     double max_y_clip, max_x_clip;
     Profile::get_max_clips(conf_mat, epsilon, max_y_clip, max_x_clip);
 
@@ -312,7 +303,8 @@ inline void get_grid_bounds(
     compute_metric_sigma<Profile>(conf_mat, metric_vals.data());
 
     const double ns_y_sigma = n_sigmas * metric_vals[1];
-    const double y_max = std::min(metric_vals[0] + ns_y_sigma, 1.0 - max_y_clip);
+    const double y_max
+        = std::min(metric_vals[0] + ns_y_sigma, 1.0 - max_y_clip);
     const double y_min = std::max(metric_vals[0] - ns_y_sigma, epsilon);
 
     int64_t y_idx_min = 0;
@@ -334,7 +326,8 @@ inline void get_grid_bounds(
     result[1] = y_idx_max <= n_y_bins ? y_idx_max : n_y_bins;
 
     const double ns_x_sigma = n_sigmas * metric_vals[3];
-    const double x_max = std::min(metric_vals[2] + ns_x_sigma, 1.0 - max_x_clip);
+    const double x_max
+        = std::min(metric_vals[2] + ns_x_sigma, 1.0 - max_x_clip);
     const double x_min = std::max(metric_vals[2] - ns_x_sigma, epsilon);
 
     int64_t x_idx_min = 0;
@@ -356,18 +349,7 @@ inline void get_grid_bounds(
     result[3] = x_idx_max <= n_x_bins ? x_idx_max : n_x_bins;
 }
 
-
-// =============================================================================
-// Generic GridBounds Class
-// =============================================================================
-
-/**
- * Class for computing grid bounds efficiently across multiple confusion matrices.
- * Used in multn_grid_curve_error functions.
- *
- * @tparam Profile  The metric profile class
- */
-template<typename Profile>
+template <typename Profile>
 class GenericGridBounds {
     const int64_t n_y_bins;
     const int64_t n_x_bins;
@@ -457,10 +439,6 @@ class GenericGridBounds {
     }
 };
 
-
 }  // namespace multn
 }  // namespace core
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_CORE_MULTN_LOGLIKE_GRID_BOUNDS_HPP_
-

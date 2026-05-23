@@ -1,6 +1,6 @@
 /* recall_ppn_multn_loglike.cpp -- Python bindings of multinomial log-likelihood
  * uncertainty for Recall-PPN
- * Copyright 2022 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
 #include <mmu/bindings/recall_ppn_multn_loglike.hpp>
 
@@ -314,4 +314,3 @@ void bind_recall_ppn_2d(py::module& m) {
 }  // namespace recall_ppn
 }  // namespace bindings
 }  // namespace mmu
-

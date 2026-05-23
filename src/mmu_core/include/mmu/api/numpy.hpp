@@ -1,8 +1,7 @@
 /* numpy.hpp -- Utility functions used to inferace with Numpy arrays
- * Copyright 2021 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_API_NUMPY_HPP_
-#define INCLUDE_MMU_API_NUMPY_HPP_
+#pragma once
 
 /* pybind11 include required even if not explicitly used
  * to prevent link with pythonXX_d.lib on Win32
@@ -19,7 +18,6 @@
 
 #include <algorithm>  // for min_element, max_element, sort
 #include <cstring>    // for memset
-#include <utility>    // for swap
 #include <vector>
 
 #include <mmu/core/common.hpp>
@@ -270,5 +268,3 @@ inline bool is_well_behaved_finite(const py::array_t<T>& arr) {
 
 }  // namespace npy
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_API_NUMPY_HPP_

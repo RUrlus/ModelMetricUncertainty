@@ -1,13 +1,12 @@
 /* roc.hpp -- ROC (TPR-FPR) namespace aliases for multinomial log-likelihood
- * Copyright 2022 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_CORE_MULTN_LOGLIKE_ROC_HPP_
-#define INCLUDE_MMU_CORE_MULTN_LOGLIKE_ROC_HPP_
+#pragma once
 
 #include <mmu/core/multn_loglike/common.hpp>
-#include <mmu/core/multn_loglike/metrics.hpp>
-#include <mmu/core/multn_loglike/grid_bounds.hpp>
 #include <mmu/core/multn_loglike/core.hpp>
+#include <mmu/core/multn_loglike/grid_bounds.hpp>
+#include <mmu/core/multn_loglike/metrics.hpp>
 
 namespace mmu {
 namespace core {
@@ -32,7 +31,6 @@ inline void set_store(
     multn::set_store<Profile>(conf_mat, store);
 }
 
-
 // =============================================================================
 // Profile Log-Likelihood Functions
 // =============================================================================
@@ -44,8 +42,10 @@ inline void set_store(
  * @param tpr       True Positive Rate value
  * @param fpr       False Positive Rate value
  * @param store     Precomputed store with nll_h0 and confusion matrix values
- * @param p_h0      Output array for constrained probabilities [p_tn, p_fp, p_fn, p_tp]
- * @return          The profile log-likelihood ratio statistic (chi2 distributed with df=2)
+ * @param p_h0      Output array for constrained probabilities [p_tn, p_fp,
+ * p_fn, p_tp]
+ * @return          The profile log-likelihood ratio statistic (chi2 distributed
+ * with df=2)
  */
 inline double prof_loglike(
     const double tpr,
@@ -74,7 +74,6 @@ inline double prof_loglike(
     double* __restrict p_h0) {
     return multn::prof_loglike<Profile>(tpr, fpr, n, conf_mat, p_h0);
 }
-
 
 // =============================================================================
 // Chi2 Score Functions
@@ -114,7 +113,8 @@ inline void multn_chi2_scores(
     const int64_t* __restrict conf_mat,
     double* scores,
     const double epsilon = 1e-4) {
-    multn::multn_chi2_scores<Profile>(n_points, tprs, fprs, conf_mat, scores, epsilon);
+    multn::multn_chi2_scores<Profile>(
+        n_points, tprs, fprs, conf_mat, scores, epsilon);
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
@@ -135,10 +135,10 @@ inline void multn_chi2_scores_mt(
     const int64_t* __restrict conf_mat,
     double* scores,
     const double epsilon = 1e-4) {
-    multn::multn_chi2_scores_mt<Profile>(n_points, tprs, fprs, conf_mat, scores, epsilon);
+    multn::multn_chi2_scores_mt<Profile>(
+        n_points, tprs, fprs, conf_mat, scores, epsilon);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
-
 
 // =============================================================================
 // Grid Error Functions
@@ -167,7 +167,8 @@ inline void get_grid_bounds(
  * @param n_bins    Number of bins in each dimension
  * @param conf_mat  Confusion matrix [TN, FP, FN, TP]
  * @param result    Output array for chi2 scores (n_bins x n_bins)
- * @param bounds    Output array for grid bounds [tpr_min, tpr_max, fpr_min, fpr_max]
+ * @param bounds    Output array for grid bounds [tpr_min, tpr_max, fpr_min,
+ * fpr_max]
  * @param n_sigmas  Number of sigmas for grid bounds
  * @param epsilon   Clipping value to avoid boundary issues
  */
@@ -178,7 +179,8 @@ inline void multn_error(
     double* __restrict bounds,
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
-    multn::multn_error<Profile>(n_bins, conf_mat, result, bounds, n_sigmas, epsilon);
+    multn::multn_error<Profile>(
+        n_bins, conf_mat, result, bounds, n_sigmas, epsilon);
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
@@ -188,7 +190,8 @@ inline void multn_error(
  * @param n_bins    Number of bins in each dimension
  * @param conf_mat  Confusion matrix [TN, FP, FN, TP]
  * @param result    Output array for chi2 scores (n_bins x n_bins)
- * @param bounds    Output array for grid bounds [tpr_min, tpr_max, fpr_min, fpr_max]
+ * @param bounds    Output array for grid bounds [tpr_min, tpr_max, fpr_min,
+ * fpr_max]
  * @param n_sigmas  Number of sigmas for grid bounds
  * @param epsilon   Clipping value to avoid boundary issues
  * @param n_threads Number of threads to use
@@ -201,10 +204,10 @@ inline void multn_error_mt(
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4,
     const int n_threads = 4) {
-    multn::multn_error_mt<Profile>(n_bins, conf_mat, result, bounds, n_sigmas, epsilon, n_threads);
+    multn::multn_error_mt<Profile>(
+        n_bins, conf_mat, result, bounds, n_sigmas, epsilon, n_threads);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
-
 
 // =============================================================================
 // Grid Error Functions with User-Provided Grid
@@ -233,12 +236,19 @@ inline void multn_grid_error(
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
     multn::multn_grid_error<Profile>(
-        n_tpr_bins, n_fpr_bins, tpr_grid, fpr_grid, conf_mat, scores, n_sigmas, epsilon);
+        n_tpr_bins,
+        n_fpr_bins,
+        tpr_grid,
+        fpr_grid,
+        conf_mat,
+        scores,
+        n_sigmas,
+        epsilon);
 }
 
 /**
- * Compute chi2 scores over a user-provided grid for multiple confusion matrices.
- * Takes the minimum score across all confusion matrices.
+ * Compute chi2 scores over a user-provided grid for multiple confusion
+ * matrices. Takes the minimum score across all confusion matrices.
  *
  * @param n_tpr_bins  Number of TPR bins
  * @param n_fpr_bins  Number of FPR bins
@@ -261,12 +271,21 @@ inline void multn_grid_curve_error(
     const double n_sigmas = 6.0,
     const double epsilon = 1e-4) {
     multn::multn_grid_curve_error<Profile>(
-        n_tpr_bins, n_fpr_bins, n_conf_mats, tpr_grid, fpr_grid, conf_mat, scores, n_sigmas, epsilon);
+        n_tpr_bins,
+        n_fpr_bins,
+        n_conf_mats,
+        tpr_grid,
+        fpr_grid,
+        conf_mat,
+        scores,
+        n_sigmas,
+        epsilon);
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
 /**
- * Compute chi2 scores over a user-provided grid for multiple confusion matrices (multi-threaded).
+ * Compute chi2 scores over a user-provided grid for multiple confusion matrices
+ * (multi-threaded).
  *
  * @param n_tpr_bins  Number of TPR bins
  * @param n_fpr_bins  Number of FPR bins
@@ -291,14 +310,19 @@ inline void multn_grid_curve_error_mt(
     const double epsilon = 1e-4,
     const int64_t n_threads = 4) {
     multn::multn_grid_curve_error_mt<Profile>(
-        n_tpr_bins, n_fpr_bins, n_conf_mats, tpr_grid, fpr_grid, conf_mat, scores, n_sigmas, epsilon, n_threads);
+        n_tpr_bins,
+        n_fpr_bins,
+        n_conf_mats,
+        tpr_grid,
+        fpr_grid,
+        conf_mat,
+        scores,
+        n_sigmas,
+        epsilon,
+        n_threads);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
-
 
 }  // namespace roc
 }  // namespace core
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_CORE_MULTN_LOGLIKE_ROC_HPP_
-

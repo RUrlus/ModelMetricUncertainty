@@ -1,16 +1,11 @@
 /* metrics.hpp -- Implementation of binary classification metrics
- * Copyright 2021 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_API_METRICS_HPP_
-#define INCLUDE_MMU_API_METRICS_HPP_
+#pragma once
 
 #include <pybind11/numpy.h>     // for py::array
 #include <pybind11/pybind11.h>  // for py::array
 #include <pybind11/stl.h>       // for py::tuple
-
-#include <algorithm>  // for max/min
-#include <cinttypes>  // for int64_t
-#include <stdexcept>  // for runtime_error
 
 #include <mmu/core/common.hpp>
 #include <mmu/core/confusion_matrix.hpp>
@@ -19,8 +14,6 @@
 #include <mmu/api/common.hpp>
 #include <mmu/api/confusion_matrix.hpp>
 #include <mmu/api/numpy.hpp>
-
-namespace py = pybind11;
 
 namespace mmu {
 namespace api {
@@ -39,5 +32,3 @@ f64arr ROC_flattened(const i64arr& conf_mat, const double fill);
 
 }  // namespace api
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_API_METRICS_HPP_

@@ -1,6 +1,6 @@
 /* metrics_bindings.cpp -- Python bindings for metrics.hpp
  *
- * Copyright 2022 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
 #include <mmu/api/metrics.hpp>
 #include <mmu/bindings/metrics.hpp>
@@ -192,7 +192,6 @@ void bind_binary_metrics_flattened(py::module& m) {
         py::arg("conf_mat"),
         py::arg("fill") = 1.);
 }
-
 
 void bind_ROC(py::module& m) {
     m.def(

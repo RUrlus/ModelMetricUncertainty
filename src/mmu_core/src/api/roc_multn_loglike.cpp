@@ -1,7 +1,7 @@
 /* roc_multn_loglike.cpp -- Implementation of Python API of multinomial
- * log-likelihood uncertainty Copyright 2022 Ralph Urlus
+ * log-likelihood uncertainty Copyright 2026 Ralph Urlus
  */
-#include <mmu/api/roc_multn_loglike.hpp>  // for py::array
+#include <mmu/api/roc_multn_loglike.hpp>
 
 namespace py = pybind11;
 
@@ -23,7 +23,8 @@ py::tuple multn_error(
     double* res_ptr = npy::get_data(result);
     double* bnds_ptr = npy::get_data(bounds);
     int64_t* cm_ptr = npy::get_data(conf_mat);
-    core::roc::multn_error(n_bins, cm_ptr, res_ptr, bnds_ptr, n_sigmas, epsilon);
+    core::roc::multn_error(
+        n_bins, cm_ptr, res_ptr, bnds_ptr, n_sigmas, epsilon);
     return py::make_tuple(result, bounds);
 }  // multn_error
 
@@ -210,7 +211,6 @@ f64arr multn_grid_curve_error_mt(
     return scores;
 }  // multn_grid_curve_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
-
 
 }  // namespace roc
 }  // namespace api
