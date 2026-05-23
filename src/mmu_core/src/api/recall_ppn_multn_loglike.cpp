@@ -1,6 +1,6 @@
 /* recall_ppn_multn_loglike.cpp -- Implementation of Python API of multinomial
  * log-likelihood uncertainty for Recall-PPN
- * Copyright 2022 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
 #include <mmu/api/recall_ppn_multn_loglike.hpp>
 
@@ -24,7 +24,8 @@ py::tuple multn_error(
     double* res_ptr = npy::get_data(result);
     double* bnds_ptr = npy::get_data(bounds);
     int64_t* cm_ptr = npy::get_data(conf_mat);
-    core::recall_ppn::multn_error(n_bins, cm_ptr, res_ptr, bnds_ptr, n_sigmas, epsilon);
+    core::recall_ppn::multn_error(
+        n_bins, cm_ptr, res_ptr, bnds_ptr, n_sigmas, epsilon);
     return py::make_tuple(result, bounds);
 }  // multn_error
 
@@ -132,7 +133,8 @@ f64arr multn_grid_error(
     const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon) {
-    if ((!npy::is_well_behaved(ppn_grid)) || (!npy::is_well_behaved(recall_grid))
+    if ((!npy::is_well_behaved(ppn_grid))
+        || (!npy::is_well_behaved(recall_grid))
         || (!npy::is_well_behaved(conf_mat))) {
         throw std::runtime_error(
             "Encountered non-aligned or non-contiguous array.");
@@ -159,7 +161,8 @@ f64arr multn_grid_curve_error(
     const i64arr& conf_mat,
     const double n_sigmas,
     const double epsilon) {
-    if ((!npy::is_well_behaved(ppn_grid)) || (!npy::is_well_behaved(recall_grid))
+    if ((!npy::is_well_behaved(ppn_grid))
+        || (!npy::is_well_behaved(recall_grid))
         || (!npy::is_well_behaved(conf_mat))) {
         throw std::runtime_error(
             "Encountered non-aligned or non-contiguous array.");
@@ -189,7 +192,8 @@ f64arr multn_grid_curve_error_mt(
     const double n_sigmas,
     const double epsilon,
     const int64_t n_threads) {
-    if ((!npy::is_well_behaved(ppn_grid)) || (!npy::is_well_behaved(recall_grid))
+    if ((!npy::is_well_behaved(ppn_grid))
+        || (!npy::is_well_behaved(recall_grid))
         || (!npy::is_well_behaved(conf_mat))) {
         throw std::runtime_error(
             "Encountered non-aligned or non-contiguous array.");
@@ -229,8 +233,10 @@ py::tuple recall_ppn(const i64arr& conf_mat) {
     const int64_t n = tn + fp + fn + tp;
     const int64_t p = fn + tp;
 
-    double recall = p > 0 ? static_cast<double>(tp) / static_cast<double>(p) : 0.0;
-    double ppn = n > 0 ? static_cast<double>(tn + fn) / static_cast<double>(n) : 0.0;
+    double recall
+        = p > 0 ? static_cast<double>(tp) / static_cast<double>(p) : 0.0;
+    double ppn
+        = n > 0 ? static_cast<double>(tn + fn) / static_cast<double>(n) : 0.0;
 
     return py::make_tuple(ppn, recall);
 }
@@ -244,7 +250,8 @@ f64arr recall_ppn_2d(const i64arr& conf_mats) {
         throw std::runtime_error("``conf_mats`` should have shape (n, 4).");
     }
     const int64_t n_mats = conf_mats.shape(0);
-    auto result = f64arr(std::vector<ssize_t>{n_mats, 2});  // [ppn, recall] columns
+    auto result
+        = f64arr(std::vector<ssize_t>{n_mats, 2});  // [ppn, recall] columns
     const int64_t* cm = npy::get_data(conf_mats);
     double* res = npy::get_data(result);
 
@@ -256,8 +263,12 @@ f64arr recall_ppn_2d(const i64arr& conf_mats) {
         const int64_t n = tn + fp + fn + tp;
         const int64_t p = fn + tp;
 
-        res[i * 2 + 0] = n > 0 ? static_cast<double>(tn + fn) / static_cast<double>(n) : 0.0;  // ppn
-        res[i * 2 + 1] = p > 0 ? static_cast<double>(tp) / static_cast<double>(p) : 0.0;  // recall
+        res[i * 2 + 0]
+            = n > 0 ? static_cast<double>(tn + fn) / static_cast<double>(n)
+                    : 0.0;  // ppn
+        res[i * 2 + 1] = p > 0
+                             ? static_cast<double>(tp) / static_cast<double>(p)
+                             : 0.0;  // recall
     }
 
     return result;
@@ -266,4 +277,3 @@ f64arr recall_ppn_2d(const i64arr& conf_mats) {
 }  // namespace recall_ppn
 }  // namespace api
 }  // namespace mmu
-

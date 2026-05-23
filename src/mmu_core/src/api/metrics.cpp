@@ -1,5 +1,5 @@
 /* metrics.cpp -- Implementation of binary classification metrics
- * Copyright 2022 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
 #include <mmu/api/metrics.hpp>
 
@@ -196,7 +196,8 @@ f64arr binary_metrics_flattened(const i64arr& conf_mat, const double fill) {
  * --- Returns ---
  * - metrics
  */
-// This is the same as PR above, it's just calling a different ROC() defined in include/mmu/core/metrics.hpp
+// This is the same as PR above, it's just calling a different ROC() defined in
+// include/mmu/core/metrics.hpp
 f64arr ROC(const i64arr& conf_mat, const double fill) {
     // condition checks
     if (!npy::is_well_behaved(conf_mat)) {

@@ -1,5 +1,5 @@
 /* numpy.cpp -- Bindings to test the numpy utility functions
- * Copyright 2021 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
 #include <mmu/tests/numpy.hpp>
 

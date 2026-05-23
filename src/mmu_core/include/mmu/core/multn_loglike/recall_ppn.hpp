@@ -1,8 +1,7 @@
 /* recall_ppn.hpp -- Recall-PPN namespace aliases for multinomial log-likelihood
- * Copyright 2022 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_CORE_MULTN_LOGLIKE_RECALL_PPN_HPP_
-#define INCLUDE_MMU_CORE_MULTN_LOGLIKE_RECALL_PPN_HPP_
+#pragma once
 
 #include <mmu/core/multn_loglike/common.hpp>
 #include <mmu/core/multn_loglike/core.hpp>
@@ -325,5 +324,3 @@ inline void multn_grid_curve_error_mt(
 }  // namespace recall_ppn
 }  // namespace core
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_CORE_MULTN_LOGLIKE_RECALL_PPN_HPP_

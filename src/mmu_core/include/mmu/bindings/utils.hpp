@@ -1,8 +1,7 @@
 /* utils.hpp -- Python bindings for utility functions from mmu/numpy and
- * mmu/utils Copyright 2022 Ralph Urlus
+ * mmu/utils Copyright 2026 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_BINDINGS_UTILS_HPP_
-#define INCLUDE_MMU_BINDINGS_UTILS_HPP_
+#pragma once
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -18,5 +17,3 @@ void bind_is_well_behaved_finite(py::module& m);
 
 }  // namespace bindings
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_BINDINGS_UTILS_HPP_

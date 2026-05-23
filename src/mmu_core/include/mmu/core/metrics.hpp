@@ -1,14 +1,10 @@
 /* metrics.hpp -- Implementation of binary classification metrics
- * Copyright 2021 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_CORE_METRICS_HPP_
-#define INCLUDE_MMU_CORE_METRICS_HPP_
+#pragma once
 
-#include <algorithm>    // for max/min
-#include <cinttypes>    // for int64_t
 #include <cmath>        // for sqrt
 #include <limits>       // for numeric_limits
-#include <stdexcept>    // for runtime_error
 #include <type_traits>  // for enable_if_t
 
 #include <mmu/core/common.hpp>
@@ -216,5 +212,3 @@ inline void binary_metrics(
 
 }  // namespace core
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_CORE_METRICS_HPP_

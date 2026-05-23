@@ -1,19 +1,13 @@
 /* confusion_matrix.hpp -- Implementation of binary classification confusion
- * matrix Copyright 2021 Ralph Urlus
+ * matrix Copyright 2026 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_API_CONFUSION_MATRIX_HPP_
-#define INCLUDE_MMU_API_CONFUSION_MATRIX_HPP_
+#pragma once
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 #include <algorithm>
-#include <cinttypes>
-#include <cmath>
-#include <limits>
-#include <string>
-#include <type_traits>
 
 #include <mmu/api/common.hpp>
 #include <mmu/api/numpy.hpp>
@@ -153,7 +147,7 @@ inline i64arr confusion_matrix_runs(
     const double scaled_tol = 1e-8 + 1e-05 * threshold;
 
 #pragma omp parallel shared( \
-    n_obs, n_runs, y_ptr, score_ptr, threshold, scaled_tol, cm_ptr)
+        n_obs, n_runs, y_ptr, score_ptr, threshold, scaled_tol, cm_ptr)
     {
 #pragma omp for
         for (int64_t i = 0; i < n_runs; i++) {
@@ -266,7 +260,7 @@ inline i64arr confusion_matrix_thresholds(
     T2* threshold_ptr = npy::get_data(thresholds);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
 #pragma omp parallel shared( \
-    n_obs, n_thresholds, y_ptr, score_ptr, threshold_ptr, cm_ptr)
+        n_obs, n_thresholds, y_ptr, score_ptr, threshold_ptr, cm_ptr)
     {
 #pragma omp for
         for (int64_t i = 0; i < n_thresholds; i++) {
@@ -333,7 +327,13 @@ inline i64arr confusion_matrix_runs_thresholds(
 
 // Bookkeeping variables
 #pragma omp parallel shared( \
-    n_runs, n_thresholds, y_ptr, score_ptr, thresholds_ptr, n_obs_ptr, cm_ptr)
+        n_runs,              \
+            n_thresholds,    \
+            y_ptr,           \
+            score_ptr,       \
+            thresholds_ptr,  \
+            n_obs_ptr,       \
+            cm_ptr)
     {
 #pragma omp for
         for (int64_t r = 0; r < n_runs; r++) {
@@ -400,14 +400,14 @@ inline i64arr confusion_matrix_thresholds_runs(
 
 // Bookkeeping variables
 #pragma omp parallel shared( \
-    n_runs,                  \
-    n_obs,                   \
-    n_thresholds,            \
-    stride_out,              \
-    y_ptr,                   \
-    score_ptr,               \
-    thresholds_ptr,          \
-    cm_ptr)
+        n_runs,              \
+            n_obs,           \
+            n_thresholds,    \
+            stride_out,      \
+            y_ptr,           \
+            score_ptr,       \
+            thresholds_ptr,  \
+            cm_ptr)
     {
 #pragma omp for
         for (int64_t i = 0; i < n_thresholds; i++) {
@@ -432,5 +432,3 @@ inline i64arr confusion_matrix_thresholds_runs(
 
 }  // namespace api
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_API_CONFUSION_MATRIX_HPP_

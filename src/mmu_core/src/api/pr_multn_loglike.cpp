@@ -1,7 +1,7 @@
 /* pr_multn_loglike.cpp -- Implementation of Python API of multinomial
  * log-likelihood uncertainty Copyright 2022 Ralph Urlus
  */
-#include <mmu/api/pr_multn_loglike.hpp>  // for py::array
+#include <mmu/api/pr_multn_loglike.hpp>
 
 namespace py = pybind11;
 
@@ -210,7 +210,6 @@ f64arr multn_grid_curve_error_mt(
     return scores;
 }  // multn_grid_curve_error_mt
 #endif  // MMU_HAS_OPENMP_SUPPORT
-
 
 }  // namespace pr
 }  // namespace api

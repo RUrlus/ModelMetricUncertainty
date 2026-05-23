@@ -1,8 +1,12 @@
 /* common.hpp -- Utility functions and macros used in multiple headers.
  * Copyright 2022 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_CORE_COMMON_HPP_
-#define INCLUDE_MMU_CORE_COMMON_HPP_
+#pragma once
+
+#include <cmath>
+#include <cstring>  // for memset
+#include <limits>
+#include <type_traits>
 
 #define UNUSED(x) (void)(x)
 
@@ -26,13 +30,6 @@
 typedef SSIZE_T ssize_t;
 #endif
 
-#include <cstring>  // for memset
-#include <random>
-#include <type_traits>
-
-#include <pcg_extras.hpp>
-#include <pcg_random.hpp>
-
 namespace mmu {
 
 template <typename T>
@@ -47,13 +44,6 @@ namespace core {
 // p-values very close to 1
 // chi2.ppf(1-1e-14) --> 64.47398179869367
 constexpr double MULT_DEFAULT_CHI2_SCORE = 65.0;
-
-namespace random {
-
-typedef pcg_engines::setseq_dxsm_128_64 pcg64_dxsm;
-typedef pcg_extras::seed_seq_from<std::random_device> pcg_seed_seq;
-
-}  // namespace random
 
 namespace details {
 
@@ -96,5 +86,3 @@ inline void zero_array(T* ptr) {
 }  // namespace core
 
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_CORE_COMMON_HPP_

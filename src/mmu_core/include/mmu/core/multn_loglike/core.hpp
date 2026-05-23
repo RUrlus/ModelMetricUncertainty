@@ -1,8 +1,7 @@
 /* core.hpp -- Generic template functions for multinomial log-likelihood
- * Copyright 2022 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_CORE_MULTN_LOGLIKE_CORE_HPP_
-#define INCLUDE_MMU_CORE_MULTN_LOGLIKE_CORE_HPP_
+#pragma once
 
 #if defined(MMU_HAS_OPENMP_SUPPORT)
 #include <omp.h>
@@ -10,9 +9,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cinttypes>
-#include <cmath>
-#include <limits>
 #include <memory>
 
 #include <mmu/core/common.hpp>
@@ -40,19 +36,7 @@ inline void linspace(
 
 namespace multn {
 
-// =============================================================================
-// Store Initialization
-// =============================================================================
-
-/**
- * Initialize the profile log-likelihood store from a confusion matrix.
- * This is a generic template that works with any Profile class.
- *
- * @tparam Profile  The metric profile class (PrecisionRecallProfile, ROCProfile, etc.)
- * @param conf_mat  Confusion matrix [TN, FP, FN, TP]
- * @param store     Pointer to store to initialize
- */
-template<typename Profile>
+template <typename Profile>
 inline void set_store(
     const int64_t* __restrict conf_mat,
     prof_loglike_store* store) {
@@ -77,7 +61,6 @@ inline void set_store(
                        + details::xlogy(store->x_tp, store->p_tp));
 }
 
-
 // =============================================================================
 // Profile Log-Likelihood Functions
 // =============================================================================
@@ -94,10 +77,12 @@ inline void set_store(
  * @param y         Y-axis metric value (e.g., precision, TPR, PPN)
  * @param x         X-axis metric value (e.g., recall, FPR)
  * @param store     Precomputed store with nll_h0 and confusion matrix values
- * @param p_h0      Output array for constrained probabilities [p_tn, p_fp, p_fn, p_tp]
- * @return          The profile log-likelihood ratio statistic (chi2 distributed with df=2)
+ * @param p_h0      Output array for constrained probabilities [p_tn, p_fp,
+ * p_fn, p_tp]
+ * @return          The profile log-likelihood ratio statistic (chi2 distributed
+ * with df=2)
  */
-template<typename Profile>
+template <typename Profile>
 inline double prof_loglike(
     const double y,
     const double x,
@@ -124,7 +109,7 @@ inline double prof_loglike(
  * @param p_h0      Output array for constrained probabilities
  * @return          The profile log-likelihood ratio statistic
  */
-template<typename Profile>
+template <typename Profile>
 inline double prof_loglike(
     const double y,
     const double x,
@@ -152,7 +137,6 @@ inline double prof_loglike(
     return nll_h1 - nll_h0;
 }
 
-
 // =============================================================================
 // Chi2 Score Functions
 // =============================================================================
@@ -167,7 +151,7 @@ inline double prof_loglike(
  * @param epsilon   Clipping value to avoid boundary issues
  * @return          The chi2 score
  */
-template<typename Profile>
+template <typename Profile>
 inline double multn_chi2_score(
     const double y,
     const double x,
@@ -197,7 +181,7 @@ inline double multn_chi2_score(
  * @param scores    Output array for chi2 scores
  * @param epsilon   Clipping value to avoid boundary issues
  */
-template<typename Profile>
+template <typename Profile>
 inline void multn_chi2_scores(
     const int64_t n_points,
     const double* ys,
@@ -233,7 +217,7 @@ inline void multn_chi2_scores(
  * @param scores    Output array for chi2 scores
  * @param epsilon   Clipping value to avoid boundary issues
  */
-template<typename Profile>
+template <typename Profile>
 inline void multn_chi2_scores_mt(
     const int64_t n_points,
     const double* ys,
@@ -265,13 +249,12 @@ inline void multn_chi2_scores_mt(
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-
 // =============================================================================
 // Grid Error Functions
 // =============================================================================
 
 // Forward declaration for get_grid_bounds (will be in grid_bounds.hpp)
-template<typename Profile>
+template <typename Profile>
 void get_grid_bounds(
     const int64_t* __restrict conf_mat,
     double* bounds,
@@ -290,7 +273,7 @@ void get_grid_bounds(
  * @param n_sigmas  Number of sigmas for grid bounds
  * @param epsilon   Clipping value to avoid boundary issues
  */
-template<typename Profile>
+template <typename Profile>
 inline void multn_error(
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,
@@ -306,7 +289,8 @@ inline void multn_error(
     auto x_grid = std::unique_ptr<double[]>(new double[n_bins]);
     details::linspace(bounds[2], bounds[3], n_bins, x_grid.get());
     const double y_start = bounds[0];
-    const double y_delta = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
+    const double y_delta
+        = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
 
     prof_loglike_store nll_store;
     set_store<Profile>(conf_mat, &nll_store);
@@ -334,7 +318,7 @@ inline void multn_error(
  * @param epsilon   Clipping value to avoid boundary issues
  * @param n_threads Number of threads to use
  */
-template<typename Profile>
+template <typename Profile>
 inline void multn_error_mt(
     const int64_t n_bins,
     const int64_t* __restrict conf_mat,
@@ -348,7 +332,8 @@ inline void multn_error_mt(
     auto x_grid = std::unique_ptr<double[]>(new double[n_bins]);
     details::linspace(bounds[2], bounds[3], n_bins, x_grid.get());
     const double y_start = bounds[0];
-    const double y_delta = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
+    const double y_delta
+        = (bounds[1] - bounds[0]) / static_cast<double>(n_bins - 1);
 
     prof_loglike_store nll_store;
     set_store<Profile>(conf_mat, &nll_store);
@@ -365,23 +350,24 @@ inline void multn_error_mt(
             y = y_start + (static_cast<double>(i) * y_delta);
             idx = i * n_bins;
             for (int64_t j = 0; j < n_bins; j++) {
-                result[idx + j] = prof_loglike<Profile>(y, x_grid[j], &nll_store, p);
+                result[idx + j]
+                    = prof_loglike<Profile>(y, x_grid[j], &nll_store, p);
             }
         }
     }  // omp parallel
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-
 // =============================================================================
 // Grid Error Functions with User-Provided Grid
 // =============================================================================
 
-// Forward declaration for GridBounds class and get_grid_bounds with index output
-template<typename Profile>
+// Forward declaration for GridBounds class and get_grid_bounds with index
+// output
+template <typename Profile>
 class GenericGridBounds;
 
-template<typename Profile>
+template <typename Profile>
 void get_grid_bounds(
     const int64_t n_y_bins,
     const int64_t n_x_bins,
@@ -406,7 +392,7 @@ void get_grid_bounds(
  * @param n_sigmas   Number of sigmas for grid bounds
  * @param epsilon    Clipping value to avoid boundary issues
  */
-template<typename Profile>
+template <typename Profile>
 inline void multn_grid_error(
     const int64_t n_y_bins,
     const int64_t n_x_bins,
@@ -429,7 +415,14 @@ inline void multn_grid_error(
 
     // Obtain the indexes over which to loop
     get_grid_bounds<Profile>(
-        n_y_bins, n_x_bins, conf_mat, y_grid, x_grid, idx_bounds, n_sigmas, epsilon);
+        n_y_bins,
+        n_x_bins,
+        conf_mat,
+        y_grid,
+        x_grid,
+        idx_bounds,
+        n_sigmas,
+        epsilon);
     const int64_t y_idx_min = idx_bounds[0];
     const int64_t y_idx_max = idx_bounds[1];
     const int64_t x_idx_min = idx_bounds[2];
@@ -452,8 +445,8 @@ inline void multn_grid_error(
 }
 
 /**
- * Compute chi2 scores over a user-provided grid for multiple confusion matrices.
- * Takes the minimum score across all confusion matrices.
+ * Compute chi2 scores over a user-provided grid for multiple confusion
+ * matrices. Takes the minimum score across all confusion matrices.
  *
  * @tparam Profile    The metric profile class
  * @param n_y_bins    Number of y-axis bins
@@ -466,7 +459,7 @@ inline void multn_grid_error(
  * @param n_sigmas    Number of sigmas for grid bounds
  * @param epsilon     Clipping value to avoid boundary issues
  */
-template<typename Profile>
+template <typename Profile>
 inline void multn_grid_curve_error(
     const int64_t n_y_bins,
     const int64_t n_x_bins,
@@ -497,7 +490,8 @@ inline void multn_grid_curve_error(
             double y = y_grid[i];
             const int64_t odx = i * n_x_bins;
             for (int64_t j = bounds.x_idx_min; j < bounds.x_idx_max; j++) {
-                double score = prof_loglike<Profile>(y, x_grid[j], &nll_store, p);
+                double score
+                    = prof_loglike<Profile>(y, x_grid[j], &nll_store, p);
                 if (score < scores[odx + j]) {
                     scores[odx + j] = score;
                 }
@@ -510,8 +504,9 @@ inline void multn_grid_curve_error(
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
 /**
- * Compute chi2 scores over a user-provided grid for multiple confusion matrices (multi-threaded).
- * Takes the minimum score across all confusion matrices and threads.
+ * Compute chi2 scores over a user-provided grid for multiple confusion matrices
+ * (multi-threaded). Takes the minimum score across all confusion matrices and
+ * threads.
  *
  * @tparam Profile    The metric profile class
  * @param n_y_bins    Number of y-axis bins
@@ -525,7 +520,7 @@ inline void multn_grid_curve_error(
  * @param epsilon     Clipping value to avoid boundary issues
  * @param n_threads   Number of threads to use
  */
-template<typename Profile>
+template <typename Profile>
 inline void multn_grid_curve_error_mt(
     const int64_t n_y_bins,
     const int64_t n_x_bins,
@@ -542,12 +537,23 @@ inline void multn_grid_curve_error_mt(
     auto thread_scores = std::unique_ptr<double[]>(new double[t_elem]);
 
     // Initialize all thread scores to high value
-    std::fill(thread_scores.get(), thread_scores.get() + t_elem, MULT_DEFAULT_CHI2_SCORE);
+    std::fill(
+        thread_scores.get(),
+        thread_scores.get() + t_elem,
+        MULT_DEFAULT_CHI2_SCORE);
 
-#pragma omp parallel num_threads(n_threads) shared( \
-    n_y_bins, n_x_bins, n_conf_mats, y_grid, x_grid, conf_mat, n_sigmas, epsilon)
+#pragma omp parallel num_threads(n_threads) \
+    shared(n_y_bins,                        \
+               n_x_bins,                    \
+               n_conf_mats,                 \
+               y_grid,                      \
+               x_grid,                      \
+               conf_mat,                    \
+               n_sigmas,                    \
+               epsilon)
     {
-        double* thread_block = thread_scores.get() + (omp_get_thread_num() * n_elem);
+        double* thread_block
+            = thread_scores.get() + (omp_get_thread_num() * n_elem);
 
         std::array<double, 4> probas;
         double* p = probas.data();
@@ -568,7 +574,8 @@ inline void multn_grid_curve_error_mt(
                 double y = y_grid[i];
                 int64_t odx = i * n_x_bins;
                 for (int64_t j = bounds.x_idx_min; j < bounds.x_idx_max; j++) {
-                    double score = prof_loglike<Profile>(y, x_grid[j], &nll_store, p);
+                    double score
+                        = prof_loglike<Profile>(y, x_grid[j], &nll_store, p);
                     int64_t idx = odx + j;
                     if (score < thread_block[idx]) {
                         thread_block[idx] = score;
@@ -597,10 +604,6 @@ inline void multn_grid_curve_error_mt(
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-
 }  // namespace multn
 }  // namespace core
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_CORE_MULTN_LOGLIKE_CORE_HPP_
-

@@ -1,17 +1,15 @@
 /* bindings.cpp -- Python bindings for MMU
- * Copyright 2022 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
 #include <pybind11/pybind11.h>
 
 #include <mmu/bindings/confusion_matrix.hpp>
 #include <mmu/bindings/metrics.hpp>
 #include <mmu/bindings/pr_multn_loglike.hpp>
-#include <mmu/bindings/roc_multn_loglike.hpp>
 #include <mmu/bindings/recall_ppn_multn_loglike.hpp>
+#include <mmu/bindings/roc_multn_loglike.hpp>
 #include <mmu/bindings/utils.hpp>
 #include <mmu/core/common.hpp>
-
-namespace py = pybind11;
 
 namespace mmu {
 namespace bindings {

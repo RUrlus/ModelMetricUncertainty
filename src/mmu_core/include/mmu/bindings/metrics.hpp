@@ -1,9 +1,9 @@
 /* metrics_bindings.hpp -- Python bindings for metrics.hpp
  *
- * Copyright 2021 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_BINDINGS_METRICS_HPP_
-#define INCLUDE_MMU_BINDINGS_METRICS_HPP_
+#pragma once
+
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
@@ -28,5 +28,3 @@ void bind_ROC_flattened(py::module& m);
 
 }  // namespace bindings
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_BINDINGS_METRICS_HPP_

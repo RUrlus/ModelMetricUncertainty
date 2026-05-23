@@ -1,18 +1,11 @@
 /* confusion_matrix.hpp -- Implementation of binary classification confusion
- * matrix Copyright 2021 Ralph Urlus
+ * matrix Copyright 2026 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_CORE_CONFUSION_MATRIX_HPP_
-#define INCLUDE_MMU_CORE_CONFUSION_MATRIX_HPP_
+#pragma once
 
-#include <algorithm>
-#include <cinttypes>
-#include <cmath>
 #include <limits>
-#include <string>
-#include <type_traits>
 
 #include <mmu/core/common.hpp>
-#include <mmu/core/random.hpp>
 
 /*                  pred
  *                0     1
@@ -72,13 +65,13 @@ inline void confusion_matrix(
 
     for (int64_t i = 0; i < n_unroll; i += 8) {
         local_cm[y[i] * 2 + yhat[i]]++;
-        local_cm[y[i+1] * 2 + yhat[i+1]]++;
-        local_cm[y[i+2] * 2 + yhat[i+2]]++;
-        local_cm[y[i+3] * 2 + yhat[i+3]]++;
-        local_cm[y[i+4] * 2 + yhat[i+4]]++;
-        local_cm[y[i+5] * 2 + yhat[i+5]]++;
-        local_cm[y[i+6] * 2 + yhat[i+6]]++;
-        local_cm[y[i+7] * 2 + yhat[i+7]]++;
+        local_cm[y[i + 1] * 2 + yhat[i + 1]]++;
+        local_cm[y[i + 2] * 2 + yhat[i + 2]]++;
+        local_cm[y[i + 3] * 2 + yhat[i + 3]]++;
+        local_cm[y[i + 4] * 2 + yhat[i + 4]]++;
+        local_cm[y[i + 5] * 2 + yhat[i + 5]]++;
+        local_cm[y[i + 6] * 2 + yhat[i + 6]]++;
+        local_cm[y[i + 7] * 2 + yhat[i + 7]]++;
     }
     for (int64_t i = n_unroll; i < n_obs; i++) {
         local_cm[y[i] * 2 + yhat[i]]++;
@@ -114,13 +107,27 @@ inline void confusion_matrix(
 
     for (int64_t i = 0; i < n_unroll; i += 8) {
         local_cm[static_cast<bool>(y[i]) * 2 + static_cast<bool>(yhat[i])]++;
-        local_cm[static_cast<bool>(y[i+1]) * 2 + static_cast<bool>(yhat[i+1])]++;
-        local_cm[static_cast<bool>(y[i+2]) * 2 + static_cast<bool>(yhat[i+2])]++;
-        local_cm[static_cast<bool>(y[i+3]) * 2 + static_cast<bool>(yhat[i+3])]++;
-        local_cm[static_cast<bool>(y[i+4]) * 2 + static_cast<bool>(yhat[i+4])]++;
-        local_cm[static_cast<bool>(y[i+5]) * 2 + static_cast<bool>(yhat[i+5])]++;
-        local_cm[static_cast<bool>(y[i+6]) * 2 + static_cast<bool>(yhat[i+6])]++;
-        local_cm[static_cast<bool>(y[i+7]) * 2 + static_cast<bool>(yhat[i+7])]++;
+        local_cm
+            [static_cast<bool>(y[i + 1]) * 2
+             + static_cast<bool>(yhat[i + 1])]++;
+        local_cm
+            [static_cast<bool>(y[i + 2]) * 2
+             + static_cast<bool>(yhat[i + 2])]++;
+        local_cm
+            [static_cast<bool>(y[i + 3]) * 2
+             + static_cast<bool>(yhat[i + 3])]++;
+        local_cm
+            [static_cast<bool>(y[i + 4]) * 2
+             + static_cast<bool>(yhat[i + 4])]++;
+        local_cm
+            [static_cast<bool>(y[i + 5]) * 2
+             + static_cast<bool>(yhat[i + 5])]++;
+        local_cm
+            [static_cast<bool>(y[i + 6]) * 2
+             + static_cast<bool>(yhat[i + 6])]++;
+        local_cm
+            [static_cast<bool>(y[i + 7]) * 2
+             + static_cast<bool>(yhat[i + 7])]++;
     }
     for (int64_t i = n_unroll; i < n_obs; i++) {
         local_cm[static_cast<bool>(y[i]) * 2 + static_cast<bool>(yhat[i])]++;
@@ -158,13 +165,13 @@ inline void confusion_matrix(
 
     for (int64_t i = 0; i < n_unroll; i += 8) {
         local_cm[(y[i] > epsilon_T1) * 2 + (yhat[i] > epsilon_T2)]++;
-        local_cm[(y[i+1] > epsilon_T1) * 2 + (yhat[i+1] > epsilon_T2)]++;
-        local_cm[(y[i+2] > epsilon_T1) * 2 + (yhat[i+2] > epsilon_T2)]++;
-        local_cm[(y[i+3] > epsilon_T1) * 2 + (yhat[i+3] > epsilon_T2)]++;
-        local_cm[(y[i+4] > epsilon_T1) * 2 + (yhat[i+4] > epsilon_T2)]++;
-        local_cm[(y[i+5] > epsilon_T1) * 2 + (yhat[i+5] > epsilon_T2)]++;
-        local_cm[(y[i+6] > epsilon_T1) * 2 + (yhat[i+6] > epsilon_T2)]++;
-        local_cm[(y[i+7] > epsilon_T1) * 2 + (yhat[i+7] > epsilon_T2)]++;
+        local_cm[(y[i + 1] > epsilon_T1) * 2 + (yhat[i + 1] > epsilon_T2)]++;
+        local_cm[(y[i + 2] > epsilon_T1) * 2 + (yhat[i + 2] > epsilon_T2)]++;
+        local_cm[(y[i + 3] > epsilon_T1) * 2 + (yhat[i + 3] > epsilon_T2)]++;
+        local_cm[(y[i + 4] > epsilon_T1) * 2 + (yhat[i + 4] > epsilon_T2)]++;
+        local_cm[(y[i + 5] > epsilon_T1) * 2 + (yhat[i + 5] > epsilon_T2)]++;
+        local_cm[(y[i + 6] > epsilon_T1) * 2 + (yhat[i + 6] > epsilon_T2)]++;
+        local_cm[(y[i + 7] > epsilon_T1) * 2 + (yhat[i + 7] > epsilon_T2)]++;
     }
     for (int64_t i = n_unroll; i < n_obs; i++) {
         local_cm[(y[i] > epsilon_T1) * 2 + (yhat[i] > epsilon_T2)]++;
@@ -201,17 +208,35 @@ inline void confusion_matrix(
     const int64_t n_unroll = n_obs - (n_obs % 8);
 
     for (int64_t i = 0; i < n_unroll; i += 8) {
-        local_cm[static_cast<bool>(y[i]) * 2 + greater_equal_tol(score[i], threshold)]++;
-        local_cm[static_cast<bool>(y[i+1]) * 2 + greater_equal_tol(score[i+1], threshold)]++;
-        local_cm[static_cast<bool>(y[i+2]) * 2 + greater_equal_tol(score[i+2], threshold)]++;
-        local_cm[static_cast<bool>(y[i+3]) * 2 + greater_equal_tol(score[i+3], threshold)]++;
-        local_cm[static_cast<bool>(y[i+4]) * 2 + greater_equal_tol(score[i+4], threshold)]++;
-        local_cm[static_cast<bool>(y[i+5]) * 2 + greater_equal_tol(score[i+5], threshold)]++;
-        local_cm[static_cast<bool>(y[i+6]) * 2 + greater_equal_tol(score[i+6], threshold)]++;
-        local_cm[static_cast<bool>(y[i+7]) * 2 + greater_equal_tol(score[i+7], threshold)]++;
+        local_cm
+            [static_cast<bool>(y[i]) * 2
+             + greater_equal_tol(score[i], threshold)]++;
+        local_cm
+            [static_cast<bool>(y[i + 1]) * 2
+             + greater_equal_tol(score[i + 1], threshold)]++;
+        local_cm
+            [static_cast<bool>(y[i + 2]) * 2
+             + greater_equal_tol(score[i + 2], threshold)]++;
+        local_cm
+            [static_cast<bool>(y[i + 3]) * 2
+             + greater_equal_tol(score[i + 3], threshold)]++;
+        local_cm
+            [static_cast<bool>(y[i + 4]) * 2
+             + greater_equal_tol(score[i + 4], threshold)]++;
+        local_cm
+            [static_cast<bool>(y[i + 5]) * 2
+             + greater_equal_tol(score[i + 5], threshold)]++;
+        local_cm
+            [static_cast<bool>(y[i + 6]) * 2
+             + greater_equal_tol(score[i + 6], threshold)]++;
+        local_cm
+            [static_cast<bool>(y[i + 7]) * 2
+             + greater_equal_tol(score[i + 7], threshold)]++;
     }
     for (int64_t i = n_unroll; i < n_obs; i++) {
-        local_cm[static_cast<bool>(y[i]) * 2 + greater_equal_tol(score[i], threshold)]++;
+        local_cm
+            [static_cast<bool>(y[i]) * 2
+             + greater_equal_tol(score[i], threshold)]++;
     }
     for (int j = 0; j < 4; j++) {
         conf_mat[j] = local_cm[j];
@@ -246,17 +271,33 @@ inline void confusion_matrix(
     const int64_t n_unroll = n_obs - (n_obs % 8);
 
     for (int64_t i = 0; i < n_unroll; i += 8) {
-        local_cm[(y[i] > epsilon) * 2 + greater_equal_tol(score[i], threshold)]++;
-        local_cm[(y[i+1] > epsilon) * 2 + greater_equal_tol(score[i+1], threshold)]++;
-        local_cm[(y[i+2] > epsilon) * 2 + greater_equal_tol(score[i+2], threshold)]++;
-        local_cm[(y[i+3] > epsilon) * 2 + greater_equal_tol(score[i+3], threshold)]++;
-        local_cm[(y[i+4] > epsilon) * 2 + greater_equal_tol(score[i+4], threshold)]++;
-        local_cm[(y[i+5] > epsilon) * 2 + greater_equal_tol(score[i+5], threshold)]++;
-        local_cm[(y[i+6] > epsilon) * 2 + greater_equal_tol(score[i+6], threshold)]++;
-        local_cm[(y[i+7] > epsilon) * 2 + greater_equal_tol(score[i+7], threshold)]++;
+        local_cm
+            [(y[i] > epsilon) * 2 + greater_equal_tol(score[i], threshold)]++;
+        local_cm
+            [(y[i + 1] > epsilon) * 2
+             + greater_equal_tol(score[i + 1], threshold)]++;
+        local_cm
+            [(y[i + 2] > epsilon) * 2
+             + greater_equal_tol(score[i + 2], threshold)]++;
+        local_cm
+            [(y[i + 3] > epsilon) * 2
+             + greater_equal_tol(score[i + 3], threshold)]++;
+        local_cm
+            [(y[i + 4] > epsilon) * 2
+             + greater_equal_tol(score[i + 4], threshold)]++;
+        local_cm
+            [(y[i + 5] > epsilon) * 2
+             + greater_equal_tol(score[i + 5], threshold)]++;
+        local_cm
+            [(y[i + 6] > epsilon) * 2
+             + greater_equal_tol(score[i + 6], threshold)]++;
+        local_cm
+            [(y[i + 7] > epsilon) * 2
+             + greater_equal_tol(score[i + 7], threshold)]++;
     }
     for (int64_t i = n_unroll; i < n_obs; i++) {
-        local_cm[(y[i] > epsilon) * 2 + greater_equal_tol(score[i], threshold)]++;
+        local_cm
+            [(y[i] > epsilon) * 2 + greater_equal_tol(score[i], threshold)]++;
     }
     for (int j = 0; j < 4; j++) {
         conf_mat[j] = local_cm[j];
@@ -292,17 +333,35 @@ inline void confusion_matrix(
     const int64_t n_unroll = n_obs - (n_obs % 8);
 
     for (int64_t i = 0; i < n_unroll; i += 8) {
-        local_cm[static_cast<bool>(y[i]) * 2 + (score[i] - threshold >= -scaled_tol)]++;
-        local_cm[static_cast<bool>(y[i+1]) * 2 + (score[i+1] - threshold >= -scaled_tol)]++;
-        local_cm[static_cast<bool>(y[i+2]) * 2 + (score[i+2] - threshold >= -scaled_tol)]++;
-        local_cm[static_cast<bool>(y[i+3]) * 2 + (score[i+3] - threshold >= -scaled_tol)]++;
-        local_cm[static_cast<bool>(y[i+4]) * 2 + (score[i+4] - threshold >= -scaled_tol)]++;
-        local_cm[static_cast<bool>(y[i+5]) * 2 + (score[i+5] - threshold >= -scaled_tol)]++;
-        local_cm[static_cast<bool>(y[i+6]) * 2 + (score[i+6] - threshold >= -scaled_tol)]++;
-        local_cm[static_cast<bool>(y[i+7]) * 2 + (score[i+7] - threshold >= -scaled_tol)]++;
+        local_cm
+            [static_cast<bool>(y[i]) * 2
+             + (score[i] - threshold >= -scaled_tol)]++;
+        local_cm
+            [static_cast<bool>(y[i + 1]) * 2
+             + (score[i + 1] - threshold >= -scaled_tol)]++;
+        local_cm
+            [static_cast<bool>(y[i + 2]) * 2
+             + (score[i + 2] - threshold >= -scaled_tol)]++;
+        local_cm
+            [static_cast<bool>(y[i + 3]) * 2
+             + (score[i + 3] - threshold >= -scaled_tol)]++;
+        local_cm
+            [static_cast<bool>(y[i + 4]) * 2
+             + (score[i + 4] - threshold >= -scaled_tol)]++;
+        local_cm
+            [static_cast<bool>(y[i + 5]) * 2
+             + (score[i + 5] - threshold >= -scaled_tol)]++;
+        local_cm
+            [static_cast<bool>(y[i + 6]) * 2
+             + (score[i + 6] - threshold >= -scaled_tol)]++;
+        local_cm
+            [static_cast<bool>(y[i + 7]) * 2
+             + (score[i + 7] - threshold >= -scaled_tol)]++;
     }
     for (int64_t i = n_unroll; i < n_obs; i++) {
-        local_cm[static_cast<bool>(y[i]) * 2 + (score[i] - threshold >= -scaled_tol)]++;
+        local_cm
+            [static_cast<bool>(y[i]) * 2
+             + (score[i] - threshold >= -scaled_tol)]++;
     }
     for (int j = 0; j < 4; j++) {
         conf_mat[j] = local_cm[j];
@@ -339,17 +398,33 @@ inline void confusion_matrix(
     const int64_t n_unroll = n_obs - (n_obs % 8);
 
     for (int64_t i = 0; i < n_unroll; i += 8) {
-        local_cm[(y[i] > epsilon) * 2 + (score[i] - threshold >= -scaled_tol)]++;
-        local_cm[(y[i+1] > epsilon) * 2 + (score[i+1] - threshold >= -scaled_tol)]++;
-        local_cm[(y[i+2] > epsilon) * 2 + (score[i+2] - threshold >= -scaled_tol)]++;
-        local_cm[(y[i+3] > epsilon) * 2 + (score[i+3] - threshold >= -scaled_tol)]++;
-        local_cm[(y[i+4] > epsilon) * 2 + (score[i+4] - threshold >= -scaled_tol)]++;
-        local_cm[(y[i+5] > epsilon) * 2 + (score[i+5] - threshold >= -scaled_tol)]++;
-        local_cm[(y[i+6] > epsilon) * 2 + (score[i+6] - threshold >= -scaled_tol)]++;
-        local_cm[(y[i+7] > epsilon) * 2 + (score[i+7] - threshold >= -scaled_tol)]++;
+        local_cm
+            [(y[i] > epsilon) * 2 + (score[i] - threshold >= -scaled_tol)]++;
+        local_cm
+            [(y[i + 1] > epsilon) * 2
+             + (score[i + 1] - threshold >= -scaled_tol)]++;
+        local_cm
+            [(y[i + 2] > epsilon) * 2
+             + (score[i + 2] - threshold >= -scaled_tol)]++;
+        local_cm
+            [(y[i + 3] > epsilon) * 2
+             + (score[i + 3] - threshold >= -scaled_tol)]++;
+        local_cm
+            [(y[i + 4] > epsilon) * 2
+             + (score[i + 4] - threshold >= -scaled_tol)]++;
+        local_cm
+            [(y[i + 5] > epsilon) * 2
+             + (score[i + 5] - threshold >= -scaled_tol)]++;
+        local_cm
+            [(y[i + 6] > epsilon) * 2
+             + (score[i + 6] - threshold >= -scaled_tol)]++;
+        local_cm
+            [(y[i + 7] > epsilon) * 2
+             + (score[i + 7] - threshold >= -scaled_tol)]++;
     }
     for (int64_t i = n_unroll; i < n_obs; i++) {
-        local_cm[(y[i] > epsilon) * 2 + (score[i] - threshold >= -scaled_tol)]++;
+        local_cm
+            [(y[i] > epsilon) * 2 + (score[i] - threshold >= -scaled_tol)]++;
     }
     for (int j = 0; j < 4; j++) {
         conf_mat[j] = local_cm[j];
@@ -358,5 +433,3 @@ inline void confusion_matrix(
 
 }  // namespace core
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_CORE_CONFUSION_MATRIX_HPP_

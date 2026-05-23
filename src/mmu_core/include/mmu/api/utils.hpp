@@ -1,8 +1,7 @@
 /* utils.hpp -- Utility function around type checking of py::array_t
- * Copyright 2022 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_API_UTILS_HPP_
-#define INCLUDE_MMU_API_UTILS_HPP_
+#pragma once
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -168,5 +167,3 @@ inline bool is_correct_shape_order(
 }  // namespace details
 }  // namespace api
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_API_UTILS_HPP_

@@ -1,5 +1,5 @@
 /* utils.cpp -- Python bindings for utility functions from mmu/numpy and
- * mmu/utils Copyright 2021 Ralph Urlus
+ * mmu/utils Copyright 2026 Ralph Urlus
  */
 
 #include <mmu/api/utils.hpp>

@@ -1,11 +1,10 @@
 /* roc_multn_loglike.hpp -- Python bindings of multinomial log-likelihood
- * uncertainty Copyright 2022 Ralph Urlus
+ * uncertainty Copyright 2026 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_BINDINGS_ROC_MULTN_LOGLIKE_HPP_
-#define INCLUDE_MMU_BINDINGS_ROC_MULTN_LOGLIKE_HPP_
+#pragma once
 
-#include <pybind11/numpy.h>     // for py::array
-#include <pybind11/pybind11.h>  // for py::array
+#include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
 
 #include <mmu/api/roc_multn_loglike.hpp>
 
@@ -28,5 +27,3 @@ void bind_multn_chi2_scores_mt(py::module& m);
 }  // namespace roc
 }  // namespace bindings
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_BINDINGS_ROC_MULTN_LOGLIKE_HPP_

@@ -1,9 +1,8 @@
 /* recall_ppn_multn_loglike.hpp -- Implementation of Python API of multinomial
  * log-likelihood uncertainty for Recall-PPN
- * Copyright 2022 Ralph Urlus
+ * Copyright 2026 Ralph Urlus
  */
-#ifndef INCLUDE_MMU_API_RECALL_PPN_MULTN_LOGLIKE_HPP_
-#define INCLUDE_MMU_API_RECALL_PPN_MULTN_LOGLIKE_HPP_
+#pragma once
 
 #include <pybind11/numpy.h>     // for py::array
 #include <pybind11/pybind11.h>  // for py::array
@@ -87,6 +86,3 @@ f64arr recall_ppn_2d(const i64arr& conf_mats);
 }  // namespace recall_ppn
 }  // namespace api
 }  // namespace mmu
-
-#endif  // INCLUDE_MMU_API_RECALL_PPN_MULTN_LOGLIKE_HPP_
-

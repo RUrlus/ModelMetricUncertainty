@@ -1,5 +1,5 @@
 /* roc_multn_loglike.cpp -- Python bindings of multinomial log-likelihood
- * uncertainty Copyright 2022 Ralph Urlus
+ * uncertainty Copyright 2026 Ralph Urlus
  */
 #include <mmu/bindings/roc_multn_loglike.hpp>
 
@@ -193,7 +193,6 @@ void bind_multn_grid_curve_error_mt(py::module& m) {
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-
 void bind_multn_chi2_score(py::module& m) {
     m.def(
         "roc_multn_chi2_score",
@@ -280,7 +279,6 @@ void bind_multn_chi2_scores_mt(py::module& m) {
         py::arg("epsilon") = 1e-4);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
-
 
 }  // namespace roc
 }  // namespace bindings
