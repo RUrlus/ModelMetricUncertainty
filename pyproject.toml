@@ -23,7 +23,10 @@ classifiers = [
 ]
 dependencies = [
     "numpy>=1.18.0",
-    "scipy>=1.4.1",
+    "scipy>=1.5.2",
+    "pandas>=0.25.1",
+    "matplotlib>=2.2.3",
+    "scikit-learn>=1.0",
 ]
 
 [project.optional-dependencies]
