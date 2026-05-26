@@ -73,7 +73,7 @@ struct PrecisionRecallProfile {
      * @param conf_mat confusion matrix [TN, FP, FN, TP]
      * @param probas   output array [p_tn, p_fp, p_fn, p_tp]
      */
-    static inline void constrained_fit_safe(
+    static inline void guarded_constrained_fit(
         const double y,  // precision
         const double x,  // recall
         const int64_t* __restrict conf_mat,
@@ -167,7 +167,7 @@ struct ROCProfile {
      * @param conf_mat confusion matrix [TN, FP, FN, TP]
      * @param probas   output array [p_tn, p_fp, p_fn, p_tp]
      */
-    static inline void constrained_fit_safe(
+    static inline void guarded_constrained_fit(
         const double y,  // TPR
         const double x,  // FPR
         const int64_t* __restrict conf_mat,
@@ -365,12 +365,12 @@ struct RecallPPNProfile {
         if (discriminant < 0.0) {
             if (discriminant > -eps) {
                 // Numerical noise, treat as zero
-                const double t = linear_coef / (2.0 * fn_tp_ratio * n_total);
-                if (eps < t && t < t_max - eps) {
-                    probas[3] = t;
-                    probas[2] = fn_tp_ratio * t;
-                    probas[0] = y - probas[2];
-                    probas[1] = pp - t;
+                const double p_tp = linear_coef / (2.0 * fn_tp_ratio * n_total);
+                if (eps < p_tp && p_tp < t_max - eps) {
+                    probas[3] = p_tp;
+                    probas[1] = pp - p_tp;           // p_fp
+                    probas[2] = fn_tp_ratio * p_tp;  // t_fn
+                    probas[0] = y - probas[2];       // p_tn
                     return true;
                 }
             }
@@ -388,14 +388,13 @@ struct RecallPPNProfile {
         double best_t = 0.0;
         bool found = false;
 
-        for (double t : {root1, root2}) {
-            if (!(eps < t && t < t_max - eps)) {
+        for (double p_tp : {root1, root2}) {
+            if (!(eps < p_tp && p_tp < t_max - eps)) {
                 continue;
             }
-            const double p_tp = t;
-            const double p_fn = fn_tp_ratio * t;
+            const double p_fn = fn_tp_ratio * p_tp;
             const double p_tn = y - p_fn;
-            const double p_fp = pp - t;
+            const double p_fp = pp - p_tp;
 
             if (p_tn < 0.0 || p_fp < 0.0) {
                 continue;
@@ -414,7 +413,7 @@ struct RecallPPNProfile {
 
             if (ll > best_ll) {
                 best_ll = ll;
-                best_t = t;
+                best_t = p_tp;
                 found = true;
             }
         }
@@ -435,7 +434,7 @@ struct RecallPPNProfile {
      * Single-call version with divide-by-zero guards.
      * Uses the quadratic solution for accuracy.
      */
-    static inline void constrained_fit_safe(
+    static inline void guarded_constrained_fit(
         const double y,  // PPN
         const double x,  // Recall
         const int64_t* __restrict conf_mat,

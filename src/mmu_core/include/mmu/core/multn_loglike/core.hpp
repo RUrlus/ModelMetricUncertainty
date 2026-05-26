@@ -99,7 +99,7 @@ inline double prof_loglike(
 
 /**
  * Compute the profile log-likelihood ratio statistic.
- * Single-call version that computes everything from scratch.
+ * Single-call version with guards.
  *
  * @tparam Profile  The metric profile class
  * @param y         Y-axis metric value
@@ -116,7 +116,6 @@ inline double prof_loglike(
     const double n,
     const int64_t* __restrict conf_mat,
     double* __restrict p_h0) {
-    const double metric_n = Profile::compute_metric_n(conf_mat);
     const auto x_tn = static_cast<double>(conf_mat[0]);
     const auto x_fp = static_cast<double>(conf_mat[1]);
     const auto x_fn = static_cast<double>(conf_mat[2]);
@@ -128,7 +127,7 @@ inline double prof_loglike(
           * (details::xlogy(x_tn, x_tn / n) + details::xlogy(x_fp, x_fp / n)
              + details::xlogy(x_fn, x_fn / n) + details::xlogy(x_tp, x_tp / n));
 
-    Profile::constrained_fit(y, x, metric_n, n, p_h0);
+    Profile::guarded_constrained_fit(y, x, conf_mat, p_h0);
 
     const double nll_h1
         = -2.0
