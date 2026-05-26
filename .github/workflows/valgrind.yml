@@ -43,11 +43,16 @@ jobs:
       - name: Test
         run: |
           cd tests
-          PYTHONMALLOC=malloc valgrind \
+          export PYTHONMALLOC=malloc
+          export OPENBLAS_NUM_THREADS=1
+          export OMP_NUM_THREADS=1
+          export NPY_DISABLE_CPU_FEATURES="X86_V4,X86_V3"
+          valgrind \
             --leak-check=full \
             --show-leak-kinds=all \
             --track-origins=yes \
             --num-callers=50 \
+            --error-exitcode=99 \
             --log-file=valgrind-log.txt \
             python -X faulthandler -m pytest -vv \
-            || (echo "===== VALGRIND LOG =====" && cat valgrind-log.txt && exit 1)
+            || (status=$?; echo "===== VALGRIND LOG ====="; cat valgrind-log.txt; exit $status)
