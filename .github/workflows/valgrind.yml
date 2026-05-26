@@ -43,4 +43,11 @@ jobs:
       - name: Test
         run: |
           cd tests
-          PYTHONMALLOC=malloc valgrind --leak-check=yes --track-origins=yes --log-file=valgrind-log.txt python -m pytest
+          PYTHONMALLOC=malloc valgrind \
+            --leak-check=full \
+            --show-leak-kinds=all \
+            --track-origins=yes \
+            --num-callers=50 \
+            --log-file=valgrind-log.txt \
+            python -X faulthandler -m pytest -vv \
+            || (echo "===== VALGRIND LOG =====" && cat valgrind-log.txt && exit 1)
