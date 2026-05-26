@@ -145,9 +145,10 @@ inline py::array_t<T> allocate_confusion_matrix() {
 
 /* allocate n_matrices x 4 shaped array and zero it*/
 template <typename T>
-inline py::array_t<T> allocate_n_confusion_matrices(const ssize_t n_matrices) {
+inline py::array_t<T> allocate_n_confusion_matrices(
+    const py::size_t n_matrices) {
     // allocate memory confusion_matrix
-    auto conf_mat = py::array_t<T>({n_matrices, static_cast<ssize_t>(4)});
+    auto conf_mat = py::array_t<T>({n_matrices, static_cast<py::size_t>(4)});
     // zero the memory of the confusion_matrix
     zero_array<T>(conf_mat);
     return conf_mat;

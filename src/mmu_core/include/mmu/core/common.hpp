@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cmath>
+#include <cstddef>
 #include <cstring>  // for memset
 #include <limits>
 #include <type_traits>
@@ -21,13 +22,11 @@
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
 #endif
 
-// Fix for lack of ssize_t on Windows for CPython3.10
 #if defined(_MSC_VER)
 #pragma warning(push)
-#pragma warning( \
-    disable : 4127)  // warning C4127: Conditional expression is constant
+#pragma warning(disable : 4127)
 #include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
+#pragma warning(pop)
 #endif
 
 namespace mmu {

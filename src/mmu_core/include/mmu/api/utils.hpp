@@ -31,7 +31,7 @@ namespace details {
  */
 template <typename T>
 inline int check_1d_soft(const py::array_t<T>& arr, const std::string& name) {
-    ssize_t n_dim = arr.ndim();
+    py::size_t n_dim = arr.ndim();
     if (n_dim == 1) {
         return 0;
     }
@@ -111,7 +111,7 @@ inline py::array_t<T> ensure_shape_order(
     py::array_t<T>& arr,
     const std::string& name,
     const int obs_axis = 0) {
-    const ssize_t n_dim = arr.ndim();
+    const py::ssize_t n_dim = arr.ndim();
     if (n_dim > 2) {
         throw std::runtime_error(name + " must be at most two dimensional.");
     }
@@ -149,8 +149,8 @@ inline py::array_t<T> ensure_shape_order(
 template <typename T>
 inline bool is_correct_shape_order(
     const py::array_t<T>& arr,
-    ssize_t expected) {
-    ssize_t n_dim = arr.ndim();
+    py::size_t expected) {
+    py::size_t n_dim = arr.ndim();
     bool state = false;
     if (n_dim == 1 && arr.size() == expected) {
         state = npy::is_c_contiguous(arr);

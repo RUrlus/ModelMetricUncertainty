@@ -10,6 +10,7 @@
 
 #include <mmu/api/common.hpp>
 #include <mmu/api/numpy.hpp>
+#include <mmu/core/common.hpp>
 #include <mmu/core/multn_loglike.hpp>
 
 namespace py = pybind11;
