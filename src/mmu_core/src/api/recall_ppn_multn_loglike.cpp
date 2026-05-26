@@ -249,13 +249,13 @@ f64arr recall_ppn_2d(const i64arr& conf_mats) {
     if (conf_mats.ndim() != 2 || conf_mats.shape(1) != 4) {
         throw std::runtime_error("``conf_mats`` should have shape (n, 4).");
     }
-    const int64_t n_mats = conf_mats.shape(0);
+    const py::size_t n_mats = conf_mats.shape(0);
     auto result
-        = f64arr(std::vector<ssize_t>{n_mats, 2});  // [ppn, recall] columns
+        = f64arr(std::vector<py::size_t>{n_mats, 2});  // [ppn, recall] columns
     const int64_t* cm = npy::get_data(conf_mats);
     double* res = npy::get_data(result);
 
-    for (int64_t i = 0; i < n_mats; ++i) {
+    for (py::size_t i = 0; i < n_mats; ++i) {
         const int64_t tn = cm[i * 4 + 0];
         const int64_t fp = cm[i * 4 + 1];
         const int64_t fn = cm[i * 4 + 2];
