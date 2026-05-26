@@ -29,9 +29,11 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Build and install
+      env:
+        CMAKE_ARGS: -DMMU_CICD_MODE=ON -DMMU_ENABLE_INTERNAL_TESTS=ON
       run: |
         python -m pip install --upgrade pip
-        CMAKE_ARGS="-DMMU_CICD_MODE=ON -DMMU_ENABLE_INTERNAL_TESTS=ON" python -m pip install ".[test]" --verbose
+        python -m pip install ".[test]" --verbose
 
     - name: Test
       run: |
