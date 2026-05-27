@@ -1,4 +1,4 @@
-/* recall_ppn_multn_loglike.hpp -- Implementation of Python API of multinomial
+/* ppn_recall_multn_loglike.hpp -- Implementation of Python API of multinomial
  * log-likelihood uncertainty for Recall-PPN
  * Copyright 2026 Ralph Urlus
  */
@@ -17,7 +17,7 @@ namespace py = pybind11;
 
 namespace mmu {
 namespace api {
-namespace recall_ppn {
+namespace ppn_recall {
 
 py::tuple multn_error(
     const int64_t n_bins,
@@ -81,9 +81,9 @@ f64arr multn_grid_curve_error_mt(
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
 // Metric computation functions
-py::tuple recall_ppn(const i64arr& conf_mat);
-f64arr recall_ppn_2d(const i64arr& conf_mats);
+py::tuple ppn_recall(const i64arr& conf_mat);
+f64arr ppn_recall_2d(const i64arr& conf_mats);
 
-}  // namespace recall_ppn
+}  // namespace ppn_recall
 }  // namespace api
 }  // namespace mmu

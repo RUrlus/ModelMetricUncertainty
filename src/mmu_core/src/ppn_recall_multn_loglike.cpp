@@ -1,19 +1,19 @@
-/* recall_ppn_multn_loglike.cpp -- Python bindings of multinomial log-likelihood
+/* ppn_recall_multn_loglike.cpp -- Python bindings of multinomial log-likelihood
  * uncertainty for Recall-PPN
  * Copyright 2026 Ralph Urlus
  */
-#include <mmu/bindings/recall_ppn_multn_loglike.hpp>
+#include <mmu/bindings/ppn_recall_multn_loglike.hpp>
 
 namespace py = pybind11;
 
 namespace mmu {
 namespace bindings {
-namespace recall_ppn {
+namespace ppn_recall {
 
 void bind_multn_error(py::module& m) {
     m.def(
-        "recall_ppn_multn_error",
-        &api::recall_ppn::multn_error,
+        "ppn_recall_multn_error",
+        &api::ppn_recall::multn_error,
         R"pbdoc(
         Compute chi2 scores on a uniform grid for Recall-PPN uncertainty.
 
@@ -43,8 +43,8 @@ void bind_multn_error(py::module& m) {
 #ifdef MMU_HAS_OPENMP_SUPPORT
 void bind_multn_error_mt(py::module& m) {
     m.def(
-        "recall_ppn_multn_error_mt",
-        &api::recall_ppn::multn_error_mt,
+        "ppn_recall_multn_error_mt",
+        &api::ppn_recall::multn_error_mt,
         R"pbdoc(
         Compute chi2 scores on a uniform grid for Recall-PPN uncertainty (multi-threaded).
 
@@ -77,8 +77,8 @@ void bind_multn_error_mt(py::module& m) {
 
 void bind_multn_chi2_score(py::module& m) {
     m.def(
-        "recall_ppn_multn_chi2_score",
-        &api::recall_ppn::multn_chi2_score,
+        "ppn_recall_multn_chi2_score",
+        &api::ppn_recall::multn_chi2_score,
         R"pbdoc(
         Compute chi2 score for a single (PPN, Recall) point.
 
@@ -106,8 +106,8 @@ void bind_multn_chi2_score(py::module& m) {
 
 void bind_multn_chi2_scores(py::module& m) {
     m.def(
-        "recall_ppn_multn_chi2_scores",
-        &api::recall_ppn::multn_chi2_scores,
+        "ppn_recall_multn_chi2_scores",
+        &api::ppn_recall::multn_chi2_scores,
         R"pbdoc(
         Compute chi2 scores for multiple (PPN, Recall) points.
 
@@ -136,8 +136,8 @@ void bind_multn_chi2_scores(py::module& m) {
 #ifdef MMU_HAS_OPENMP_SUPPORT
 void bind_multn_chi2_scores_mt(py::module& m) {
     m.def(
-        "recall_ppn_multn_chi2_scores_mt",
-        &api::recall_ppn::multn_chi2_scores_mt,
+        "ppn_recall_multn_chi2_scores_mt",
+        &api::ppn_recall::multn_chi2_scores_mt,
         R"pbdoc(
         Compute chi2 scores for multiple (PPN, Recall) points (multi-threaded).
 
@@ -166,8 +166,8 @@ void bind_multn_chi2_scores_mt(py::module& m) {
 
 void bind_multn_grid_error(py::module& m) {
     m.def(
-        "recall_ppn_multn_grid_error",
-        &api::recall_ppn::multn_grid_error,
+        "ppn_recall_multn_grid_error",
+        &api::ppn_recall::multn_grid_error,
         R"pbdoc(
         Compute chi2 scores on a user-provided grid.
 
@@ -198,8 +198,8 @@ void bind_multn_grid_error(py::module& m) {
 
 void bind_multn_grid_curve_error(py::module& m) {
     m.def(
-        "recall_ppn_multn_grid_curve_error",
-        &api::recall_ppn::multn_grid_curve_error,
+        "ppn_recall_multn_grid_curve_error",
+        &api::ppn_recall::multn_grid_curve_error,
         R"pbdoc(
         Compute chi2 scores on a user-provided grid for multiple confusion matrices.
 
@@ -234,8 +234,8 @@ void bind_multn_grid_curve_error(py::module& m) {
 #ifdef MMU_HAS_OPENMP_SUPPORT
 void bind_multn_grid_curve_error_mt(py::module& m) {
     m.def(
-        "recall_ppn_multn_grid_curve_error_mt",
-        &api::recall_ppn::multn_grid_curve_error_mt,
+        "ppn_recall_multn_grid_curve_error_mt",
+        &api::ppn_recall::multn_grid_curve_error_mt,
         R"pbdoc(
         Compute chi2 scores on a user-provided grid for multiple confusion matrices (multi-threaded).
 
@@ -271,10 +271,10 @@ void bind_multn_grid_curve_error_mt(py::module& m) {
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
-void bind_recall_ppn(py::module& m) {
+void bind_ppn_recall(py::module& m) {
     m.def(
-        "recall_ppn",
-        &api::recall_ppn::recall_ppn,
+        "ppn_recall",
+        &api::ppn_recall::ppn_recall,
         R"pbdoc(
         Compute (PPN, Recall) from a confusion matrix.
 
@@ -291,10 +291,10 @@ void bind_recall_ppn(py::module& m) {
         py::arg("conf_mat"));
 }
 
-void bind_recall_ppn_2d(py::module& m) {
+void bind_ppn_recall_2d(py::module& m) {
     m.def(
-        "recall_ppn_2d",
-        &api::recall_ppn::recall_ppn_2d,
+        "ppn_recall_2d",
+        &api::ppn_recall::ppn_recall_2d,
         R"pbdoc(
         Compute (PPN, Recall) for multiple confusion matrices.
 
@@ -311,6 +311,6 @@ void bind_recall_ppn_2d(py::module& m) {
         py::arg("conf_mats"));
 }
 
-}  // namespace recall_ppn
+}  // namespace ppn_recall
 }  // namespace bindings
 }  // namespace mmu

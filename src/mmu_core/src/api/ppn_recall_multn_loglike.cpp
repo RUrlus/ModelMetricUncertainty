@@ -1,14 +1,14 @@
-/* recall_ppn_multn_loglike.cpp -- Implementation of Python API of multinomial
+/* ppn_recall_multn_loglike.cpp -- Implementation of Python API of multinomial
  * log-likelihood uncertainty for Recall-PPN
  * Copyright 2026 Ralph Urlus
  */
-#include <mmu/api/recall_ppn_multn_loglike.hpp>
+#include <mmu/api/ppn_recall_multn_loglike.hpp>
 
 namespace py = pybind11;
 
 namespace mmu {
 namespace api {
-namespace recall_ppn {
+namespace ppn_recall {
 
 py::tuple multn_error(
     const int64_t n_bins,
@@ -24,7 +24,7 @@ py::tuple multn_error(
     double* res_ptr = npy::get_data(result);
     double* bnds_ptr = npy::get_data(bounds);
     int64_t* cm_ptr = npy::get_data(conf_mat);
-    core::recall_ppn::multn_error(
+    core::ppn_recall::multn_error(
         n_bins, cm_ptr, res_ptr, bnds_ptr, n_sigmas, epsilon);
     return py::make_tuple(result, bounds);
 }  // multn_error
@@ -45,7 +45,7 @@ py::tuple multn_error_mt(
     double* res_ptr = npy::get_data(result);
     double* bnds_ptr = npy::get_data(bounds);
     int64_t* cm_ptr = npy::get_data(conf_mat);
-    core::recall_ppn::multn_error_mt(
+    core::ppn_recall::multn_error_mt(
         n_bins, cm_ptr, res_ptr, bnds_ptr, n_sigmas, epsilon, n_threads);
     return py::make_tuple(result, bounds);
 }  // multn_error_mt
@@ -63,7 +63,7 @@ double multn_chi2_score(
     if (conf_mat.size() != 4) {
         throw std::runtime_error("``conf_mat`` should have length of 4.");
     }
-    return core::recall_ppn::multn_chi2_score(
+    return core::ppn_recall::multn_chi2_score(
         ppn, recall, npy::get_data(conf_mat), epsilon);
 }
 
@@ -86,7 +86,7 @@ f64arr multn_chi2_scores(
     }
     const int64_t n_points = ppns.size();
     auto scores = f64arr(n_points);
-    core::recall_ppn::multn_chi2_scores(
+    core::ppn_recall::multn_chi2_scores(
         n_points,
         npy::get_data(ppns),
         npy::get_data(recalls),
@@ -116,7 +116,7 @@ f64arr multn_chi2_scores_mt(
     }
     const int64_t n_points = ppns.size();
     auto scores = f64arr(n_points);
-    core::recall_ppn::multn_chi2_scores_mt(
+    core::ppn_recall::multn_chi2_scores_mt(
         n_points,
         npy::get_data(ppns),
         npy::get_data(recalls),
@@ -142,7 +142,7 @@ f64arr multn_grid_error(
     const int64_t ppn_bins = ppn_grid.size();
     const int64_t recall_bins = recall_grid.size();
     auto scores = f64arr({ppn_bins, recall_bins});
-    core::recall_ppn::multn_grid_error(
+    core::ppn_recall::multn_grid_error(
         ppn_bins,
         recall_bins,
         npy::get_data(ppn_grid),
@@ -170,7 +170,7 @@ f64arr multn_grid_curve_error(
     const int64_t ppn_bins = ppn_grid.size();
     const int64_t recall_bins = recall_grid.size();
     auto scores = f64arr({ppn_bins, recall_bins});
-    core::recall_ppn::multn_grid_curve_error(
+    core::ppn_recall::multn_grid_curve_error(
         ppn_bins,
         recall_bins,
         n_conf_mats,
@@ -201,7 +201,7 @@ f64arr multn_grid_curve_error_mt(
     const int64_t ppn_bins = ppn_grid.size();
     const int64_t recall_bins = recall_grid.size();
     auto scores = f64arr({ppn_bins, recall_bins});
-    core::recall_ppn::multn_grid_curve_error_mt(
+    core::ppn_recall::multn_grid_curve_error_mt(
         ppn_bins,
         recall_bins,
         n_conf_mats,
@@ -217,7 +217,7 @@ f64arr multn_grid_curve_error_mt(
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
 // Metric computation functions
-py::tuple recall_ppn(const i64arr& conf_mat) {
+py::tuple ppn_recall(const i64arr& conf_mat) {
     if (!npy::is_well_behaved(conf_mat)) {
         throw std::runtime_error(
             "Encountered non-aligned or non-contiguous array.");
@@ -241,7 +241,7 @@ py::tuple recall_ppn(const i64arr& conf_mat) {
     return py::make_tuple(ppn, recall);
 }
 
-f64arr recall_ppn_2d(const i64arr& conf_mats) {
+f64arr ppn_recall_2d(const i64arr& conf_mats) {
     if (!npy::is_well_behaved(conf_mats)) {
         throw std::runtime_error(
             "Encountered non-aligned or non-contiguous array.");
@@ -274,6 +274,6 @@ f64arr recall_ppn_2d(const i64arr& conf_mats) {
     return result;
 }
 
-}  // namespace recall_ppn
+}  // namespace ppn_recall
 }  // namespace api
 }  // namespace mmu

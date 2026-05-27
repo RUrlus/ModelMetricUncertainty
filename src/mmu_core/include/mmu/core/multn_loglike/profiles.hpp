@@ -232,7 +232,7 @@ struct ROCProfile {
  * Note: This is a more complex constrained optimization that requires
  * solving a quadratic equation to find the optimal t = p_TP.
  */
-struct RecallPPNProfile {
+struct PPNRecallProfile {
     static constexpr const char* y_name = "PPN";
     static constexpr const char* x_name = "Recall";
 
