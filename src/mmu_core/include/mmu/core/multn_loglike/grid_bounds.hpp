@@ -10,7 +10,7 @@
 
 #include <mmu/core/common.hpp>
 #include <mmu/core/multn_loglike/common.hpp>
-#include <mmu/core/multn_loglike/metrics.hpp>
+#include <mmu/core/multn_loglike/profiles.hpp>
 
 /* conf_mat layout:
  *  0 TN
@@ -184,7 +184,7 @@ inline void compute_metric_sigma<ROCProfile>(
 
 // Recall-PPN specialization
 template <>
-inline void compute_metric_sigma<RecallPPNProfile>(
+inline void compute_metric_sigma<PPNRecallProfile>(
     const int64_t* __restrict conf_mat,
     double* __restrict metrics) {
     const int64_t tn = conf_mat[0];

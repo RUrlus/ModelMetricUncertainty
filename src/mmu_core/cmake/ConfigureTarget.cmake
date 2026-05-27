@@ -33,8 +33,8 @@ set(MMU_SRC_FILES
     ${MMU_BINDINGS_PATH}/pr_multn_loglike.cpp
     ${MMU_API_PATH}/roc_multn_loglike.cpp
     ${MMU_BINDINGS_PATH}/roc_multn_loglike.cpp
-    ${MMU_API_PATH}/recall_ppn_multn_loglike.cpp
-    ${MMU_BINDINGS_PATH}/recall_ppn_multn_loglike.cpp)
+    ${MMU_API_PATH}/ppn_recall_multn_loglike.cpp
+    ${MMU_BINDINGS_PATH}/ppn_recall_multn_loglike.cpp)
 
 pybind11_add_module(_mmu_core MODULE ${MMU_SRC_FILES})
 target_link_libraries(_mmu_core PUBLIC mmu::mmu)

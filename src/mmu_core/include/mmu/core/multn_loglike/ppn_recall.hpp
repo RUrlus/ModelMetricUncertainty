@@ -3,16 +3,17 @@
  */
 #pragma once
 
+#include <mmu/core/multn_loglike/chi2.hpp>
 #include <mmu/core/multn_loglike/common.hpp>
-#include <mmu/core/multn_loglike/core.hpp>
 #include <mmu/core/multn_loglike/grid_bounds.hpp>
-#include <mmu/core/multn_loglike/metrics.hpp>
+#include <mmu/core/multn_loglike/loglike.hpp>
+#include <mmu/core/multn_loglike/profiles.hpp>
 
 namespace mmu {
 namespace core {
 namespace recall_ppn {
 
-using Profile = multn::RecallPPNProfile;
+using Profile = multn::PPNRecallProfile;
 
 /**
  * Initialize the profile log-likelihood store from a confusion matrix.
