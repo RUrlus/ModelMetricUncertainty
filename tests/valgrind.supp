@@ -1,0 +1,116 @@
+########################################
+# PYBIND11 ENUM / FUNCTION REGISTRATION
+########################################
+{
+  pybind11_enum_strdup
+  Memcheck:Leak
+  match-leak-kinds: possible
+  fun:malloc
+  fun:strdup
+  fun:pybind11::cpp_function::initialize_generic
+}
+
+{
+  pybind11_enum_init
+  Memcheck:Leak
+  match-leak-kinds: possible
+  fun:malloc
+  fun:pybind11::enum_*
+}
+
+########################################
+# NUMPY UFUNC INITIALIZATION
+########################################
+{
+  numpy_ufunc_init
+  Memcheck:Leak
+  match-leak-kinds: possible
+  fun:malloc
+  fun:PyUFunc_FromFuncAndDataAndSignatureAndIdentity
+}
+
+########################################
+# SCIPY SPECIAL / UFUNC WRAPPERS
+########################################
+{
+  scipy_special_ufunc
+  Memcheck:Leak
+  match-leak-kinds: possible
+  fun:malloc
+  obj:*/scipy/*
+  fun:PyUFunc_*
+}
+
+########################################
+# GENERIC PYTHON MODULE INIT LEAKS
+########################################
+{
+  python_module_exec
+  Memcheck:Leak
+  match-leak-kinds: possible
+  fun:malloc
+  fun:PyModule_ExecDef
+}
+
+########################################
+# IMPORTLIB BOOTSTRAP NOISE
+########################################
+{
+  importlib_bootstrap
+  Memcheck:Leak
+  match-leak-kinds: possible
+  fun:malloc
+  obj:*/importlib/_bootstrap*
+}
+
+########################################
+# MATPLOTLIB / CONTOURPY (pybind11-based)
+########################################
+{
+  matplotlib_pybind11
+  Memcheck:Leak
+  match-leak-kinds: possible
+  obj:*/matplotlib/*
+  fun:pybind11::*
+}
+
+{
+  contourpy_pybind11
+  Memcheck:Leak
+  match-leak-kinds: possible
+  obj:*/contourpy/*
+  fun:pybind11::*
+}
+
+########################################
+# HIGHSPY (scipy.optimize)
+########################################
+{
+  highspy_pybind11
+  Memcheck:Leak
+  match-leak-kinds: possible
+  obj:*/_highspy/*
+  fun:pybind11::*
+}
+
+########################################
+# SMALL STRDUP LEAKS (GLOBAL FALLBACK)
+########################################
+{
+  strdup_small_leaks
+  Memcheck:Leak
+  match-leak-kinds: possible
+  fun:malloc
+  fun:strdup
+}
+
+########################################
+# NUMPY CORE IMPORT NOISE
+########################################
+{
+  numpy_core_init
+  Memcheck:Leak
+  match-leak-kinds: possible
+  obj:*/numpy/*
+  fun:PyModule_ExecDef
+}
