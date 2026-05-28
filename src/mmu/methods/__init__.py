@@ -1,29 +1,28 @@
-from mmu.methods.prpoint import PrecisionRecallUncertainty
+from mmu.methods.ppn_recall import PPNRecallCurveUncertainty, PPNRecallUncertainty
 from mmu.methods.prcurve import PrecisionRecallCurveUncertainty
-from mmu.methods.rocpoint import ROCUncertainty
+from mmu.methods.prpoint import PrecisionRecallUncertainty
 from mmu.methods.roccurve import ROCCurveUncertainty
-from mmu.methods.recall_ppn import RecallPPNUncertainty
-from mmu.methods.recall_ppn import RecallPPNCurveUncertainty
+from mmu.methods.rocpoint import ROCUncertainty
 
 # Aliases
 PRU = PrecisionRecallUncertainty
 PRCU = PrecisionRecallCurveUncertainty
 ROCU = ROCUncertainty
 ROCCU = ROCCurveUncertainty
-RPPNU = RecallPPNUncertainty
-RPPNCU = RecallPPNCurveUncertainty
+PPNRU = PPNRecallUncertainty
+PPNRCU = PPNRecallCurveUncertainty
 
 __all__ = [
-    "PRU",
     "PRCU",
-    "ROCU",
+    "PRU",
     "ROCCU",
-    "RPPNU",
-    "RPPNCU",
-    "PrecisionRecallUncertainty",
+    "ROCU",
+    "PPNRCU",
+    "PPNRU",
+    "PPNRecallUncertainty",
     "PrecisionRecallCurveUncertainty",
-    "ROCUncertainty",
+    "PrecisionRecallUncertainty",
     "ROCCurveUncertainty",
-    "RecallPPNUncertainty",
+    "ROCUncertainty",
     "RecallPPNCurveUncertainty",
 ]

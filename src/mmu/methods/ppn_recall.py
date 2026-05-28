@@ -1,19 +1,16 @@
-"""Module containing the API for Recall vs Proportion Predicted Negative uncertainty.
+"""Module containing the API for Proportion Predicted Negative vs Recall uncertainty.
 
 This module provides analytical profile likelihood solutions for the joint
 uncertainty of Recall (TPR) and Proportion Predicted Negative (PPN) metrics.
 """
 
-import numpy as np
-
-from mmu.methods.pointbase import BaseUncertainty
-from mmu.methods.curvebase import BaseCurveUncertainty
-
 import mmu.lib._mmu_core as _core
 from mmu.lib import _MMU_MT_SUPPORT
+from mmu.methods.curvebase import BaseCurveUncertainty
+from mmu.methods.pointbase import BaseUncertainty
 
 
-class RecallPPNUncertainty(BaseUncertainty):
+class PPNRecallUncertainty(BaseUncertainty):
     """Compute joint uncertainty on Recall and Proportion Predicted Negative.
 
     The joint statistical uncertainty is computed using profile log-likelihoods
@@ -60,18 +57,17 @@ class RecallPPNUncertainty(BaseUncertainty):
         BaseUncertainty.__init__(self)
 
         # Set metric and error functions (C++ implementations)
-        self.metric_func = _core.recall_ppn
-        self.multn_error_func = _core.recall_ppn_multn_error
-        self.multn_chi2_score_func = _core.recall_ppn_multn_chi2_score
-        self.multn_chi2_scores_func = _core.recall_ppn_multn_chi2_scores
+        self.metric_func = _core.ppn_recall
+        self.multn_error_func = _core.ppn_recall_multn_error
+        self.multn_chi2_score_func = _core.ppn_recall_multn_chi2_score
+        self.multn_chi2_scores_func = _core.ppn_recall_multn_chi2_scores
 
         if _MMU_MT_SUPPORT:
-            self.multn_error_mt_func = _core.recall_ppn_multn_error_mt
-            self.multn_chi2_scores_mt_func = _core.recall_ppn_multn_chi2_scores_mt
+            self.multn_error_mt_func = _core.ppn_recall_multn_error_mt
+            self.multn_chi2_scores_mt_func = _core.ppn_recall_multn_chi2_scores_mt
 
         self.y_label = "PPN"
         self.x_label = "Recall"
-
 
     @property
     def recall(self):
@@ -106,15 +102,10 @@ class RecallPPNUncertainty(BaseUncertainty):
         return self.y_bounds
 
 
-RPPNU = RecallPPNUncertainty
+RPPNU = PPNRecallUncertainty
 
 
-# =============================================================================
-# RecallPPNCurveUncertainty - Curve Uncertainty Class
-# =============================================================================
-
-
-class RecallPPNCurveUncertainty(BaseCurveUncertainty):
+class PPNRecallCurveUncertainty(BaseCurveUncertainty):
     """Compute joint uncertainty for Recall-PPN curve over multiple thresholds.
 
     The joint statistical uncertainty is computed using profile log-likelihoods
@@ -158,15 +149,14 @@ class RecallPPNCurveUncertainty(BaseCurveUncertainty):
         BaseCurveUncertainty.__init__(self)
 
         # Set metric and error functions (C++ implementations)
-        self.multn_grid_curve_error_func = _core.recall_ppn_multn_grid_curve_error
-        self.metric_2d_func = _core.recall_ppn_2d
+        self.multn_grid_curve_error_func = _core.ppn_recall_multn_grid_curve_error
+        self.metric_2d_func = _core.ppn_recall_2d
 
         if _MMU_MT_SUPPORT:
-            self.multn_grid_curve_error_mt_func = _core.recall_ppn_multn_grid_curve_error_mt
+            self.multn_grid_curve_error_mt_func = _core.ppn_recall_multn_grid_curve_error_mt
 
         self.y_label = "PPN"
         self.x_label = "Recall"
-
 
     @property
     def recall(self):
@@ -202,4 +192,4 @@ class RecallPPNCurveUncertainty(BaseCurveUncertainty):
 
 
 # Alias for convenience
-RPPNCU = RecallPPNCurveUncertainty
+PPNRCU = PPNRecallCurveUncertainty
