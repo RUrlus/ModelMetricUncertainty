@@ -7,12 +7,7 @@ from mmu.commons.types import _is_ext_compat
 from mmu.lib import _core
 from mmu.lib import _MMU_MT_SUPPORT
 
-_ORDER_SH = {
-    "C_CONTIGUOUS": "C",
-    0: "C",
-    "F_CONTIGUOUS": "F",
-    1: "F",
-}
+_ORDER_SH = {"C_CONTIGUOUS": "C", 0: "C", "F_CONTIGUOUS": "F", 1: "F"}
 
 
 def _check_n_threads(n_threads=None):
@@ -31,15 +26,7 @@ def _check_n_threads(n_threads=None):
 
 
 def _check_array(
-    arr,
-    dtype_check,
-    axis=None,
-    target_axis=0,
-    target_order=1,
-    min_dim=1,
-    max_dim=2,
-    copy=False,
-    check_finite=True,
+    arr, dtype_check, axis=None, target_axis=0, target_order=1, min_dim=1, max_dim=2, copy=False, check_finite=True
 ):
     """Specialisation of check_array for Numpy arrays."""
     convert = copy
@@ -76,11 +63,7 @@ def _check_array(
         order = -1
 
     # the arr is not contiguous or is not aligned
-    convert += (
-        not arr.flags.aligned
-        or (order == -1)
-        or ((ndims > 1) and (order != target_order))
-    )
+    convert += not arr.flags.aligned or (order == -1) or ((ndims > 1) and (order != target_order))
 
     if convert > 0:
         return np.asarray(arr, order=_ORDER_SH[target_order], dtype=dtype)  # type: ignore
@@ -152,7 +135,7 @@ def check_array(
     # these settings must not change
     kwargs["accept_sparse"] = False
     kwargs["accept_large_sparse"] = False
-    kwargs["force_all_finite"] = True
+    kwargs["ensure_all_finite"] = True
     kwargs["allow_nd"] = False
 
     if "ensure_2d" not in kwargs:
