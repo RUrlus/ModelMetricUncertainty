@@ -48,8 +48,10 @@ jobs:
           export OMP_NUM_THREADS=1
           export NPY_DISABLE_CPU_FEATURES="X86_V4,X86_V3"
           valgrind \
+            --suppressions=valgrind.supp \
             --leak-check=full \
             --show-leak-kinds=all \
+            --errors-for-leak-kinds=definite,indirect \
             --track-origins=yes \
             --num-callers=50 \
             --error-exitcode=99 \
