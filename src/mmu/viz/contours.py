@@ -1,9 +1,7 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-from mmu.viz.utils import _get_color_hexes
-from mmu.viz.utils import _create_pr_legend
-from mmu.viz.utils import _create_pr_legend_scatter
+from mmu.viz.utils import _create_pr_legend, _create_pr_legend_scatter, _get_color_hexes
 
 
 def _plot_curve_contours(
@@ -20,8 +18,8 @@ def _plot_curve_contours(
     legend_loc,
     equal_aspect,
     limit_axis,
-    y_label='',
-    x_label='',
+    y_label="",
+    x_label="",
 ):
     if cmap is None:
         cmap = "Blues"
@@ -38,7 +36,7 @@ def _plot_curve_contours(
     RX, PY = np.meshgrid(x_grid, y_grid)
     colors = _get_color_hexes(cmap, n_colors=len(labels), keep_alpha=True)
 
-    levels = [0.0] + levels.tolist()
+    levels = [0.0, *levels.tolist()]
     # create contours
     ax.contourf(RX, PY, scores, levels=levels, colors=colors, alpha=alpha)  # type: ignore
     # plot precision recall
@@ -79,8 +77,8 @@ def _plot_contours(
     legend_loc,
     equal_aspect,
     limit_axis,
-    y_label='',
-    x_label='',
+    y_label="",
+    x_label="",
 ):
     if cmap is None:
         cmap = "Blues"
@@ -97,23 +95,15 @@ def _plot_contours(
     y_grid = np.linspace(bounds[0], bounds[1], num=n_bins)
     x_grid = np.linspace(bounds[2], bounds[3], num=n_bins)
     RX, PY = np.meshgrid(x_grid, y_grid)
-    colors, c_marker = _get_color_hexes(
-        cmap, n_colors=len(labels), return_marker=True, keep_alpha=True
-    )
+    colors, c_marker = _get_color_hexes(cmap, n_colors=len(labels), return_marker=True, keep_alpha=True)
 
     # add zero level to contours
-    levels = [0.0] + levels.tolist()
+    levels = [0.0, *levels.tolist()]
     # create contours
     ax.contourf(RX, PY, scores, levels=levels, colors=colors, alpha=alpha)  # type: ignore
     # plot precision recall
     ax.scatter(  # type: ignore
-        x,
-        y,
-        color=c_marker,
-        marker="x",
-        s=50,
-        lw=2,
-        zorder=len(labels) + 1,
+        x, y, color=c_marker, marker="x", s=50, lw=2, zorder=len(labels) + 1
     )
     ax.set_xlabel(x_label, fontsize=14)  # type: ignore
     ax.set_ylabel(y_label, fontsize=14)  # type: ignore

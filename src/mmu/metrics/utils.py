@@ -1,6 +1,6 @@
 import numpy as np
-from mmu.commons import check_array
-from mmu.commons import _convert_to_float
+
+from mmu.commons import _convert_to_float, check_array
 
 
 def auto_thresholds(scores, max_steps=None, epsilon=None, seed=None):
@@ -53,9 +53,7 @@ def auto_thresholds(scores, max_steps=None, epsilon=None, seed=None):
         rng = np.random.default_rng(seed)
         weights = np.log(1.0 / fdiff[distinct_idx])
         weights /= weights.sum()
-        threshold_idxs = np.sort(
-            rng.choice(distinct_idx, replace=False, size=max_steps, p=weights)
-        )
+        threshold_idxs = np.sort(rng.choice(distinct_idx, replace=False, size=max_steps, p=weights))
 
     if threshold_idxs[0] != 0 and threshold_idxs[-1] != n_elem - 1:
         thresholds = np.empty(threshold_idxs.size + 2, dtype=np.float64)

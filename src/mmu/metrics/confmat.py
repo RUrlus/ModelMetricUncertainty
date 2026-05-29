@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
+
+from mmu.commons import _convert_to_ext_types, _convert_to_float, check_array
 from mmu.lib import _core
-from mmu.commons import check_array
-from mmu.commons import _convert_to_ext_types
-from mmu.commons import _convert_to_float
 
 
 def confusion_matrix_to_dataframe(conf_mat):
@@ -14,7 +13,7 @@ def confusion_matrix_to_dataframe(conf_mat):
     conf_mat : np.ndarray
         array containing a single confusion matrix
 
-    Returns
+    Returns:
     -------
     pd.DataFrame
         the confusion matrix
@@ -35,7 +34,7 @@ def confusion_matrices_to_dataframe(conf_mat):
     conf_mat : np.ndarray
         array containing multiple confusion matrices as an (N, 4) array
 
-    Returns
+    Returns:
     -------
     pd.DataFrame
         the confusion matrix
@@ -67,14 +66,14 @@ def confusion_matrix(y, yhat=None, scores=None, threshold=0.5, return_df=False):
     return_df : bool, default=False
         return confusion matrix as pd.DataFrame
 
-    Raises
+    Raises:
     ------
     TypeError
         if both `scores` and `yhat` are None
     TypeError
         if `scores` is not None and `threshold` is not a float
 
-    Returns
+    Returns:
     -------
     conf_mat : np.ndarray, pd.DataFrame
         the confusion_matrix with layout
@@ -86,37 +85,31 @@ def confusion_matrix(y, yhat=None, scores=None, threshold=0.5, return_df=False):
     y = check_array(y, max_dim=1, dtype_check=_convert_to_ext_types)
 
     if scores is not None:
-        scores = check_array(
-            scores,
-            max_dim=1,
-            dtype_check=_convert_to_float,
-        )
+        scores = check_array(scores, max_dim=1, dtype_check=_convert_to_float)
         if not isinstance(threshold, float):
-            raise TypeError("`threshold` must be a float if scores is not None")
+            msg = "`threshold` must be a float if scores is not None"
+            raise TypeError(msg)
         if scores.size != y.size:
-            raise ValueError("`scores` and `y` must have equal length.")
+            msg_0 = "`scores` and `y` must have equal length."
+            raise ValueError(msg_0)
         conf_mat = _core.confusion_matrix_score(y, scores, threshold)
     elif yhat is not None:
-        yhat = check_array(
-            yhat,
-            max_dim=1,
-            dtype_check=_convert_to_ext_types,
-        )
+        yhat = check_array(yhat, max_dim=1, dtype_check=_convert_to_ext_types)
         if yhat.size != y.size:
-            raise ValueError("`yhat` and `y` must have equal length.")
+            msg_1 = "`yhat` and `y` must have equal length."
+            raise ValueError(msg_1)
 
         conf_mat = _core.confusion_matrix(y, yhat)
     else:
-        raise TypeError("`yhat` must not be None if `scores` is None")
+        msg_2 = "`yhat` must not be None if `scores` is None"
+        raise TypeError(msg_2)
 
     if return_df:
         return confusion_matrix_to_dataframe(conf_mat)
     return conf_mat
 
 
-def confusion_matrices(
-    y, yhat=None, scores=None, threshold=0.5, obs_axis=0, return_df=False
-):
+def confusion_matrices(y, yhat=None, scores=None, threshold=0.5, obs_axis=0, return_df=False):
     """Compute binary confusion matrices over multiple runs.
 
     `conf_mats` is alias for this function.
@@ -141,14 +134,14 @@ def confusion_matrices(
     return_df : bool, default=False
         return confusion matrix as pd.DataFrame
 
-    Raises
+    Raises:
     ------
     TypeError
         if both `scores` and `yhat` are None
     TypeError
         if `scores` is not None and `threshold` is not a float
 
-    Returns
+    Returns:
     -------
     confusion_matrices np.ndarray, pd.DataFrame
         the confusion_matrices where the rows contain the counts for the runs
@@ -157,12 +150,7 @@ def confusion_matrices(
     """
     # condition checks
     y = check_array(
-        y,
-        axis=obs_axis,
-        target_axis=obs_axis,
-        target_order=1 - obs_axis,
-        max_dim=2,
-        dtype_check=_convert_to_ext_types,
+        y, axis=obs_axis, target_axis=obs_axis, target_order=1 - obs_axis, max_dim=2, dtype_check=_convert_to_ext_types
     )
 
     if scores is not None:
@@ -175,12 +163,12 @@ def confusion_matrices(
             dtype_check=_convert_to_float,
         )
         if not isinstance(threshold, float):
-            raise TypeError("`threshold` must be a float if scores is not None")
+            msg = "`threshold` must be a float if scores is not None"
+            raise TypeError(msg)
         if scores.size != y.size:
-            raise ValueError("`scores` and `y` must have equal length.")
-        conf_mat = _core.confusion_matrix_score_runs(
-            y, scores, threshold, obs_axis=obs_axis
-        )
+            msg_0 = "`scores` and `y` must have equal length."
+            raise ValueError(msg_0)
+        conf_mat = _core.confusion_matrix_score_runs(y, scores, threshold, obs_axis=obs_axis)
     elif yhat is not None:
         yhat = check_array(
             yhat,
@@ -191,11 +179,13 @@ def confusion_matrices(
             dtype_check=_convert_to_ext_types,
         )
         if yhat.size != y.size:
-            raise ValueError("`yhat` and `y` must have equal length.")
+            msg_1 = "`yhat` and `y` must have equal length."
+            raise ValueError(msg_1)
 
         conf_mat = _core.confusion_matrix_runs(y, yhat, obs_axis=obs_axis)
     else:
-        raise TypeError("`yhat` must not be None if `scores` is None")
+        msg_2 = "`yhat` must not be None if `scores` is None"
+        raise TypeError(msg_2)
 
     if return_df:
         return confusion_matrices_to_dataframe(conf_mat)
@@ -220,7 +210,7 @@ def confusion_matrices_thresholds(y, scores, thresholds, return_df=False):
     return_df : bool, default=False
         return the metrics confusion matrix and metrics as a DataFrame
 
-    Returns
+    Returns:
     -------
     confusion_matrix : np.ndarray, pd.DataFrame
         the confusion_matrices where the rows contain the counts for a
@@ -228,28 +218,15 @@ def confusion_matrices_thresholds(y, scores, thresholds, return_df=False):
 
     """
     # condition checks
-    y = check_array(
-        y,
-        max_dim=2,
-        target_order=1,
-        dtype_check=_convert_to_ext_types,
-    )
+    y = check_array(y, max_dim=2, target_order=1, dtype_check=_convert_to_ext_types)
 
-    scores = check_array(
-        scores,
-        max_dim=2,
-        target_order=1,
-        dtype_check=_convert_to_float,
-    )
+    scores = check_array(scores, max_dim=2, target_order=1, dtype_check=_convert_to_float)
 
-    thresholds = check_array(
-        thresholds,
-        max_dim=1,
-        dtype_check=_convert_to_float,
-    )
+    thresholds = check_array(thresholds, max_dim=1, dtype_check=_convert_to_float)
 
     if scores.size != y.size:
-        raise ValueError("`scores` and `y` must have equal length.")
+        msg = "`scores` and `y` must have equal length."
+        raise ValueError(msg)
 
     conf_mat = _core.confusion_matrix_thresholds(y, scores, thresholds)
 
@@ -258,9 +235,7 @@ def confusion_matrices_thresholds(y, scores, thresholds, return_df=False):
     return conf_mat
 
 
-def confusion_matrices_runs_thresholds(
-    y, scores, thresholds, n_obs=None, fill=0.0, obs_axis=0
-):
+def confusion_matrices_runs_thresholds(y, scores, thresholds, n_obs=None, fill=0.0, obs_axis=0):
     """Compute confusion matrices over runs and thresholds.
 
     `conf_mats_runs_thresh` is an alias for this function.
@@ -287,7 +262,7 @@ def confusion_matrices_runs_thresholds(
         0 if the observations for a single run is a column (e.g. from
         pd.DataFrame) and 1 otherwhise
 
-    Returns
+    Returns:
     -------
     conf_mat : np.ndarray[int64]
         3D array where the rows contain the counts for a threshold,
@@ -295,19 +270,10 @@ def confusion_matrices_runs_thresholds(
         a run
 
     """
-    thresholds = check_array(
-        thresholds,
-        max_dim=1,
-        dtype_check=_convert_to_float,
-    )
+    thresholds = check_array(thresholds, max_dim=1, dtype_check=_convert_to_float)
 
     scores = check_array(
-        scores,
-        axis=obs_axis,
-        target_axis=obs_axis,
-        target_order=1 - obs_axis,
-        max_dim=2,
-        dtype_check=_convert_to_float,
+        scores, axis=obs_axis, target_axis=obs_axis, target_order=1 - obs_axis, max_dim=2, dtype_check=_convert_to_float
     )
 
     n_runs = scores.shape[1 - obs_axis]
@@ -319,12 +285,7 @@ def confusion_matrices_runs_thresholds(
         y = np.tile(y, n_runs)
 
     y = check_array(
-        y,
-        axis=obs_axis,
-        target_axis=obs_axis,
-        target_order=1 - obs_axis,
-        max_dim=2,
-        dtype_check=_convert_to_ext_types,
+        y, axis=obs_axis, target_axis=obs_axis, target_order=1 - obs_axis, max_dim=2, dtype_check=_convert_to_ext_types
     )
 
     n_thresholds = thresholds.size
