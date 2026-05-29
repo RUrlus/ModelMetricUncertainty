@@ -7,8 +7,11 @@ target_include_directories(mmu_headers INTERFACE ${PROJECT_SOURCE_DIR}/src/mmu_c
 add_library(mmu_mmu INTERFACE)
 add_library(mmu::mmu ALIAS mmu_mmu)
 target_include_directories(
-  mmu_mmu INTERFACE ${PROJECT_SOURCE_DIR}/src/mmu_core/include/ ${Python3_INCLUDE_DIRS}
-                    ${PROJECT_SOURCE_DIR}/src/mmu_core/external/pcg-cpp/include)
+  mmu_mmu INTERFACE
+    ${PROJECT_SOURCE_DIR}/src/mmu_core/include/
+    ${Python3_INCLUDE_DIRS}
+    ${PROJECT_SOURCE_DIR}/src/mmu_core/external/pcg-cpp/include
+)
 
 if(MMU_DEV_MODE AND NOT MMU_CICD_MODE)
   target_compile_options(mmu_mmu INTERFACE ${MMU_DEVMODE_OPTIONS})
@@ -39,8 +42,19 @@ set(MMU_SRC_FILES
 pybind11_add_module(_mmu_core MODULE ${MMU_SRC_FILES})
 target_link_libraries(_mmu_core PUBLIC mmu::mmu)
 target_compile_definitions(
-  _mmu_core PRIVATE EXTENSION_MODULE_NAME=_mmu_core VERSION_INFO=${PROJECT_VERSION})
-target_compile_options(_mmu_core PRIVATE "$<$<CONFIG:RELEASE>:${MMU_ARCHITECTURE_FLAGS}>")
+  _mmu_core PRIVATE EXTENSION_MODULE_NAME=_mmu_core VERSION_INFO=${PROJECT_VERSION}
+)
+
+if(MMU_ARCHITECTURE_FLAGS)
+  target_compile_options(_mmu_core PRIVATE
+    "$<$<CONFIG:Release>:${MMU_ARCHITECTURE_FLAGS}>"
+  )
+endif()
+
+if(MMU_X86_ISA_NAME)
+  target_compile_definitions(_mmu_core PRIVATE MMU_X86_ISA_${MMU_X86_ISA_NAME}=1)
+endif()
+
 set_property(TARGET _mmu_core PROPERTY CXX_STANDARD ${MMU_CPP_STANDARD})
 set_property(TARGET _mmu_core PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET _mmu_core PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -51,7 +65,8 @@ if(OpenMP_CXX_FOUND AND APPLE)
   get_target_property(
     OpenMP_LIBRARY_LOCATION
     OpenMP::OpenMP_CXX
-    INTERFACE_LINK_LIBRARIES)
+    INTERFACE_LINK_LIBRARIES
+  )
   get_filename_component(OpenMP_LIBRARY_NAME ${OpenMP_LIBRARY_LOCATION} NAME)
   get_filename_component(OpenMP_LIBRARY_DIR ${OpenMP_LIBRARY_LOCATION} DIRECTORY)
 
@@ -65,7 +80,8 @@ if(OpenMP_CXX_FOUND AND APPLE)
       "@rpath/${OpenMP_LIBRARY_NAME}"
       $<TARGET_FILE:_mmu_core>
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Replacing hard-coded OpenMP install_name with @rpath/${OpenMP_LIBRARY_NAME}")
+    COMMENT "Replacing hard-coded OpenMP install_name with @rpath/${OpenMP_LIBRARY_NAME}"
+  )
 
   if(MMU_VENDOR_OPENMP)
     set(OpenMP_TARGET_DIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/.dylibs")
@@ -75,13 +91,15 @@ if(OpenMP_CXX_FOUND AND APPLE)
       TARGET _mmu_core
       POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E make_directory ${OpenMP_TARGET_DIR}
-      COMMAND ${CMAKE_COMMAND} -E copy ${OpenMP_LIBRARY_LOCATION} ${OpenMP_TARGET_LOCATION})
+      COMMAND ${CMAKE_COMMAND} -E copy ${OpenMP_LIBRARY_LOCATION} ${OpenMP_TARGET_LOCATION}
+    )
     set_target_properties(
       _mmu_core
       PROPERTIES
         BUILD_WITH_INSTALL_RPATH TRUE
         INSTALL_RPATH "@loader_path/../.dylibs/"
-        INSTALL_RPATH_USE_LINK_PATH FALSE)
+        INSTALL_RPATH_USE_LINK_PATH FALSE
+    )
   else()
     set_target_properties(
       _mmu_core
@@ -89,14 +107,13 @@ if(OpenMP_CXX_FOUND AND APPLE)
         BUILD_WITH_INSTALL_RPATH TRUE
         INSTALL_RPATH
           "${OpenMP_LIBRARY_DIR};${MMU_HOMEBREW_PREFIX}/opt/libomp/lib;/opt/homebrew/opt/libomp/lib"
-        INSTALL_RPATH_USE_LINK_PATH FALSE)
+        INSTALL_RPATH_USE_LINK_PATH FALSE
+    )
   endif()
 endif()
-
 
 if(SKBUILD)
   install(TARGETS _mmu_core LIBRARY DESTINATION "${PROJECT_NAME}/lib")
 else()
   install(TARGETS _mmu_core LIBRARY DESTINATION "${PROJECT_SOURCE_DIR}/src/mmu/lib")
 endif()
-
