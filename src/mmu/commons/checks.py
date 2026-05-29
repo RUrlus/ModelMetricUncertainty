@@ -18,16 +18,15 @@ _ORDER_SH = {
 def _check_n_threads(n_threads=None):
     maxt_m1 = multiprocessing.cpu_count() - 1
     if n_threads is None:
-        if _MMU_MT_SUPPORT:
-            n_threads = 4
-        else:
-            n_threads = 1
+        n_threads = 4 if _MMU_MT_SUPPORT else 1
     elif not isinstance(n_threads, int):
-        raise TypeError("`n_threads` must be an int")
+        msg = "`n_threads` must be an int"
+        raise TypeError(msg)
     if n_threads == -1:
         n_threads = maxt_m1
     if (n_threads == 0) or (n_threads < -1):
-        raise ValueError("`n_threads` must be strictly positive or -1")
+        msg = "`n_threads` must be strictly positive or -1"
+        raise ValueError(msg)
     return n_threads
 
 
@@ -52,12 +51,15 @@ def _check_array(
     for s in arr.shape:
         ndims += s > 1
     if ndims > max_dim:
-        raise ValueError(f"Array must be at most {max_dim} dimensional.")
-    elif ndims < min_dim:
-        raise ValueError(f"Array must have at least {min_dim} dimensions.")
+        msg = f"Array must be at most {max_dim} dimensional."
+        raise ValueError(msg)
+    if ndims < min_dim:
+        msg_0 = f"Array must have at least {min_dim} dimensions."
+        raise ValueError(msg_0)
 
     if check_finite and (not _core.all_finite(arr)):
-        raise ValueError("Non-finite values encountered")
+        msg_1 = "Non-finite values encountered"
+        raise ValueError(msg_1)
 
     # check if array has assumed layout row, column wise
     if axis is None:
@@ -164,8 +166,10 @@ def check_array(
     for s in arr.shape:
         ndims += s > 1
     if ndims > max_dim:
-        raise ValueError(f"Array must be at most {max_dim} dimensional.")
-    elif ndims < min_dim:
-        raise ValueError(f"Array must have at least {min_dim} dimensions.")
+        msg = f"Array must be at most {max_dim} dimensional."
+        raise ValueError(msg)
+    if ndims < min_dim:
+        msg_0 = f"Array must have at least {min_dim} dimensions."
+        raise ValueError(msg_0)
 
     return arr

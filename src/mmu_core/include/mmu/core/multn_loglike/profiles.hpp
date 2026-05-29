@@ -14,37 +14,28 @@ namespace multn {
 namespace details {
 
 constexpr double k_prob_tol_mult = 128.0;
-constexpr double k_disc_tol_mult = 64.0;
+constexpr double k_disc_tol = 64.0 * std::numeric_limits<double>::epsilon();
 constexpr double k_prob_tol
-    = k_prob_tol_mult * std::numeric_limits<double>::epsilon();
+    = -1 * k_prob_tol_mult * std::numeric_limits<double>::epsilon();
 
 template <bool Guarded>
-inline bool finalize_probas4(
+inline bool neg_clip(
     const double p_tn,
     const double p_fp,
     const double p_fn,
     const double p_tp,
     double* __restrict probas) {
     if constexpr (Guarded) {
-        if (p_tn < -k_prob_tol || p_fp < -k_prob_tol || p_fn < -k_prob_tol
-            || p_tp < -k_prob_tol) {
+        if (p_tn < k_prob_tol || p_fp < k_prob_tol || p_fn < k_prob_tol
+            || p_tp < k_prob_tol) {
             return false;
         }
-        probas[0] = p_tn < 0.0 ? 0.0 : p_tn;
-        probas[1] = p_fp < 0.0 ? 0.0 : p_fp;
-        probas[2] = p_fn < 0.0 ? 0.0 : p_fn;
-        probas[3] = p_tp < 0.0 ? 0.0 : p_tp;
-        return true;
-    } else {
-        if (p_tn < 0.0 || p_fp < 0.0 || p_fn < 0.0 || p_tp < 0.0) {
-            return false;
-        }
-        probas[0] = p_tn;
-        probas[1] = p_fp;
-        probas[2] = p_fn;
-        probas[3] = p_tp;
-        return true;
     }
+    probas[0] = p_tn < 0.0 ? 0.0 : p_tn;
+    probas[1] = p_fp < 0.0 ? 0.0 : p_fp;
+    probas[2] = p_fn < 0.0 ? 0.0 : p_fn;
+    probas[3] = p_tp < 0.0 ? 0.0 : p_tp;
+    return true;
 }
 
 inline double safe_ratio(const double num, const double den) {
@@ -108,8 +99,7 @@ struct PrecisionRecallProfile {
         const double p_fp = prec_ratio * p_tp;
         const double p_tn = 1.0 - p_fp - p_fn - p_tp;
 
-        return details::finalize_probas4<Guarded>(
-            p_tn, p_fp, p_fn, p_tp, probas);
+        return details::neg_clip<Guarded>(p_tn, p_fp, p_fn, p_tp, probas);
     }
 
     static inline void get_max_clips(
@@ -174,8 +164,7 @@ struct ROCProfile {
         const double p_fp = x * neg;
         const double p_tn = (1.0 - x) * neg;
 
-        return details::finalize_probas4<Guarded>(
-            p_tn, p_fp, p_fn, p_tp, probas);
+        return details::neg_clip<Guarded>(p_tn, p_fp, p_fn, p_tp, probas);
     }
 
     static inline void get_max_clips(
@@ -252,10 +241,9 @@ struct PPNRecallProfile {
         double D = std::fma(-4.0 * a, c, L * L);
 
         if constexpr (Guarded) {
-            const double D_tol = details::k_disc_tol_mult
-                                 * std::numeric_limits<double>::epsilon()
-                                 * (L * L + std::abs(4.0 * a * c));
             if (D < 0.0) {
+                const double D_tol
+                    = details::k_disc_tol * (L * L + std::abs(4.0 * a * c));
                 if (D > -D_tol) {
                     D = 0.0;
                 } else {
@@ -263,9 +251,7 @@ struct PPNRecallProfile {
                 }
             }
         } else {
-            if (D < 0.0) {
-                return false;
-            }
+            D = D < 0.0 ? 0.0 : D;
         }
 
         const double sqrt_D = std::sqrt(D);
@@ -279,8 +265,7 @@ struct PPNRecallProfile {
         const double p_tn = y - p_fn;
         const double p_fp = q - p_tp;
 
-        return details::finalize_probas4<Guarded>(
-            p_tn, p_fp, p_fn, p_tp, probas);
+        return details::neg_clip<Guarded>(p_tn, p_fp, p_fn, p_tp, probas);
     }
 
     static inline void get_max_clips(
