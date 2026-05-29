@@ -58,30 +58,6 @@ struct prof_loglike_store {
     double nll_h0 = 0.0;
 };
 
-namespace details {
-
-inline void linspace(
-    const double start,
-    double const end,
-    const size_t steps,
-    double* values) {
-    if (steps == 0) {
-        throw std::runtime_error("`steps` must be greater than zero.");
-    } else if (steps == 1) {
-        values[0] = static_cast<double>(start);
-        return;
-    }
-    const double delta = (end - start) / static_cast<double>(steps - 1);
-    const size_t N = steps - 1;
-    values[0] = start;
-    values[N] = end;
-    for (size_t i = 1; i < N; ++i) {
-        values[i] = start + (delta * i);
-    }
-    return;
-}
-
-}  // namespace details
 }  // namespace multn
 }  // namespace core
 }  // namespace mmu

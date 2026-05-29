@@ -57,37 +57,93 @@ struct PrecisionRecallProfile {
     static constexpr const char* x_name = "Recall";
 
     static inline double compute_metric_n(const int64_t* __restrict conf_mat) {
+        // n3 = FP + FN + TP
         return static_cast<double>(conf_mat[1] + conf_mat[2] + conf_mat[3]);
     }
 
-    static inline void
-    metric_values(const int64_t* __restrict conf_mat, double& y, double& x) {
-        const double fp = static_cast<double>(conf_mat[1]);
-        const double fn = static_cast<double>(conf_mat[2]);
-        const double tp = static_cast<double>(conf_mat[3]);
-
-        y = details::safe_ratio(tp, tp + fp);  // precision
-        x = details::safe_ratio(tp, tp + fn);  // recall
-    }
-
-    static inline void metric_sigmas(
+    /*
+     * Exact old-style BVN sigma logic for Precision-Recall.
+     *
+     * Output layout:
+     *   out[0] = Precision
+     *   out[1] = sigma(Precision)
+     *   out[2] = Recall
+     *   out[3] = sigma(Recall)
+     */
+    static inline void bvn_sigma(
         const int64_t* __restrict conf_mat,
-        double& y_sigma,
-        double& x_sigma) {
-        double y, x;
-        metric_values(conf_mat, y, x);
+        double* __restrict out) {
+        const int64_t itp = conf_mat[3];
+        const double tp = static_cast<double>(itp);
 
-        const double pred_pos = static_cast<double>(conf_mat[1] + conf_mat[3]);
-        const double pos = static_cast<double>(conf_mat[2] + conf_mat[3]);
+        const int64_t itp_fn = conf_mat[2] + conf_mat[3];
+        const double tp_fn = static_cast<double>(itp_fn);
 
-        y_sigma = details::safe_binom_sigma(y, pred_pos);
-        x_sigma = details::safe_binom_sigma(x, pos);
+        const int64_t itp_fp = conf_mat[1] + conf_mat[3];
+        const double tp_fp = static_cast<double>(itp_fp);
+
+        // ---------------------------------------------------------------------
+        // Precision = TP / (TP + FP)
+        // ---------------------------------------------------------------------
+        double prec;
+        double prec_sigma;
+
+        if (itp == itp_fp) {
+            // precision == 1
+            prec = 1.0;
+            const double prec_for_sigma
+                = static_cast<double>(itp_fp - 1) / tp_fp;
+            prec_sigma
+                = std::sqrt((prec_for_sigma * (1.0 - prec_for_sigma)) / tp_fp);
+        } else if (itp_fp > 0) {
+            prec = tp / tp_fp;
+            prec_sigma = std::sqrt(
+                static_cast<double>(conf_mat[3] * conf_mat[1])
+                / std::pow(tp_fp, 3.0));
+        } else {
+            // precision == 0
+            prec = 0.0;
+            const double prec_for_sigma = 1.0 / tp_fp;
+            prec_sigma
+                = std::sqrt((prec_for_sigma * (1.0 - prec_for_sigma)) / tp_fp);
+        }
+
+        // ---------------------------------------------------------------------
+        // Recall = TP / (TP + FN)
+        // ---------------------------------------------------------------------
+        double rec;
+        double rec_sigma;
+
+        if (itp == itp_fn) {
+            // recall == 1
+            rec = 1.0;
+            const double rec_for_sigma
+                = static_cast<double>(itp_fn - 1) / tp_fn;
+            rec_sigma
+                = std::sqrt((rec_for_sigma * (1.0 - rec_for_sigma)) / tp_fn);
+        } else if (itp_fn > 0) {
+            rec = tp / tp_fn;
+            rec_sigma = std::sqrt(
+                static_cast<double>(conf_mat[3] * conf_mat[2])
+                / std::pow(tp_fn, 3.0));
+        } else {
+            // recall == 0
+            rec = 0.0;
+            const double rec_for_sigma = 1.0 / tp_fn;
+            rec_sigma
+                = std::sqrt((rec_for_sigma * (1.0 - rec_for_sigma)) / tp_fn);
+        }
+
+        out[0] = prec;
+        out[1] = prec_sigma;
+        out[2] = rec;
+        out[3] = rec_sigma;
     }
 
     template <bool Guarded>
     static inline bool constrained_fit(
-        const double y,  // precision
-        const double x,  // recall
+        const double y,  // Precision
+        const double x,  // Recall
         const prof_loglike_store& store,
         double* __restrict probas) {
         const double rec_ratio = (1.0 - x) / x;
@@ -107,8 +163,9 @@ struct PrecisionRecallProfile {
         const double epsilon,
         double& max_y_clip,
         double& max_x_clip) {
-        (void)epsilon;
+        // Precision can be exactly 1 iff FP == 0
         max_y_clip = conf_mat[1] == 0 ? 0.0 : epsilon;
+        // Recall can be exactly 1 iff FN == 0
         max_x_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
     }
 };
@@ -122,32 +179,62 @@ struct ROCProfile {
     static constexpr const char* x_name = "FPR";
 
     static inline double compute_metric_n(const int64_t* __restrict conf_mat) {
+        // n2 = FN + TP
         return static_cast<double>(conf_mat[2] + conf_mat[3]);
     }
 
-    static inline void
-    metric_values(const int64_t* __restrict conf_mat, double& y, double& x) {
-        const double tn = static_cast<double>(conf_mat[0]);
-        const double fp = static_cast<double>(conf_mat[1]);
-        const double fn = static_cast<double>(conf_mat[2]);
-        const double tp = static_cast<double>(conf_mat[3]);
-
-        y = details::safe_ratio(tp, tp + fn);  // TPR
-        x = details::safe_ratio(fp, fp + tn);  // FPR
-    }
-
-    static inline void metric_sigmas(
+    /*
+     * Exact old-style BVN sigma logic for ROC.
+     *
+     * Output layout:
+     *   out[0] = TPR
+     *   out[1] = sigma(TPR)
+     *   out[2] = FPR
+     *   out[3] = sigma(FPR)
+     */
+    static inline void bvn_sigma(
         const int64_t* __restrict conf_mat,
-        double& y_sigma,
-        double& x_sigma) {
-        double y, x;
-        metric_values(conf_mat, y, x);
+        double* __restrict out) {
+        // ---------------------------------------------------------------------
+        // Y = TPR = TP / (TP + FN)
+        // ---------------------------------------------------------------------
+        double term1_y = static_cast<double>(conf_mat[3]);  // TP
+        double term2_y = static_cast<double>(conf_mat[2]);  // FN
+        const double sum_y = term1_y + term2_y;
+        const double y = term1_y / sum_y;
 
-        const double pos = static_cast<double>(conf_mat[2] + conf_mat[3]);
-        const double neg = static_cast<double>(conf_mat[0] + conf_mat[1]);
+        if (term1_y == 0.0) {
+            term1_y = 1.0;
+        }
+        if (term2_y == 0.0) {
+            term2_y = 1.0;
+        }
 
-        y_sigma = details::safe_binom_sigma(y, pos);
-        x_sigma = details::safe_binom_sigma(x, neg);
+        const double y_sigma
+            = std::sqrt((term1_y * term2_y) / std::pow(term1_y + term2_y, 3.0));
+
+        // ---------------------------------------------------------------------
+        // X = FPR = FP / (FP + TN)
+        // ---------------------------------------------------------------------
+        double term1_x = static_cast<double>(conf_mat[1]);  // FP
+        double term2_x = static_cast<double>(conf_mat[0]);  // TN
+        const double sum_x = term1_x + term2_x;
+        const double x = term1_x / sum_x;
+
+        if (term1_x == 0.0) {
+            term1_x = 1.0;
+        }
+        if (term2_x == 0.0) {
+            term2_x = 1.0;
+        }
+
+        const double x_sigma
+            = std::sqrt((term1_x * term2_x) / std::pow(term1_x + term2_x, 3.0));
+
+        out[0] = y;
+        out[1] = y_sigma;
+        out[2] = x;
+        out[3] = x_sigma;
     }
 
     template <bool Guarded>
@@ -172,8 +259,9 @@ struct ROCProfile {
         const double epsilon,
         double& max_y_clip,
         double& max_x_clip) {
-        (void)epsilon;
+        // TPR can be exactly 1 iff FN == 0
         max_y_clip = conf_mat[2] == 0 ? 0.0 : epsilon;
+        // FPR can be exactly 1 iff TN == 0
         max_x_clip = conf_mat[0] == 0 ? 0.0 : epsilon;
     }
 };
@@ -181,40 +269,95 @@ struct ROCProfile {
 // =============================================================================
 // PPN-Recall
 // =============================================================================
-
 struct PPNRecallProfile {
     static constexpr const char* y_name = "PPN";
     static constexpr const char* x_name = "Recall";
 
     static inline double compute_metric_n(const int64_t* __restrict conf_mat) {
-        return static_cast<double>(conf_mat[2] + conf_mat[3]);  // FN + TP
+        return static_cast<double>(conf_mat[2] + conf_mat[3]);
     }
 
-    static inline void
-    metric_values(const int64_t* __restrict conf_mat, double& y, double& x) {
-        const double tn = static_cast<double>(conf_mat[0]);
-        const double fn = static_cast<double>(conf_mat[2]);
-        const double tp = static_cast<double>(conf_mat[3]);
-        const double n = static_cast<double>(
-            conf_mat[0] + conf_mat[1] + conf_mat[2] + conf_mat[3]);
-
-        y = (tn + fn) / n;                     // PPN
-        x = details::safe_ratio(tp, tp + fn);  // Recall
-    }
-
-    static inline void metric_sigmas(
+    /*
+     * Y = PPN    = (TN + FN) / N
+     * X = Recall = TP / (TP + FN)
+     *
+     * Output layout:
+     *   out[0] = Y = PPN
+     *   out[1] = sigma(Y)
+     *   out[2] = X = Recall
+     *   out[3] = sigma(X)
+     */
+    static inline void bvn_sigma(
         const int64_t* __restrict conf_mat,
-        double& y_sigma,
-        double& x_sigma) {
-        double y, x;
-        metric_values(conf_mat, y, x);
+        double* __restrict out) {
+        // Y = PPN = (TN + FN) / N
+        // Write as:
+        //   Y = A / (A + B)
+        // with
+        //   A = TN + FN
+        //   B = FP + TP
+        //
+        // Interior variance:
+        //   Var(Y) = A * B / (A + B)^3
+        const int64_t iA = conf_mat[0] + conf_mat[2];  // TN + FN
+        const int64_t iB = conf_mat[1] + conf_mat[3];  // FP + TP
 
-        const double n = static_cast<double>(
-            conf_mat[0] + conf_mat[1] + conf_mat[2] + conf_mat[3]);
-        const double pos = static_cast<double>(conf_mat[2] + conf_mat[3]);
+        const double A = static_cast<double>(iA);
+        const double B = static_cast<double>(iB);
+        const double N = A + B;
 
-        y_sigma = details::safe_binom_sigma(y, n);
-        x_sigma = details::safe_binom_sigma(x, pos);
+        const double ppn = A / N;
+
+        double ppn_sigma;
+        if (iB == 0) {
+            // PPN == 1
+            const double ppn_for_sigma = (N - 1.0) / N;
+            ppn_sigma = std::sqrt((ppn_for_sigma * (1.0 - ppn_for_sigma)) / N);
+        } else if (iA == 0) {
+            // PPN == 0
+            const double ppn_for_sigma = 1.0 / N;
+            ppn_sigma = std::sqrt((ppn_for_sigma * (1.0 - ppn_for_sigma)) / N);
+        } else {
+            // Interior exact ratio variance
+            ppn_sigma = std::sqrt((A * B) / std::pow(N, 3.0));
+        }
+
+        // ---------------------------------------------------------------------
+        // X = Recall = TP / (TP + FN)
+        // ---------------------------------------------------------------------
+        const int64_t itp = conf_mat[3];
+        const double tp = static_cast<double>(itp);
+
+        const int64_t itp_fn = conf_mat[2] + conf_mat[3];
+        const double tp_fn = static_cast<double>(itp_fn);
+
+        double recall;
+        double recall_sigma;
+
+        if (itp == itp_fn) {
+            // Recall == 1
+            recall = 1.0;
+            const double recall_for_sigma
+                = static_cast<double>(itp_fn - 1) / tp_fn;
+            recall_sigma = std::sqrt(
+                (recall_for_sigma * (1.0 - recall_for_sigma)) / tp_fn);
+        } else if (itp_fn > 0) {
+            recall = tp / tp_fn;
+            recall_sigma = std::sqrt(
+                static_cast<double>(conf_mat[3] * conf_mat[2])
+                / std::pow(tp_fn, 3.0));
+        } else {
+            // Recall == 0
+            recall = 0.0;
+            const double recall_for_sigma = 1.0 / tp_fn;
+            recall_sigma = std::sqrt(
+                (recall_for_sigma * (1.0 - recall_for_sigma)) / tp_fn);
+        }
+
+        out[0] = ppn;
+        out[1] = ppn_sigma;
+        out[2] = recall;
+        out[3] = recall_sigma;
     }
 
     template <bool Guarded>
@@ -229,11 +372,28 @@ struct PPNRecallProfile {
         const double tp = store.x_tp;
         const double n = store.n;
 
+        // Constraints:
+        //   p_fn = k * p_tp,  k = (1 - x) / x
+        //   p_tn = y - p_fn
+        //   p_fp = (1 - y) - p_tp
+        //
+        // Let q = 1 - y and t = p_tp.
+        // The score equation reduces to:
+        //   (k n) t^2 - L t + c = 0
+        //
+        // with:
+        //   L = m (y + k q) + fp y + tn k q
+        //   c = m y q
+        //   m = fn + tp
+        //
+        // The interior maximiser is the smaller root, evaluated stably as:
+        //   t = 2 c / (L + sqrt(D))
+        // where D = L^2 - 4 a c and a = k n.
+
         const double k = (1.0 - x) / x;
         const double q = 1.0 - y;
         const double m = fn + tp;
 
-        // (k n) t^2 - L t + c = 0, t = p_tp
         const double a = k * n;
         const double L = m * (y + k * q) + fp * y + tn * k * q;
         const double c = m * y * q;
@@ -260,6 +420,7 @@ struct PPNRecallProfile {
             return false;
         }
 
+        // smaller root, stable form
         const double p_tp = (2.0 * c) / denom;
         const double p_fn = k * p_tp;
         const double p_tn = y - p_fn;
