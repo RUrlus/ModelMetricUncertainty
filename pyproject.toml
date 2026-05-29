@@ -8,7 +8,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "mmu"
-version = "0.2.0rc0"
+version = "0.2.0rc1"
 description = "Fast binary classification metrics with uncertainty quantification"
 readme = "README.rst"
 requires-python = ">=3.9"
