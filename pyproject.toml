@@ -31,7 +31,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "pytest>=6.0",
+    "pytest>=8.4.2",
 ]
 
 all = [
