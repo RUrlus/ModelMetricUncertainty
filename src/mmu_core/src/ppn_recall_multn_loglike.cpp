@@ -36,8 +36,8 @@ void bind_multn_error(py::module& m) {
         )pbdoc",
         py::arg("n_bins"),
         py::arg("conf_mat"),
-        py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4);
+        py::arg("n_sigmas") = MULT_DEFAULT_N_SIGMAS,
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON);
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
@@ -69,8 +69,8 @@ void bind_multn_error_mt(py::module& m) {
         )pbdoc",
         py::arg("n_bins"),
         py::arg("conf_mat"),
-        py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4,
+        py::arg("n_sigmas") = MULT_DEFAULT_N_SIGMAS,
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON,
         py::arg("n_threads") = 4);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
@@ -101,7 +101,7 @@ void bind_multn_chi2_score(py::module& m) {
         py::arg("ppn"),
         py::arg("recall"),
         py::arg("conf_mat"),
-        py::arg("epsilon") = 1e-4);
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON);
 }
 
 void bind_multn_chi2_scores(py::module& m) {
@@ -130,7 +130,7 @@ void bind_multn_chi2_scores(py::module& m) {
         py::arg("ppns"),
         py::arg("recalls"),
         py::arg("conf_mat"),
-        py::arg("epsilon") = 1e-4);
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON);
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
@@ -160,7 +160,7 @@ void bind_multn_chi2_scores_mt(py::module& m) {
         py::arg("ppns"),
         py::arg("recalls"),
         py::arg("conf_mat"),
-        py::arg("epsilon") = 1e-4);
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
 
@@ -192,8 +192,8 @@ void bind_multn_grid_error(py::module& m) {
         py::arg("ppn_grid"),
         py::arg("recall_grid"),
         py::arg("conf_mat"),
-        py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4);
+        py::arg("n_sigmas") = MULT_DEFAULT_N_SIGMAS,
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON);
 }
 
 void bind_multn_grid_curve_error(py::module& m) {
@@ -227,8 +227,8 @@ void bind_multn_grid_curve_error(py::module& m) {
         py::arg("ppn_grid"),
         py::arg("recall_grid"),
         py::arg("conf_mat"),
-        py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4);
+        py::arg("n_sigmas") = MULT_DEFAULT_N_SIGMAS,
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON);
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
@@ -265,8 +265,8 @@ void bind_multn_grid_curve_error_mt(py::module& m) {
         py::arg("ppn_grid"),
         py::arg("recall_grid"),
         py::arg("conf_mat"),
-        py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4,
+        py::arg("n_sigmas") = MULT_DEFAULT_N_SIGMAS,
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON,
         py::arg("n_threads") = 4);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT

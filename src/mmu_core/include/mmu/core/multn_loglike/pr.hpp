@@ -41,7 +41,7 @@ inline double multn_chi2_score(
     const double prec,
     const double rec,
     const int64_t* __restrict conf_mat,
-    const double epsilon = 1e-4) {
+    const double epsilon = MULT_DEFAULT_EPSILON) {
     return multn::multn_chi2_score<Profile>(prec, rec, conf_mat, epsilon);
 }
 
@@ -51,7 +51,7 @@ inline void multn_chi2_scores(
     const double* recs,
     const int64_t* __restrict conf_mat,
     double* scores,
-    const double epsilon = 1e-4) {
+    const double epsilon = MULT_DEFAULT_EPSILON) {
     multn::multn_chi2_scores<Profile>(
         n_points, precs, recs, conf_mat, scores, epsilon);
 }
@@ -63,7 +63,7 @@ inline void multn_chi2_scores_mt(
     const double* recs,
     const int64_t* __restrict conf_mat,
     double* scores,
-    const double epsilon = 1e-4) {
+    const double epsilon = MULT_DEFAULT_EPSILON) {
     multn::multn_chi2_scores_mt<Profile>(
         n_points, precs, recs, conf_mat, scores, epsilon);
 }
@@ -72,8 +72,8 @@ inline void multn_chi2_scores_mt(
 inline void get_grid_bounds(
     const int64_t* __restrict conf_mat,
     double* bounds,
-    const double n_sigmas = 6.0,
-    const double epsilon = 1e-4) {
+    const double n_sigmas = MULT_DEFAULT_N_SIGMAS,
+    const double epsilon = MULT_DEFAULT_EPSILON) {
     multn::get_grid_bounds<Profile>(conf_mat, bounds, n_sigmas, epsilon);
 }
 
@@ -82,8 +82,8 @@ inline void multn_error(
     const int64_t* __restrict conf_mat,
     double* __restrict result,
     double* __restrict bounds,
-    const double n_sigmas = 6.0,
-    const double epsilon = 1e-4) {
+    const double n_sigmas = MULT_DEFAULT_N_SIGMAS,
+    const double epsilon = MULT_DEFAULT_EPSILON) {
     multn::multn_error<Profile>(
         n_bins, conf_mat, result, bounds, n_sigmas, epsilon);
 }
@@ -94,8 +94,8 @@ inline void multn_error_mt(
     const int64_t* __restrict conf_mat,
     double* __restrict result,
     double* __restrict bounds,
-    const double n_sigmas = 6.0,
-    const double epsilon = 1e-4,
+    const double n_sigmas = MULT_DEFAULT_N_SIGMAS,
+    const double epsilon = MULT_DEFAULT_EPSILON,
     const int n_threads = 4) {
     multn::multn_error_mt<Profile>(
         n_bins, conf_mat, result, bounds, n_sigmas, epsilon, n_threads);
@@ -109,8 +109,8 @@ inline void multn_grid_error(
     const double* __restrict rec_grid,
     const int64_t* __restrict conf_mat,
     double* __restrict scores,
-    const double n_sigmas = 6.0,
-    const double epsilon = 1e-4) {
+    const double n_sigmas = MULT_DEFAULT_N_SIGMAS,
+    const double epsilon = MULT_DEFAULT_EPSILON) {
     multn::multn_grid_error<Profile>(
         n_prec_bins,
         n_rec_bins,
@@ -130,8 +130,8 @@ inline void multn_grid_curve_error(
     const double* __restrict rec_grid,
     const int64_t* __restrict conf_mat,
     double* __restrict scores,
-    const double n_sigmas = 6.0,
-    const double epsilon = 1e-4) {
+    const double n_sigmas = MULT_DEFAULT_N_SIGMAS,
+    const double epsilon = MULT_DEFAULT_EPSILON) {
     multn::multn_grid_curve_error<Profile>(
         n_prec_bins,
         n_rec_bins,
@@ -153,8 +153,8 @@ inline void multn_grid_curve_error_mt(
     const double* __restrict rec_grid,
     const int64_t* __restrict conf_mat,
     double* __restrict scores,
-    const double n_sigmas = 6.0,
-    const double epsilon = 1e-4,
+    const double n_sigmas = MULT_DEFAULT_N_SIGMAS,
+    const double epsilon = MULT_DEFAULT_EPSILON,
     const int64_t n_threads = 4) {
     multn::multn_grid_curve_error_mt<Profile>(
         n_prec_bins,
