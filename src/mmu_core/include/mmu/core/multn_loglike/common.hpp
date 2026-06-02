@@ -3,9 +3,7 @@
  */
 #pragma once
 
-#include <cmath>
 #include <cstdint>
-#include <stdexcept>
 
 /* conf_mat layout:
  *  0 TN

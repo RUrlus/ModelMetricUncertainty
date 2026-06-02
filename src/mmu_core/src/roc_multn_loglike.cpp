@@ -1,5 +1,5 @@
 /* roc_multn_loglike.cpp -- Python bindings of multinomial log-likelihood
- * uncertainty Copyright 2026 Ralph Urlus
+ * uncertainty Copyright 2022 Ralph Urlus
  */
 #include <mmu/bindings/roc_multn_loglike.hpp>
 
@@ -36,8 +36,8 @@ void bind_multn_error(py::module& m) {
         )pbdoc",
         py::arg("n_bins"),
         py::arg("conf_mat"),
-        py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4);
+        py::arg("n_sigmas") = MULT_DEFAULT_N_SIGMAS,
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON);
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
@@ -70,8 +70,8 @@ void bind_multn_error_mt(py::module& m) {
         )pbdoc",
         py::arg("n_bins"),
         py::arg("conf_mat"),
-        py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4,
+        py::arg("n_sigmas") = MULT_DEFAULT_N_SIGMAS,
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON,
         py::arg("n_threads") = 4);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
@@ -106,8 +106,8 @@ void bind_multn_grid_error(py::module& m) {
         py::arg("precs_grid"),
         py::arg("recs_grid"),
         py::arg("conf_mat"),
-        py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4);
+        py::arg("n_sigmas") = MULT_DEFAULT_N_SIGMAS,
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON);
 }
 
 void bind_multn_grid_curve_error(py::module& m) {
@@ -144,8 +144,8 @@ void bind_multn_grid_curve_error(py::module& m) {
         py::arg("precs_grid"),
         py::arg("recs_grid"),
         py::arg("conf_mat"),
-        py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4);
+        py::arg("n_sigmas") = MULT_DEFAULT_N_SIGMAS,
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON);
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
@@ -187,8 +187,8 @@ void bind_multn_grid_curve_error_mt(py::module& m) {
         py::arg("precs_grid"),
         py::arg("recs_grid"),
         py::arg("conf_mat"),
-        py::arg("n_sigmas") = 6.0,
-        py::arg("epsilon") = 1e-4,
+        py::arg("n_sigmas") = MULT_DEFAULT_N_SIGMAS,
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON,
         py::arg("n_threads") = 4);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
@@ -219,7 +219,7 @@ void bind_multn_chi2_score(py::module& m) {
         py::arg("prec"),
         py::arg("rec"),
         py::arg("conf_mat"),
-        py::arg("epsilon") = 1e-4);
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON);
 }
 
 void bind_multn_chi2_scores(py::module& m) {
@@ -247,7 +247,7 @@ void bind_multn_chi2_scores(py::module& m) {
         py::arg("precs"),
         py::arg("recs"),
         py::arg("conf_mat"),
-        py::arg("epsilon") = 1e-4);
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON);
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
@@ -276,7 +276,7 @@ void bind_multn_chi2_scores_mt(py::module& m) {
         py::arg("precs"),
         py::arg("recs"),
         py::arg("conf_mat"),
-        py::arg("epsilon") = 1e-4);
+        py::arg("epsilon") = MULT_DEFAULT_EPSILON);
 }
 #endif  // MMU_HAS_OPENMP_SUPPORT
 

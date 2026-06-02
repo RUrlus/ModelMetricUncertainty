@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <stdexcept>
 
+#include <mmu/config.hpp>
 #include <mmu/core/multn_loglike/profiles.hpp>
 
 /* conf_mat layout:
@@ -67,8 +68,8 @@ template <typename Profile>
 inline void get_grid_bounds(
     const int64_t* __restrict conf_mat,
     double* __restrict bounds,
-    const double n_sigmas = 6.0,
-    const double epsilon = 1e-4) {
+    const double n_sigmas = MULT_DEFAULT_N_SIGMAS,
+    double epsilon = MULT_DEFAULT_EPSILON) {
     double max_y_clip = epsilon;
     double max_x_clip = epsilon;
     Profile::get_max_clips(conf_mat, epsilon, max_y_clip, max_x_clip);
@@ -207,8 +208,8 @@ inline void get_grid_bounds(
     const double* __restrict ys,
     const double* __restrict xs,
     int64_t* __restrict result,
-    const double n_sigmas = 6.0,
-    const double epsilon = 1e-4) {
+    const double n_sigmas = MULT_DEFAULT_N_SIGMAS,
+    double epsilon = MULT_DEFAULT_EPSILON) {
     double max_y_clip = epsilon;
     double max_x_clip = epsilon;
     Profile::get_max_clips(conf_mat, epsilon, max_y_clip, max_x_clip);

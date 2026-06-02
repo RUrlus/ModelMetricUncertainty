@@ -37,21 +37,18 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_all_finite(m);
     bind_is_well_behaved_finite(m);
 
-    // pr_multn_loglike (Wilks - KEEP)
     pr::bind_multn_error(m);
     pr::bind_multn_grid_error(m);
     pr::bind_multn_grid_curve_error(m);
     pr::bind_multn_chi2_score(m);
     pr::bind_multn_chi2_scores(m);
 
-    // roc_multn_loglike (Wilks - KEEP)
     roc::bind_multn_error(m);
     roc::bind_multn_grid_error(m);
     roc::bind_multn_grid_curve_error(m);
     roc::bind_multn_chi2_score(m);
     roc::bind_multn_chi2_scores(m);
 
-    // ppn_recall_multn_loglike (Wilks)
     ppn_recall::bind_multn_error(m);
     ppn_recall::bind_multn_grid_error(m);
     ppn_recall::bind_multn_grid_curve_error(m);
@@ -61,17 +58,14 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     ppn_recall::bind_ppn_recall_2d(m);
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
-    // pr_multn_loglike MT (KEEP)
     pr::bind_multn_error_mt(m);
     pr::bind_multn_grid_curve_error_mt(m);
     pr::bind_multn_chi2_scores_mt(m);
 
-    // roc_multn_loglike MT (KEEP)
     roc::bind_multn_error_mt(m);
     roc::bind_multn_grid_curve_error_mt(m);
     roc::bind_multn_chi2_scores_mt(m);
 
-    // ppn_recall_multn_loglike MT
     ppn_recall::bind_multn_error_mt(m);
     ppn_recall::bind_multn_grid_curve_error_mt(m);
     ppn_recall::bind_multn_chi2_scores_mt(m);
