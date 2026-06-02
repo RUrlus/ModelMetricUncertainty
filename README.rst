@@ -52,7 +52,7 @@ Metrics consist mainly of high-performance functions to compute the confusion ma
 The ``binary_metrics`` functions compute the 10 most commonly used metrics:
 
 - Negative precision aka Negative Predictive Value (NPV)
-- Positive recision aka Positive Predictive Value (PPV)
+- Positive precision aka Positive Predictive Value (PPV)
 - Negative recall aka True Negative Rate (TNR) aka Specificity
 - Positive recall aka True Positive Rate (TPR) aka Sensitivity
 - Negative f1 score
