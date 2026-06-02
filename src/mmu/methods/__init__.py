@@ -19,10 +19,10 @@ __all__ = [
     "ROCU",
     "PPNRCU",
     "PPNRU",
+    "PPNRecallCurveUncertainty",
     "PPNRecallUncertainty",
     "PrecisionRecallCurveUncertainty",
     "PrecisionRecallUncertainty",
     "ROCCurveUncertainty",
     "ROCUncertainty",
-    "RecallPPNCurveUncertainty",
 ]
