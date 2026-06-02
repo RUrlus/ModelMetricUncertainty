@@ -76,8 +76,8 @@ inline bool is_well_behaved(PyObject* src) {
 
 inline bool is_well_behaved(PyArrayObject* arr) {
     return (
-        PyArray_CHKFLAGS(arr, NPY_ARRAY_ALIGNED & NPY_ARRAY_C_CONTIGUOUS)
-        || PyArray_CHKFLAGS(arr, NPY_ARRAY_ALIGNED & NPY_ARRAY_F_CONTIGUOUS));
+        PyArray_CHKFLAGS(arr, NPY_ARRAY_ALIGNED | NPY_ARRAY_C_CONTIGUOUS)
+        || PyArray_CHKFLAGS(arr, NPY_ARRAY_ALIGNED | NPY_ARRAY_F_CONTIGUOUS));
 }
 
 inline void* get_data(PyObject* src) {

@@ -70,4 +70,4 @@ def _convert_to_ext_types(arr):
 
 
 def _is_ext_compat(arr):
-    return hasattr(arr, "dtype") or (arr.dtype in DTYPES_S)
+    return hasattr(arr, "dtype") and (arr.dtype in DTYPES_S)
