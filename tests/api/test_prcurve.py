@@ -1,26 +1,26 @@
 import os
-import pytest
 import numpy as np
+import pytest
 import sklearn.metrics as skm
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 
-
 import mmu
-from mmu.commons._testing import generate_test_labels
-from mmu.commons._testing import greater_equal_tol
-from mmu.commons._testing import PRCU_skm
-from mmu.commons._testing import ROCCU_skm
+from mmu.commons._testing import PRCU_skm, ROCCU_skm, generate_test_labels, greater_equal_tol
 
 
-@pytest.mark.parametrize(
-    "curve_class,skm_func",
-    [
-        (mmu.PRCU, PRCU_skm),
-        (mmu.ROCCU, ROCCU_skm),
-    ],
-)
+def test_PR_MU_reference():
+
+    fpath = os.path.abspath(os.path.dirname(__file__))
+    conf_mats = np.load(os.path.join(fpath, "pr_curve_reference_conf_mats.npy"))
+    ref_scores = np.load(os.path.join(fpath, "pr_curve_reference.npy"))
+
+    curve_err = mmu.PRCU().from_confusion_matrices(conf_mats)
+    assert np.allclose(curve_err.chi2_scores, ref_scores)
+
+
+@pytest.mark.parametrize("curve_class,skm_func", [(mmu.PRCU, PRCU_skm), (mmu.ROCCU, ROCCU_skm)])
 def test_MU_from_scores(curve_class, skm_func):
     """Test BaseCurveUncertainty.from_scores"""
     np.random.seed(412)
@@ -41,13 +41,7 @@ def test_MU_from_scores(curve_class, skm_func):
     assert np.array_equal(err.conf_mats[100], sk_conf_mat.flatten())
 
 
-@pytest.mark.parametrize(
-    "curve_class,skm_func",
-    [
-        (mmu.PRCU, PRCU_skm),
-        (mmu.ROCCU, ROCCU_skm),
-    ],
-)
+@pytest.mark.parametrize("curve_class,skm_func", [(mmu.PRCU, PRCU_skm), (mmu.ROCCU, ROCCU_skm)])
 def test_MU_from_confusion_matrices(curve_class, skm_func):
     """Test BaseCurveUncertainty.from_confusion_matrices"""
     np.random.seed(412)
@@ -69,13 +63,7 @@ def test_MU_from_confusion_matrices(curve_class, skm_func):
     assert np.array_equal(err.conf_mats[100], sk_conf_mat.flatten())
 
 
-@pytest.mark.parametrize(
-    "curve_class,skm_func",
-    [
-        (mmu.PRCU, PRCU_skm),
-        (mmu.ROCCU, ROCCU_skm),
-    ],
-)
+@pytest.mark.parametrize("curve_class,skm_func", [(mmu.PRCU, PRCU_skm), (mmu.ROCCU, ROCCU_skm)])
 def test_MU_from_classifier(curve_class, skm_func):
     """Test BaseCurveUncertainty.from_classifier"""
     # generate seeds to be used by sklearn
@@ -87,9 +75,7 @@ def test_MU_from_classifier(curve_class, skm_func):
     X, y = make_classification(n_samples=1000, n_classes=2, random_state=seeds())
 
     # split into train/test sets
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.5, random_state=seeds()
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=seeds())
     # fit a model
     model = LogisticRegression(solver="lbfgs")
     model.fit(X_train, y_train)
@@ -99,9 +85,7 @@ def test_MU_from_classifier(curve_class, skm_func):
     thresholds = np.linspace(1e-12, 1 - 1e-12, 200)
     yhat = greater_equal_tol(y_scores, thresholds[100])
     sk_conf_mat = skm.confusion_matrix(y_test, yhat)
-    err = curve_class.from_classifier(
-        clf=model, X=X_test, y=y_test, thresholds=thresholds
-    )
+    err = curve_class.from_classifier(clf=model, X=X_test, y=y_test, thresholds=thresholds)
     assert err.conf_mats is not None
     assert err.conf_mats.dtype == np.dtype(np.int64)
 
