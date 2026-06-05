@@ -1,4 +1,5 @@
 """Module containing the API for the ROC with Multinomial uncertainty."""
+
 from mmu.methods.curvebase import BaseCurveUncertainty
 from mmu.lib import _MMU_MT_SUPPORT
 
@@ -22,8 +23,8 @@ class ROCCurveUncertainty(BaseCurveUncertainty):
         if _MMU_MT_SUPPORT:
             self.multn_grid_curve_error_mt_func = roc_multn_grid_curve_error_mt
 
-        self.y_label = 'True Positive Rate (Recall)'
-        self.x_label = 'False Positive Rate'
+        self.y_label = "TPR"
+        self.x_label = "FPR"
 
     @property
     def TPR(self):
