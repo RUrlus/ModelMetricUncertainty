@@ -1,11 +1,10 @@
 import multiprocessing
+
 import numpy as np
 from sklearn.utils import check_array as sk_check_array
 
-from mmu.commons.types import _convert_to_ext_types
-from mmu.commons.types import _is_ext_compat
-from mmu.lib import _core
-from mmu.lib import _MMU_MT_SUPPORT
+from mmu.commons.types import _convert_to_ext_types, _is_ext_compat
+from mmu.lib import _MMU_MT_SUPPORT, _core
 
 _ORDER_SH = {"C_CONTIGUOUS": "C", 0: "C", "F_CONTIGUOUS": "F", 1: "F"}
 
@@ -110,7 +109,7 @@ def check_array(
         keyword arguments passed to sklearn's check_array
 
 
-    Returns
+    Returns:
     -------
     np.ndarray
         the input array or the input array with the correct properties

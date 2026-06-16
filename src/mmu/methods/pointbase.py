@@ -1,20 +1,18 @@
 """Module containing the API for the uncertainty modelled through profile log likelihoods."""
+
 import warnings
 from itertools import zip_longest
-from typing import Dict, List, Optional, Union
+from typing import Union
 
 import numpy as np
 import pandas as pd
 import scipy.stats as sts
 
-from mmu.commons import check_array
-from mmu.commons import _convert_to_int, _convert_to_float
+from mmu.commons import _convert_to_float, _convert_to_int, check_array
 from mmu.commons.checks import _check_n_threads
-from mmu.metrics.confmat import confusion_matrix
-from mmu.metrics.confmat import confusion_matrix_to_dataframe
-from mmu.viz.contours import _plot_contours
-
 from mmu.lib import _MMU_MT_SUPPORT
+from mmu.metrics.confmat import confusion_matrix, confusion_matrix_to_dataframe
+from mmu.viz.contours import _plot_contours
 
 
 class BaseUncertainty:
@@ -33,7 +31,7 @@ class BaseUncertainty:
     - Edge cases (near y=1.0, x=0.0)
     - Any confusion matrix counts
 
-    Attributes
+    Attributes:
     ----------
     conf_mat : np.ndarray[int64]
         the confusion_matrix with layout
@@ -70,7 +68,7 @@ class BaseUncertainty:
         the label of the x-axis.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.conf_mat = None
         self.y = None
         self.x = None
@@ -92,7 +90,8 @@ class BaseUncertainty:
 
     def _parse_threshold(self, threshold):
         if not isinstance(threshold, float) or not (0.0 < threshold < 1.0):
-            raise TypeError("`threshold` must be a float in [0, 1]")
+            msg = "`threshold` must be a float in [0, 1]"
+            raise TypeError(msg)
         self.threshold = threshold
 
     def _compute_scores(self, n_bins, n_sigmas, epsilon, n_threads):
@@ -101,23 +100,29 @@ class BaseUncertainty:
             self.n_bins = 100
         elif isinstance(n_bins, int):
             if n_bins < 1:
-                raise ValueError("`n_bins` must be bigger than 0")
+                msg = "`n_bins` must be bigger than 0"
+                raise ValueError(msg)
             self.n_bins = n_bins
         else:
-            raise TypeError("`n_bins` must be an int")
+            msg_0 = "`n_bins` must be an int"
+            raise TypeError(msg_0)
 
         # -- validate n_sigmas arg
         if not isinstance(n_sigmas, (int, float)):
-            raise TypeError("`n_sigmas` must be an int or float.")
-        elif n_sigmas < 1.0:
-            raise ValueError("`n_sigmas` must be greater than 1.")
+            msg_1 = "`n_sigmas` must be an int or float."
+            raise TypeError(msg_1)
+        if n_sigmas < 1.0:
+            msg_2 = "`n_sigmas` must be greater than 1."
+            raise ValueError(msg_2)
         self.n_sigmas = n_sigmas
 
         # -- validate epsilon arg
         if not isinstance(epsilon, float):
-            raise TypeError("`epsilon` must be a float")
-        elif not (1e-15 <= epsilon <= 0.1):
-            raise ValueError("`epsilon` must be  in [1e-15, 0.1]")
+            msg_3 = "`epsilon` must be a float"
+            raise TypeError(msg_3)
+        if not (1e-15 <= epsilon <= 0.1):
+            msg_4 = "`epsilon` must be  in [1e-15, 0.1]"
+            raise ValueError(msg_4)
         self.epsilon = epsilon
 
         self.y, self.x = self.metric_func(self.conf_mat)
@@ -134,15 +139,9 @@ class BaseUncertainty:
             )
         else:
             if n_threads > 1:
-                warnings.warn(
-                    "mmu was not compiled with multi-threading enabled,"
-                    " ignoring `n_threads`"
-                )
+                warnings.warn("mmu was not compiled with multi-threading enabled, ignoring `n_threads`")
             self.chi2_scores, bounds = self.multn_error_func(
-                n_bins=self.n_bins,
-                conf_mat=self.conf_mat,
-                n_sigmas=self.n_sigmas,
-                epsilon=self.epsilon,
+                n_bins=self.n_bins, conf_mat=self.conf_mat, n_sigmas=self.n_sigmas, epsilon=self.epsilon
             )
         self.y_bounds = bounds[0, :].copy()
         self.x_bounds = bounds[1, :].copy()
@@ -155,9 +154,9 @@ class BaseUncertainty:
         scores: np.ndarray,
         threshold: float = 0.5,
         n_bins: int = 100,
-        n_sigmas: Union[int, float] = 6.0,
+        n_sigmas: int | float = 6.0,
         epsilon: float = 1e-12,
-        n_threads: Optional[int] = None,
+        n_threads: int | None = None,
     ):
         """Compute joint-uncertainty for a point.
 
@@ -201,9 +200,9 @@ class BaseUncertainty:
         y: np.ndarray,
         yhat: np.ndarray,
         n_bins: int = 100,
-        n_sigmas: Union[int, float] = 6.0,
+        n_sigmas: int | float = 6.0,
         epsilon: float = 1e-12,
-        n_threads: Optional[int] = None,
+        n_threads: int | None = None,
     ):
         """Compute joint-uncertainty for a point.
 
@@ -239,9 +238,9 @@ class BaseUncertainty:
         cls,
         conf_mat: np.ndarray,
         n_bins: int = 100,
-        n_sigmas: Union[int, float] = 6.0,
+        n_sigmas: int | float = 6.0,
         epsilon: float = 1e-12,
-        n_threads: Optional[int] = None,
+        n_threads: int | None = None,
     ):
         """Compute joint-uncertainty for a point.
 
@@ -282,9 +281,9 @@ class BaseUncertainty:
         y: np.ndarray,
         threshold: float = 0.5,
         n_bins: int = 100,
-        n_sigmas: Union[int, float] = 6.0,
+        n_sigmas: int | float = 6.0,
         epsilon: float = 1e-12,
-        n_threads: Optional[int] = None,
+        n_threads: int | None = None,
     ):
         """Compute joint-uncertainty for a point.
 
@@ -319,7 +318,8 @@ class BaseUncertainty:
         self = cls()
         self._parse_threshold(threshold)
         if not hasattr(clf, "predict_proba"):
-            raise TypeError("`clf` must have a method `predict_proba`")
+            msg = "`clf` must have a method `predict_proba`"
+            raise TypeError(msg)
         scores = clf.predict_proba(X)[:, 1]
         self.conf_mat = confusion_matrix(y=y, scores=scores, threshold=threshold)
         self._compute_scores(n_bins, n_sigmas, epsilon, n_threads)
@@ -346,12 +346,7 @@ class BaseUncertainty:
         # confidence limits in two dimensions
         return sts.chi2.ppf(alphas, 2)
 
-    def compute_score_for(
-        self,
-        y: Union[float, np.ndarray],
-        x: Union[float, np.ndarray],
-        epsilon: float = 1e-12,
-    ) -> float:
+    def compute_score_for(self, y: float | np.ndarray, x: float | np.ndarray, epsilon: float = 1e-12) -> float:
         """Compute score for a given y(s) and x(s).
 
         The profile loglikelihood is computed which follows a chi2
@@ -373,44 +368,36 @@ class BaseUncertainty:
             the value used to prevent the bounds from reaching
             the point (y=1.0, x=0.0) which would result in NaNs.
 
-        Returns
+        Returns:
         -------
         chi2_score : float, np.ndarray[float64]
             the chi2_score(s) for the given y(s) and x(s).
 
         """
         if self.conf_mat is None:
-            raise RuntimeError("the class needs to be initialised with from_*")
+            msg = "the class needs to be initialised with from_*"
+            raise RuntimeError(msg)
         if not isinstance(epsilon, float):
-            raise TypeError("`epsilon` must be a float")
-        elif not (1e-15 <= epsilon <= 0.1):
-            raise ValueError("`epsilon` must be  in [1e-15, 0.1]")
+            msg_0 = "`epsilon` must be a float"
+            raise TypeError(msg_0)
+        if not (1e-15 <= epsilon <= 0.1):
+            msg_1 = "`epsilon` must be  in [1e-15, 0.1]"
+            raise ValueError(msg_1)
 
-        if (
-            isinstance(y, float)
-            and (0.0 <= y <= 1.0)
-            and isinstance(x, float)
-            and (0.0 <= x <= 1.0)
-        ):
+        if isinstance(y, float) and (0.0 <= y <= 1.0) and isinstance(x, float) and (0.0 <= x <= 1.0):
             return self.multn_chi2_score_func(y, x, self.conf_mat, epsilon)
-        elif isinstance(y, np.ndarray) and isinstance(x, np.ndarray):
+        if isinstance(y, np.ndarray) and isinstance(x, np.ndarray):
             y = check_array(y, max_dim=1, dtype_check=_convert_to_float)
             x = check_array(x, max_dim=1, dtype_check=_convert_to_float)
             if _MMU_MT_SUPPORT:
                 return self.multn_chi2_scores_mt_func(y, x, self.conf_mat, epsilon)
             return self.multn_chi2_scores_func(y, x, self.conf_mat, epsilon)
-        else:
-            raise ValueError(
-                "``y`` and ``x`` must both be floats or np.ndarray's of"
-                " floats in [0, 1]"
-            )
+        msg_2 = "``y`` and ``x`` must both be floats or np.ndarray's of floats in [0, 1]"
+        raise ValueError(msg_2)
 
     def compute_pvalue_for(
-        self,
-        y: Union[float, np.ndarray],
-        x: Union[float, np.ndarray],
-        epsilon: float = 1e-12,
-    ) -> Union[float, np.ndarray]:
+        self, y: float | np.ndarray, x: float | np.ndarray, epsilon: float = 1e-12
+    ) -> float | np.ndarray:
         """Compute p-value(s) for a given y(s) and x(s).
 
         The profile loglikelihood is computed which follows a chi2
@@ -432,7 +419,7 @@ class BaseUncertainty:
             the value used to prevent the bounds from reaching
             the point (y=1.0, x=0.0) which would result in NaNs.
 
-        Returns
+        Returns:
         -------
         pvalue : float, np.ndarray[float64]
             the p-value(s) for the given y(s) and x(s).
@@ -444,7 +431,7 @@ class BaseUncertainty:
     def get_conf_mat(self) -> pd.DataFrame:
         """Obtain confusion matrix as a DataFrame.
 
-        Returns
+        Returns:
         -------
         pd.DataFrame
             the confusion matrix of the test set
@@ -460,7 +447,8 @@ class BaseUncertainty:
         elif point_kwargs is None:
             point_kwargs = {"cmap": "Reds"}
         else:
-            raise TypeError("`point_kwargs` must be a Dict or None")
+            msg = "`point_kwargs` must be a Dict or None"
+            raise TypeError(msg)
         self._ax = point.plot(ax=self._ax, **point_kwargs)
         self._handles = self._handles + point._handles
         self._ax.legend(handles=self._handles, loc="lower left", fontsize=12)  # type: ignore
@@ -472,32 +460,18 @@ class BaseUncertainty:
             if other_kwargs is None:
                 other_kwargs = {}
             elif isinstance(other_kwargs, dict):
-                other_kwargs = [
-                    other_kwargs,
-                ] * len(other)
+                other_kwargs = [other_kwargs] * len(other)
             for point, kwargs in zip_longest(other, other_kwargs):
                 self._add_point_to_plot(point, kwargs)
         else:
-            raise TypeError(
-                "`point_uncertainty` must be of type BaseUncertainty"
-                " or a list of those"
-            )
+            msg = "`point_uncertainty` must be of type BaseUncertainty or a list of those"
+            raise TypeError(msg)
 
-    def _plot_contour(
-        self,
-        levels,
-        ax,
-        cmap,
-        equal_aspect,
-        limit_axis,
-        legend_loc,
-        alpha,
-        other,
-        other_kwargs,
-    ):
+    def _plot_contour(self, levels, ax, cmap, equal_aspect, limit_axis, legend_loc, alpha, other, other_kwargs):
         """Plot confidence interval(s) for the point."""
         if self.chi2_scores is None:
-            raise RuntimeError("the class needs to be initialised with from_*")
+            msg = "the class needs to be initialised with from_*"
+            raise RuntimeError(msg)
 
         # quick catch for list and tuples
         if isinstance(levels, (list, tuple)):
@@ -517,14 +491,13 @@ class BaseUncertainty:
         elif isinstance(levels, float):
             labels = [f"{round(levels * 100, 3)}% CI"]
             levels = self._get_critical_values_alpha(np.array((levels,)))
-        elif isinstance(levels, np.ndarray) and np.issubdtype(
-            levels.dtype, np.floating
-        ):
+        elif isinstance(levels, np.ndarray) and np.issubdtype(levels.dtype, np.floating):
             levels = np.sort(np.unique(levels))
             labels = [f"{round(l * 100, 3)}% CI" for l in levels]
             levels = self._get_critical_values_alpha(levels)
         else:
-            raise TypeError("`levels` must be a int, float, array-like or None")
+            msg_0 = "`levels` must be a int, float, array-like or None"
+            raise TypeError(msg_0)
 
         self.critical_values_plot = levels
 
@@ -552,19 +525,15 @@ class BaseUncertainty:
 
     def plot(
         self,
-        levels: Union[int, float, np.ndarray, None] = None,
+        levels: int | float | np.ndarray | None = None,
         ax=None,
         cmap: str = "Blues",
         equal_aspect: bool = True,
         limit_axis: bool = True,
-        legend_loc: Optional[str] = None,
+        legend_loc: str | None = None,
         alpha: float = 0.8,
-        other: Union[
-            "BaseUncertainty",
-            List["BaseUncertainty"],
-            None,
-        ] = None,
-        other_kwargs: Union[Dict, List[Dict], None] = None,
+        other: Union["BaseUncertainty", list["BaseUncertainty"], None] = None,
+        other_kwargs: dict | list[dict] | None = None,
     ):
         """Plot confidence interval(s).
 
@@ -597,7 +566,7 @@ class BaseUncertainty:
             `other_kwargs` is a dict, the kwargs are used for all point
             others.
 
-        Returns
+        Returns:
         -------
         ax : matplotlib.axes.Axes
             the axis with the contour added to it
@@ -614,4 +583,3 @@ class BaseUncertainty:
             other=other,
             other_kwargs=other_kwargs,
         )
-

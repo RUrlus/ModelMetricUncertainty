@@ -1,23 +1,19 @@
 """Module containing the API for the Multinomial uncertainty."""
+
 import warnings
 from itertools import zip_longest
-from typing import Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
 import scipy.stats as sts
 
-from mmu.commons import (
-    check_array,
-    _convert_to_float,
-    _convert_to_int,
-)
+from mmu.commons import _convert_to_float, _convert_to_int, check_array
 from mmu.commons.checks import _check_n_threads
-from mmu.metrics.utils import auto_thresholds
-from mmu.metrics.confmat import confusion_matrices_thresholds
-from mmu.metrics.confmat import confusion_matrices_to_dataframe
-from mmu.viz.contours import _plot_curve_contours
 from mmu.lib import _MMU_MT_SUPPORT
 from mmu.methods.pointbase import BaseUncertainty
+from mmu.metrics.confmat import confusion_matrices_thresholds, confusion_matrices_to_dataframe
+from mmu.metrics.utils import auto_thresholds
+from mmu.viz.contours import _plot_curve_contours
 
 
 class BaseCurveUncertainty:
@@ -36,7 +32,7 @@ class BaseCurveUncertainty:
     - Edge cases (near y=1.0, x=0.0)
     - Any confusion matrix counts
 
-    Attributes
+    Attributes:
     ----------
     conf_mat : np.ndarray[int64]
         the confusion_matrices over the thresholds with columns [TN, FP, FN, TP].
@@ -75,7 +71,7 @@ class BaseCurveUncertainty:
         the label of the x-axis.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.n_conf_mats = None
         self.conf_mats = None
         self.y = None
@@ -118,10 +114,7 @@ class BaseCurveUncertainty:
             )
         else:
             if n_threads > 1:
-                warnings.warn(
-                    "mmu was not compiled with multi-threading enabled,"
-                    " ignoring `n_threads`"
-                )
+                warnings.warn("mmu was not compiled with multi-threading enabled, ignoring `n_threads`")
             self.chi2_scores = self.multn_grid_curve_error_func(
                 self.n_conf_mats,
                 self.y_grid,
@@ -135,13 +128,13 @@ class BaseCurveUncertainty:
         if thresholds is None:
             thresholds = auto_thresholds(scores, max_steps=max_steps, seed=seed)
         else:
-            thresholds = check_array(
-                thresholds, max_dim=1, dtype_check=_convert_to_float
-            )
+            thresholds = check_array(thresholds, max_dim=1, dtype_check=_convert_to_float)
         if thresholds.min() <= 0.0:
-            raise ValueError("`thresholds` should be in (0., 1.0)")
+            msg = "`thresholds` should be in (0., 1.0)"
+            raise ValueError(msg)
         if thresholds.max() >= 1.0:
-            raise ValueError("`thresholds` should be in (0., 1.0)")
+            msg_0 = "`thresholds` should be in (0., 1.0)"
+            raise ValueError(msg_0)
         self.thresholds = thresholds
 
     def _parse_nbins(self, n_bins):
@@ -156,36 +149,44 @@ class BaseCurveUncertainty:
             self.y_grid = self.x_grid = np.linspace(lb, ub, 1000)
         elif isinstance(n_bins, int):
             if n_bins < 1:
-                raise ValueError("`n_bins` must be bigger than 0")
+                msg = "`n_bins` must be bigger than 0"
+                raise ValueError(msg)
             self.y_grid = self.x_grid = np.linspace(lb, ub, n_bins)
         elif isinstance(n_bins, np.ndarray):
             if not np.issubdtype(n_bins.dtype, np.integer):
-                raise TypeError("`n_bins` must be an int or list-like ints")
+                msg_0 = "`n_bins` must be an int or list-like ints"
+                raise TypeError(msg_0)
             self.y_grid = np.linspace(lb, ub, n_bins[0])
             self.x_grid = np.linspace(lb, ub, n_bins[1])
 
         elif isinstance(n_bins, (list, tuple)) and len(n_bins) == 2:
             if (not isinstance(n_bins[0], int)) or (not isinstance(n_bins[1], int)):
-                raise TypeError("`n_bins` must be an int or list-like ints")
+                msg_1 = "`n_bins` must be an int or list-like ints"
+                raise TypeError(msg_1)
             self.y_grid = np.linspace(lb, ub, n_bins[0])
             self.x_grid = np.linspace(lb, ub, n_bins[1])
         else:
-            raise TypeError("`n_bins` must be an int or list-like ints")
+            msg_2 = "`n_bins` must be an int or list-like ints"
+            raise TypeError(msg_2)
 
     def _parse_n_sigmas(self, n_sigmas):
         # -- validate n_sigmas arg
         if not isinstance(n_sigmas, (int, float)):
-            raise TypeError("`n_sigmas` must be an int or float.")
-        elif n_sigmas < 1.0:
-            raise ValueError("`n_sigmas` must be greater than 1.")
+            msg = "`n_sigmas` must be an int or float."
+            raise TypeError(msg)
+        if n_sigmas < 1.0:
+            msg_0 = "`n_sigmas` must be greater than 1."
+            raise ValueError(msg_0)
         self.n_sigmas = n_sigmas
 
     def _parse_epsilon(self, epsilon):
         # -- validate epsilon arg
         if not isinstance(epsilon, float):
-            raise TypeError("`epsilon` must be a float")
-        elif not (1e-15 <= epsilon <= 0.1):
-            raise ValueError("`epsilon` must be  in [1e-15, 0.1]")
+            msg = "`epsilon` must be a float"
+            raise TypeError(msg)
+        if not (1e-15 <= epsilon <= 0.1):
+            msg_0 = "`epsilon` must be  in [1e-15, 0.1]"
+            raise ValueError(msg_0)
         self.epsilon = epsilon
 
     @classmethod
@@ -193,13 +194,13 @@ class BaseCurveUncertainty:
         cls,
         y: np.ndarray,
         scores: np.ndarray,
-        thresholds: Optional[np.ndarray] = None,
-        n_bins: Union[int, Tuple[int], List[int], np.ndarray, None] = 1000,
-        n_sigmas: Union[int, float] = 6.0,
+        thresholds: np.ndarray | None = None,
+        n_bins: int | tuple[int] | list[int] | np.ndarray | None = 1000,
+        n_sigmas: int | float = 6.0,
         epsilon: float = 1e-12,
-        auto_max_steps: Optional[int] = None,
-        auto_seed: Optional[int] = None,
-        n_threads: Optional[int] = None,
+        auto_max_steps: int | None = None,
+        auto_seed: int | None = None,
+        n_threads: int | None = None,
     ):
         """Compute the curve uncertainty from classifier scores.
 
@@ -244,9 +245,7 @@ class BaseCurveUncertainty:
         self = cls()
         self._parse_thresholds(thresholds, scores, auto_max_steps, auto_seed)
         self._parse_nbins(n_bins)
-        self.conf_mats = confusion_matrices_thresholds(
-            y=y, scores=scores, thresholds=self.thresholds
-        )
+        self.conf_mats = confusion_matrices_thresholds(y=y, scores=scores, thresholds=self.thresholds)
         self.n_conf_mats = self.conf_mats.shape[0]
         self._compute_scores(n_sigmas, epsilon, n_threads)
         return self
@@ -255,11 +254,11 @@ class BaseCurveUncertainty:
     def from_confusion_matrices(
         cls,
         conf_mats: np.ndarray,
-        n_bins: Union[int, Tuple[int], List[int], np.ndarray, None] = 1000,
-        n_sigmas: Union[int, float] = 6.0,
+        n_bins: int | tuple[int] | list[int] | np.ndarray | None = 1000,
+        n_sigmas: int | float = 6.0,
         epsilon: float = 1e-12,
         obs_axis: int = 0,
-        n_threads: Optional[int] = None,
+        n_threads: int | None = None,
     ):
         """Compute a curve uncertainty from confusion matrices.
 
@@ -309,13 +308,13 @@ class BaseCurveUncertainty:
         clf,
         X: np.ndarray,
         y: np.ndarray,
-        thresholds: Optional[np.ndarray] = None,
-        n_bins: Union[int, Tuple[int], List[int], np.ndarray, None] = 1000,
-        n_sigmas: Union[int, float] = 6.0,
+        thresholds: np.ndarray | None = None,
+        n_bins: int | tuple[int] | list[int] | np.ndarray | None = 1000,
+        n_sigmas: int | float = 6.0,
         epsilon: float = 1e-12,
-        auto_max_steps: Optional[int] = None,
-        auto_seed: Optional[int] = None,
-        n_threads: Optional[int] = None,
+        auto_max_steps: int | None = None,
+        auto_seed: int | None = None,
+        n_threads: int | None = None,
     ):
         """Compute the curve uncertainty from a trained classifier.
 
@@ -358,13 +357,12 @@ class BaseCurveUncertainty:
         """
         self = cls()
         if not hasattr(clf, "predict_proba"):
-            raise TypeError("`clf` must have a method `predict_proba`")
+            msg = "`clf` must have a method `predict_proba`"
+            raise TypeError(msg)
         score = clf.predict_proba(X)[:, 1]
         self._parse_thresholds(thresholds, score, auto_max_steps, auto_seed)
         self._parse_nbins(n_bins)
-        self.conf_mats = confusion_matrices_thresholds(
-            y=y, scores=score, thresholds=self.thresholds
-        )
+        self.conf_mats = confusion_matrices_thresholds(y=y, scores=score, thresholds=self.thresholds)
         self.n_conf_mats = self.conf_mats.shape[0]
         self._compute_scores(n_sigmas, epsilon, n_threads)
         return self
@@ -372,7 +370,7 @@ class BaseCurveUncertainty:
     def get_conf_mats(self) -> pd.DataFrame:
         """Obtain confusion matrix as a DataFrame.
 
-        Returns
+        Returns:
         -------
         pd.DataFrame
             the confusion matrix of the test set
@@ -381,7 +379,8 @@ class BaseCurveUncertainty:
 
     def _get_critical_values_std(self, n_std):
         """Compute the critical values for a chi2 with 2df using the continuity
-        correction."""
+        correction.
+        """
         alphas = 2.0 * (sts.norm.cdf(n_std) - 0.5)
         # confidence limits in two dimensions
         return sts.chi2.ppf(alphas, 2)
@@ -393,7 +392,8 @@ class BaseCurveUncertainty:
 
     def _add_point_to_plot(self, point, point_kwargs):
         if not isinstance(point, BaseUncertainty):
-            raise TypeError("``point`` must be BaseUncertainty isinstance.")
+            msg = "``point`` must be BaseUncertainty isinstance."
+            raise TypeError(msg)
         if isinstance(point_kwargs, dict):
             if "cmap" not in point_kwargs:
                 point_kwargs["cmap"] = "Reds"
@@ -404,7 +404,8 @@ class BaseCurveUncertainty:
         elif point_kwargs is None:
             point_kwargs = {"cmap": "Reds"}
         else:
-            raise TypeError("`point_kwargs` must be a Dict or None")
+            msg_0 = "`point_kwargs` must be a Dict or None"
+            raise TypeError(msg_0)
         self._ax = point.plot(ax=self._ax, **point_kwargs)
         self._handles = self._handles + point._handles
         self._ax.legend(handles=self._handles, loc="lower center", fontsize=12)  # type: ignore
@@ -416,30 +417,24 @@ class BaseCurveUncertainty:
             if point_kwargs is None:
                 point_kwargs = {}
             elif isinstance(point_kwargs, dict):
-                point_kwargs = [
-                    point_kwargs,
-                ] * len(point)
+                point_kwargs = [point_kwargs] * len(point)
             for p, k in zip_longest(point, point_kwargs):
                 self._add_point_to_plot(p, k)
         else:
-            raise TypeError(
-                "``point_uncertainty`` must be a BaseUncertainty"
-                " isinstance or a list of BaseUncertainty's."
-            )
+            msg = "``point_uncertainty`` must be a BaseUncertainty isinstance or a list of BaseUncertainty's."
+            raise TypeError(msg)
 
     def plot(
         self,
-        levels: Union[int, float, np.ndarray, None] = None,
+        levels: int | float | np.ndarray | None = None,
         ax=None,
         cmap: str = "Blues",
         equal_aspect: bool = False,
         limit_axis: bool = True,
-        legend_loc: Optional[str] = None,
+        legend_loc: str | None = None,
         alpha: float = 0.8,
-        point_uncertainty: Union[
-            BaseUncertainty, List[BaseUncertainty], None
-        ] = None,
-        point_kwargs: Union[Dict, List[Dict], None] = None,
+        point_uncertainty: BaseUncertainty | list[BaseUncertainty] | None = None,
+        point_kwargs: dict | list[dict] | None = None,
     ):
         """Plot confidence interval(s)
 
@@ -472,14 +467,15 @@ class BaseCurveUncertainty:
             `point_kwargs` is a dict the kwargs are used for all point
             uncertainties.
 
-        Returns
+        Returns:
         -------
         ax : matplotlib.axes.Axes
             the axis with the contour added to it
 
         """
         if self.chi2_scores is None:
-            raise RuntimeError("the class needs to be initialised with from_*")
+            msg = "the class needs to be initialised with from_*"
+            raise RuntimeError(msg)
 
         # quick catch for list and tuples
         if isinstance(levels, (list, tuple)):
@@ -499,14 +495,13 @@ class BaseCurveUncertainty:
         elif isinstance(levels, float):
             labels = [f"{round(levels * 100, 3)}% CI"]
             levels = self._get_critical_values_alpha(np.array((levels,)))
-        elif isinstance(levels, np.ndarray) and np.issubdtype(
-            levels.dtype, np.floating
-        ):
+        elif isinstance(levels, np.ndarray) and np.issubdtype(levels.dtype, np.floating):
             levels = np.sort(np.unique(levels))
             labels = [f"{round(l * 100, 3)}% CI" for l in levels]
             levels = self._get_critical_values_alpha(levels)
         else:
-            raise TypeError("`levels` must be a int, float, array-like or None")
+            msg_0 = "`levels` must be a int, float, array-like or None"
+            raise TypeError(msg_0)
 
         self.critical_values_plot = levels
 
