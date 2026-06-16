@@ -24,7 +24,7 @@ def auto_thresholds(scores, max_steps=None, epsilon=None, seed=None):
         seed to use when subsampeling, ignored when `max_steps` is None or
         when the number of unique thresholds is smaller than `max_steps`.
 
-    Returns
+    Returns:
     -------
     thresholds : np.ndarray[float64]
         the thresholds that result in different confusion matrices. Length
