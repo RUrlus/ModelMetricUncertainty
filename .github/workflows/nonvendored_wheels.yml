@@ -47,7 +47,7 @@ jobs:
       with:
         python-version: "3.11"
 
-    - uses: pypa/cibuildwheel@v4.0.0
+    - uses: pypa/cibuildwheel@v4.1.0
       env:
         CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
         CIBW_TEST_EXTRAS: test
