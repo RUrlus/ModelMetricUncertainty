@@ -100,7 +100,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="$HOME/.local/libomp"
         cmake --build openmp_build --target install --config Release
 
-    - uses: pypa/cibuildwheel@v4.1.0
+    - uses: pypa/cibuildwheel@v4.1.1
       env:
         CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
         CIBW_ENVIRONMENT: CMAKE_ARGS="-DMMU_ENABLE_ARCH_FLAGS=OFF -DMMU_ENABLE_OPENMP=ON -DMMU_DISABLE_OPENMP=OFF -DMMU_CICD_MODE=ON"
@@ -159,7 +159,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="/usr/local"
         cmake --build openmp_build --target install --config Release
 
-    - uses: pypa/cibuildwheel@v4.1.0
+    - uses: pypa/cibuildwheel@v4.1.1
       env:
         CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
         CIBW_ARCHS: "x86_64"
