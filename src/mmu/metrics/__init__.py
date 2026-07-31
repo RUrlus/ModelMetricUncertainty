@@ -17,8 +17,13 @@ from mmu.metrics.metrics import precision_recall
 from mmu.metrics.metrics import precision_recall_curve
 from mmu.metrics.metrics import ROC_curve
 from mmu.metrics.utils import auto_thresholds
+from mmu.metrics.delong import auc_confidence_interval
+from mmu.metrics.delong import delong_contrast_test
+from mmu.metrics.delong import delong_covariance
+from mmu.metrics.delong import delong_test
 
 __all__ = [
+    "auc_confidence_interval",
     "auto_thresholds",
     "binary_metrics",
     "binary_metrics_runs",
@@ -34,6 +39,9 @@ __all__ = [
     "confusion_matrices_runs_thresholds",
     "confusion_matrix_to_dataframe",
     "confusion_matrices_to_dataframe",
+    "delong_contrast_test",
+    "delong_covariance",
+    "delong_test",
     "metrics_to_dataframe",
     "precision_recall",
     "precision_recall_curve",

@@ -23,6 +23,7 @@ from mmu.methods import (
 )
 from mmu.metrics import (
     ROC_curve,
+    auc_confidence_interval,
     auto_thresholds,
     binary_metrics,
     binary_metrics_confusion_matrices,
@@ -36,6 +37,7 @@ from mmu.metrics import (
     confusion_matrices_to_dataframe,
     confusion_matrix,
     confusion_matrix_to_dataframe,
+    delong_contrast_test,
     delong_covariance,
     delong_test,
     metrics_to_dataframe,
@@ -79,6 +81,7 @@ __all__ = [
     "ROCUncertainty",
     "ROC_curve",
     "__version__",
+    "auc_confidence_interval",
     "auto_thresholds",
     "binary_metrics",
     "binary_metrics_confusion_matrices",
@@ -92,6 +95,7 @@ __all__ = [
     "confusion_matrices_to_dataframe",
     "confusion_matrix",
     "confusion_matrix_to_dataframe",
+    "delong_contrast_test",
     "delong_covariance",
     "delong_test",
     "generate_data",
