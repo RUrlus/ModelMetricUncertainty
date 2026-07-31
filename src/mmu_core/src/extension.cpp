@@ -4,6 +4,7 @@
 #include <pybind11/pybind11.h>
 
 #include <mmu/bindings/confusion_matrix.hpp>
+#include <mmu/bindings/delong.hpp>
 #include <mmu/bindings/metrics.hpp>
 #include <mmu/bindings/ppn_recall_multn_loglike.hpp>
 #include <mmu/bindings/pr_multn_loglike.hpp>
@@ -33,6 +34,9 @@ PYBIND11_MODULE(EXTENSION_MODULE_NAME, m) {
     bind_ROC(m);
     bind_ROC_2d(m);
     bind_ROC_flattened(m);
+    bind_delong_components(m);
+    bind_delong_covariance(m);
+    bind_delong_test(m);
     // npy
     bind_all_finite(m);
     bind_is_well_behaved_finite(m);
