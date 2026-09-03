@@ -1,57 +1,28 @@
 import itertools
-import pytest
+
 import numpy as np
+import pytest
+
 import mmu
+from mmu.commons._testing import compute_reference_metrics, generate_test_labels
 
-from mmu.commons._testing import generate_test_labels
-from mmu.commons._testing import compute_reference_metrics
+Y_DTYPES = [bool, np.bool_, int, np.int32, np.int64, float, np.float32, np.float64]
 
-Y_DTYPES = [
-    bool,
-    np.bool_,
-    int,
-    np.int32,
-    np.int64,
-    float,
-    np.float32,
-    np.float64,
-]
+YHAT_DTYPES = [bool, np.bool_, int, np.int32, np.int64, float, np.float32, np.float64]
 
-YHAT_DTYPES = [
-    bool,
-    np.bool_,
-    int,
-    np.int32,
-    np.int64,
-    float,
-    np.float32,
-    np.float64,
-]
-
-PROBA_DTYPES = [
-    float,
-    np.float32,
-    np.float64,
-]
+PROBA_DTYPES = [float, np.float32, np.float64]
 
 
 def test_binary_metrics_yhat():
     """Test confusion_matrix int64"""
     for y_dtype, yhat_dtype in itertools.product(Y_DTYPES, YHAT_DTYPES):
-        _, yhat, y = generate_test_labels(
-            N=1000,
-            y_dtype=y_dtype,
-            yhat_dtype=yhat_dtype
-        )
+        _, yhat, y = generate_test_labels(N=1000, y_dtype=y_dtype, yhat_dtype=yhat_dtype)
         sk_conf_mat, sk_metrics = compute_reference_metrics(y, yhat=yhat)
 
         conf_mat, metrics = mmu.binary_metrics(y, yhat)
-        assert np.array_equal(conf_mat, sk_conf_mat), (
-            f"test failed for dtypes: {y_dtype}, {yhat_dtype}"
-        )
-        assert np.allclose(metrics, sk_metrics), (
-            f"test failed for dtypes: {y_dtype}, {yhat_dtype}"
-        )
+        assert np.array_equal(conf_mat, sk_conf_mat), f"test failed for dtypes: {y_dtype}, {yhat_dtype}"
+        assert np.allclose(metrics, sk_metrics), f"test failed for dtypes: {y_dtype}, {yhat_dtype}"
+
 
 def test_binary_metrics_yhat_shapes():
     """Check if different shapes are handled correctly."""
@@ -63,12 +34,8 @@ def test_binary_metrics_yhat_shapes():
 
     for y_, yhat_ in itertools.product(y_shapes, yhat_shapes):
         conf_mat, metrics = mmu.binary_metrics(y_, yhat_)
-        assert np.array_equal(conf_mat, sk_conf_mat), (
-            f"test failed for dtypes: {y_.shape}, {yhat_.shape}"
-        )
-        assert np.allclose(metrics, sk_metrics), (
-            f"test failed for dtypes: {y_.shape}, {yhat_.shape}"
-        )
+        assert np.array_equal(conf_mat, sk_conf_mat), f"test failed for dtypes: {y_.shape}, {yhat_.shape}"
+        assert np.allclose(metrics, sk_metrics), f"test failed for dtypes: {y_.shape}, {yhat_.shape}"
 
     # unequal length
     with pytest.raises(ValueError):
@@ -77,15 +44,9 @@ def test_binary_metrics_yhat_shapes():
         mmu.binary_metrics(y[:100], yhat)
 
     # 2d with more than one row/column for the second dimension or 3d
-    y_shapes = [
-        np.tile(y[:, None], 2),
-        np.tile(y[None, :], (2, 1)),
-    ]
+    y_shapes = [np.tile(y[:, None], 2), np.tile(y[None, :], (2, 1))]
 
-    yhat_shapes = [
-        np.tile(yhat[:, None], 2),
-        np.tile(yhat[None, :], (2, 1)),
-    ]
+    yhat_shapes = [np.tile(yhat[:, None], 2), np.tile(yhat[None, :], (2, 1))]
     for y_, yhat_ in itertools.product(y_shapes, yhat_shapes):
         with pytest.raises(ValueError):
             mmu.binary_metrics(y_, yhat_)
@@ -97,77 +58,56 @@ def test_binary_metrics_order():
     sk_conf_mat, sk_metrics = compute_reference_metrics(y, yhat=yhat)
 
     y_orders = [
-        y.copy(order='C'),
-        y.copy(order='F'),
-        y[None, :].copy(order='C'),
-        y[:, None].copy(order='C'),
-        y[None, :].copy(order='F'),
-        y[:, None].copy(order='F'),
+        y.copy(order="C"),
+        y.copy(order="F"),
+        y[None, :].copy(order="C"),
+        y[:, None].copy(order="C"),
+        y[None, :].copy(order="F"),
+        y[:, None].copy(order="F"),
     ]
 
     yhat_orders = [
-        yhat.copy(order='C'),
-        yhat.copy(order='F'),
-        yhat[None, :].copy(order='C'),
-        yhat[:, None].copy(order='C'),
-        yhat[None, :].copy(order='F'),
-        yhat[:, None].copy(order='F'),
+        yhat.copy(order="C"),
+        yhat.copy(order="F"),
+        yhat[None, :].copy(order="C"),
+        yhat[:, None].copy(order="C"),
+        yhat[None, :].copy(order="F"),
+        yhat[:, None].copy(order="F"),
     ]
 
     for y_, yhat_ in itertools.product(y_orders, yhat_orders):
         conf_mat, metrics = mmu.binary_metrics(y_, yhat_)
-        assert np.array_equal(conf_mat, sk_conf_mat), (
-            f"test failed for dtypes: {y_.shape}, {yhat_.shape}"
-        )
-        assert np.allclose(metrics, sk_metrics), (
-            f"test failed for dtypes: {y_.shape}, {yhat_.shape}"
-        )
+        assert np.array_equal(conf_mat, sk_conf_mat), f"test failed for dtypes: {y_.shape}, {yhat_.shape}"
+        assert np.allclose(metrics, sk_metrics), f"test failed for dtypes: {y_.shape}, {yhat_.shape}"
 
 
 def test_binary_metrics_proba():
     """Test confusion_matrix int64"""
     thresholds = np.random.uniform(0, 1, 10)
-    for y_dtype, proba_dtype, threshold in itertools.product(
-        Y_DTYPES, PROBA_DTYPES, thresholds
-    ):
-        proba, _, y = generate_test_labels(
-            N=1000,
-            y_dtype=y_dtype,
-            proba_dtype=proba_dtype
-        )
-        sk_conf_mat, sk_metrics = compute_reference_metrics(
-            y, proba=proba, threshold=threshold
-        )
+    for y_dtype, proba_dtype, threshold in itertools.product(Y_DTYPES, PROBA_DTYPES, thresholds):
+        proba, _, y = generate_test_labels(N=1000, y_dtype=y_dtype, proba_dtype=proba_dtype)
+        sk_conf_mat, sk_metrics = compute_reference_metrics(y, proba=proba, threshold=threshold)
 
         conf_mat, metrics = mmu.binary_metrics(y, scores=proba, threshold=threshold)
         assert np.array_equal(conf_mat, sk_conf_mat), (
-            f"test failed for dtypes: {y_dtype}, {proba_dtype}"
-            f" and threshold: {threshold}"
+            f"test failed for dtypes: {y_dtype}, {proba_dtype} and threshold: {threshold}"
         )
         assert np.allclose(metrics, sk_metrics), (
-            f"test failed for dtypes: {y_dtype}, {proba_dtype}"
-            f" and threshold: {threshold}"
+            f"test failed for dtypes: {y_dtype}, {proba_dtype} and threshold: {threshold}"
         )
 
     # test fill settings
-    proba, _, y = generate_test_labels(N=1000,)
-    thresholds = [1e7, 1. - 1e7]
+    proba, _, y = generate_test_labels(N=1000)
+    thresholds = [1e7, 1.0 - 1e7]
     fills = [0.0, 1.0]
     threshold = 1e-7
 
     for threshold, fill in itertools.product(thresholds, fills):
-        conf_mat, metrics = mmu.binary_metrics(
-            y, scores=proba, threshold=threshold, fill=fill
-        )
-        sk_conf_mat, sk_metrics = compute_reference_metrics(
-            y, proba=proba, threshold=threshold, fill=fill
-        )
-        assert np.array_equal(conf_mat, sk_conf_mat), (
-            f"test failed for threshold: {threshold}, fill: {fill}"
-        )
-        assert np.allclose(metrics, sk_metrics), (
-            f"test failed for threshold: {threshold}, fill: {fill}"
-        )
+        conf_mat, metrics = mmu.binary_metrics(y, scores=proba, threshold=threshold, fill=fill)
+        sk_conf_mat, sk_metrics = compute_reference_metrics(y, proba=proba, threshold=threshold, fill=fill)
+        assert np.array_equal(conf_mat, sk_conf_mat), f"test failed for threshold: {threshold}, fill: {fill}"
+        assert np.allclose(metrics, sk_metrics), f"test failed for threshold: {threshold}, fill: {fill}"
+
 
 def test_binary_metrics_proba_shapes():
     """Check if different shapes are handled correctly."""
@@ -175,18 +115,12 @@ def test_binary_metrics_proba_shapes():
     y_shapes = [y, y[None, :], y[:, None]]
     proba_shapes = [proba, proba[None, :], proba[:, None]]
 
-    sk_conf_mat, sk_metrics = compute_reference_metrics(
-        y, proba=proba, threshold=0.5
-    )
+    sk_conf_mat, sk_metrics = compute_reference_metrics(y, proba=proba, threshold=0.5)
 
     for y_, proba_ in itertools.product(y_shapes, proba_shapes):
         conf_mat, metrics = mmu.binary_metrics(y_, scores=proba_, threshold=0.5)
-        assert np.array_equal(conf_mat, sk_conf_mat), (
-            f"test failed for shapes: {y_.shape}, {proba_.shape}"
-        )
-        assert np.allclose(metrics, sk_metrics), (
-            f"test failed for shapes: {y_.shape}, {proba_.shape}"
-        )
+        assert np.array_equal(conf_mat, sk_conf_mat), f"test failed for shapes: {y_.shape}, {proba_.shape}"
+        assert np.allclose(metrics, sk_metrics), f"test failed for shapes: {y_.shape}, {proba_.shape}"
 
     # unequal length
     with pytest.raises(ValueError):
@@ -195,15 +129,9 @@ def test_binary_metrics_proba_shapes():
         mmu.binary_metrics(y[:100], scores=proba, threshold=0.5)
 
     # 2d with more than one row/column for the second dimension or 3d
-    y_shapes = [
-        np.tile(y[:, None], 2),
-        np.tile(y[None, :], (2, 1)),
-    ]
+    y_shapes = [np.tile(y[:, None], 2), np.tile(y[None, :], (2, 1))]
 
-    proba_shapes = [
-        np.tile(proba[:, None], 2),
-        np.tile(proba[None, :], (2, 1)),
-    ]
+    proba_shapes = [np.tile(proba[:, None], 2), np.tile(proba[None, :], (2, 1))]
     for y_, proba_ in itertools.product(y_shapes, proba_shapes):
         with pytest.raises(ValueError):
             mmu.binary_metrics(y_, scores=proba_, threshold=0.5)
@@ -213,32 +141,42 @@ def test_binary_metrics_proba_order():
     """Check that different orders and shapes are handled correctly."""
     proba, _, y = generate_test_labels(1000)
     y_orders = [
-        y.copy(order='C'),
-        y.copy(order='F'),
-        y[None, :].copy(order='C'),
-        y[:, None].copy(order='C'),
-        y[None, :].copy(order='F'),
-        y[:, None].copy(order='F'),
+        y.copy(order="C"),
+        y.copy(order="F"),
+        y[None, :].copy(order="C"),
+        y[:, None].copy(order="C"),
+        y[None, :].copy(order="F"),
+        y[:, None].copy(order="F"),
     ]
 
     proba_orders = [
-        proba.copy(order='C'),
-        proba.copy(order='F'),
-        proba[None, :].copy(order='C'),
-        proba[:, None].copy(order='C'),
-        proba[None, :].copy(order='F'),
-        proba[:, None].copy(order='F'),
+        proba.copy(order="C"),
+        proba.copy(order="F"),
+        proba[None, :].copy(order="C"),
+        proba[:, None].copy(order="C"),
+        proba[None, :].copy(order="F"),
+        proba[:, None].copy(order="F"),
     ]
 
-    sk_conf_mat, sk_metrics = compute_reference_metrics(
-        y, proba=proba, threshold=0.5
-    )
+    sk_conf_mat, sk_metrics = compute_reference_metrics(y, proba=proba, threshold=0.5)
 
     for y_, proba_ in itertools.product(y_orders, proba_orders):
         conf_mat, metrics = mmu.binary_metrics(y_, scores=proba_, threshold=0.5)
-        assert np.array_equal(conf_mat, sk_conf_mat), (
-            f"test failed for shapes: {y_.shape}, {proba_.shape}"
-        )
-        assert np.allclose(metrics, sk_metrics), (
-            f"test failed for shapes: {y_.shape}, {proba_.shape}"
-        )
+        assert np.array_equal(conf_mat, sk_conf_mat), f"test failed for shapes: {y_.shape}, {proba_.shape}"
+        assert np.allclose(metrics, sk_metrics), f"test failed for shapes: {y_.shape}, {proba_.shape}"
+
+
+def test_binary_metrics_confusion_matrices_small_n():
+    """Regression test: valid (N, 4) inputs must work for N < 4."""
+    y = np.array([0, 1, 1], dtype=np.int64)
+    scores = np.array([0.1, 0.9, 0.2], dtype=np.float64)
+    thresholds = np.array([0.2, 0.5, 0.8], dtype=np.float64)
+
+    conf_mats = mmu.confusion_matrices_thresholds(y, scores, thresholds)
+    assert conf_mats.shape == (3, 4)
+
+    expected = np.vstack([mmu.binary_metrics_confusion_matrix(conf_mats[i]) for i in range(conf_mats.shape[0])])
+    actual = mmu.binary_metrics_confusion_matrices(conf_mats)
+
+    assert actual.shape == (3, 10)
+    assert np.allclose(actual, expected)
