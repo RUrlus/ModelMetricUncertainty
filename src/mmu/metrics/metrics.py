@@ -247,7 +247,7 @@ def binary_metrics_confusion_matrices(conf_mat, fill=1.0, return_df=False):
         msg = "`fill` must be a float."
         raise TypeError(msg)
 
-    conf_mat = check_array(conf_mat, max_dim=2, target_order=0, dtype_check=_convert_to_int)
+    conf_mat = check_array(conf_mat, axis=0, max_dim=2, target_order=0, dtype_check=_convert_to_int)
     metrics = _core.binary_metrics_2d(conf_mat, fill)
 
     if return_df:
