@@ -20,6 +20,7 @@ def _plot_curve_contours(
     limit_axis,
     y_label="",
     x_label="",
+    label=None,
 ):
     if cmap is None:
         cmap = "Blues"
@@ -57,7 +58,7 @@ def _plot_curve_contours(
     if equal_aspect:
         ax.set_aspect("equal")  # type: ignore
     # create custom legend with the correct colours and labels
-    handles = _create_pr_legend(colors, labels, line_color=c_line, y_label=y_label, x_label=x_label)
+    handles = _create_pr_legend(colors, labels, line_color=c_line, y_label=y_label, x_label=x_label, label=label)
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
     fig.tight_layout()
     return ax, handles
@@ -79,6 +80,7 @@ def _plot_contours(
     limit_axis,
     y_label="",
     x_label="",
+    label=None,
 ):
     if cmap is None:
         cmap = "Blues"
@@ -123,7 +125,7 @@ def _plot_contours(
     if equal_aspect:
         ax.set_aspect("equal")  # type: ignore
     # create custom legend with the correct colours and labels
-    handles = _create_pr_legend_scatter(colors, c_marker, labels, (y, x), y_label=y_label, x_label=x_label)
+    handles = _create_pr_legend_scatter(colors, c_marker, labels, (y, x), y_label=y_label, x_label=x_label, label=label)
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
     fig.tight_layout()
     return ax, handles

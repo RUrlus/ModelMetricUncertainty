@@ -383,3 +383,53 @@ def test_PRMU_plot_integration(curve_class):
         scores=y_score,
         threshold=0.5,
     ).plot()
+
+
+@pytest.mark.parametrize("point_class", [mmu.PRU, mmu.ROCU])
+def test_point_plot_with_default_label(point_class):
+    """Test that default label behavior uses auto-generated symbol labels for point plots."""
+    np.random.seed(412)
+    y_scores_1, _, y_true = generate_test_labels(N=400)
+    point_1 = point_class.from_scores(y=y_true, scores=y_scores_1)
+
+    ax = point_1.plot(label=None)
+    legend = ax.get_legend()
+    assert legend is not None
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    # First entry should contain LaTeX symbols or coordinate values (auto-generated)
+    assert len(legend_texts) > 0, "Expected legend entries"
+
+
+@pytest.mark.parametrize("point_class", [mmu.PRU, mmu.ROCU])
+def test_point_plot_with_custom_label(point_class):
+    """Test that custom label overrides default legend text for point plots."""
+    np.random.seed(412)
+    y_scores_1, _, y_true = generate_test_labels(N=400)
+    point_1 = point_class.from_scores(y=y_true, scores=y_scores_1)
+
+    custom_label = "Model A (Validation)"
+    ax = point_1.plot(label=custom_label)
+    legend = ax.get_legend()
+    assert legend is not None
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    # First entry should be the custom label
+    assert custom_label in legend_texts, f"Expected '{custom_label}' in legend texts: {legend_texts}"
+
+
+@pytest.mark.parametrize("point_class", [mmu.PRU, mmu.ROCU])
+def test_point_plot_with_custom_label_and_overlay(point_class):
+    """Test that custom labels work with overlaid point plots."""
+    np.random.seed(412)
+    y_scores_1, _, y_true = generate_test_labels(N=400)
+    y_scores_2 = np.clip(y_scores_1 + np.random.normal(0.0, 0.05, y_scores_1.size), 1e-12, 1 - 1e-12)
+
+    point_1 = point_class.from_scores(y=y_true, scores=y_scores_1)
+    point_2 = point_class.from_scores(y=y_true, scores=y_scores_2)
+
+    # Plot with custom label for primary point and overlay with custom label
+    ax = point_1.plot(label="Model A", other=point_2, other_kwargs={"label": "Model B"})
+    legend = ax.get_legend()
+    assert legend is not None
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Model A" in legend_texts, f"Expected 'Model A' in legend: {legend_texts}"
+    assert "Model B" in legend_texts, f"Expected 'Model B' in legend: {legend_texts}"

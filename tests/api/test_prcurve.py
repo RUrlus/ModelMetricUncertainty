@@ -153,3 +153,53 @@ def test_curve_plot_backward_compatibility(curve_class):
     assert ax is not None
     legend = ax.get_legend()
     assert legend is not None
+
+
+@pytest.mark.parametrize("curve_class", [mmu.PRCU, mmu.ROCCU])
+def test_curve_plot_with_default_label(curve_class):
+    """Test that default label behavior uses auto-generated symbol labels."""
+    np.random.seed(412)
+    y_scores_1, _, y_true = generate_test_labels(N=400)
+    curve_1 = curve_class.from_scores(y=y_true, scores=y_scores_1, n_bins=100)
+
+    ax = curve_1.plot(label=None)
+    legend = ax.get_legend()
+    assert legend is not None
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    # First entry should contain LaTeX symbols (auto-generated)
+    assert any("$" in text for text in legend_texts), "Expected LaTeX symbols in legend"
+
+
+@pytest.mark.parametrize("curve_class", [mmu.PRCU, mmu.ROCCU])
+def test_curve_plot_with_custom_label(curve_class):
+    """Test that custom label overrides default legend text."""
+    np.random.seed(412)
+    y_scores_1, _, y_true = generate_test_labels(N=400)
+    curve_1 = curve_class.from_scores(y=y_true, scores=y_scores_1, n_bins=100)
+
+    custom_label = "Model A"
+    ax = curve_1.plot(label=custom_label)
+    legend = ax.get_legend()
+    assert legend is not None
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    # First entry should be the custom label
+    assert custom_label in legend_texts, f"Expected '{custom_label}' in legend texts: {legend_texts}"
+
+
+@pytest.mark.parametrize("curve_class", [mmu.PRCU, mmu.ROCCU])
+def test_curve_plot_with_custom_label_and_overlay(curve_class):
+    """Test that custom labels work with overlaid curves."""
+    np.random.seed(412)
+    y_scores_1, _, y_true = generate_test_labels(N=400)
+    y_scores_2 = np.clip(y_scores_1 + np.random.normal(0.0, 0.08, y_scores_1.size), 1e-12, 1 - 1e-12)
+
+    curve_1 = curve_class.from_scores(y=y_true, scores=y_scores_1, n_bins=100)
+    curve_2 = curve_class.from_scores(y=y_true, scores=y_scores_2, n_bins=100)
+
+    # Plot with custom label for primary curve and overlay with custom label
+    ax = curve_1.plot(label="Model A", other=curve_2, other_kwargs={"label": "Model B"})
+    legend = ax.get_legend()
+    assert legend is not None
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Model A" in legend_texts, f"Expected 'Model A' in legend: {legend_texts}"
+    assert "Model B" in legend_texts, f"Expected 'Model B' in legend: {legend_texts}"

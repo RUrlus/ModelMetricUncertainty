@@ -468,6 +468,7 @@ class BaseCurveUncertainty:
         limit_axis: bool = True,
         legend_loc: str | None = None,
         alpha: float = 0.8,
+        label: str | None = None,
         point_uncertainty: BaseUncertainty | list[BaseUncertainty] | None = None,
         point_kwargs: dict | list[dict] | None = None,
         other: Union["BaseCurveUncertainty", list["BaseCurveUncertainty"], None] = None,
@@ -495,6 +496,9 @@ class BaseCurveUncertainty:
             location of the legend, default is `lower center`
         alpha : float, defualt=0.8
             opacity value of the contours
+        label : str, default=None
+            optional custom label for the primary legend entry. If None, uses
+            default metric symbols (e.g., Precision/Recall, TPR/FPR, PPN/Recall).
         point_uncertainty : BaseUncertainty, List, default=None
             Add a point uncertainty(ies) plot to the curve plot, by default the
             `Reds` cmap is used for the point plot(s).
@@ -566,6 +570,7 @@ class BaseCurveUncertainty:
             legend_loc=legend_loc,
             y_label=self.y_label,
             x_label=self.x_label,
+            label=label,
         )
 
         if point_uncertainty is not None:

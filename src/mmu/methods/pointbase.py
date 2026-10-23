@@ -467,7 +467,7 @@ class BaseUncertainty:
             msg = "`point_uncertainty` must be of type BaseUncertainty or a list of those"
             raise TypeError(msg)
 
-    def _plot_contour(self, levels, ax, cmap, equal_aspect, limit_axis, legend_loc, alpha, other, other_kwargs):
+    def _plot_contour(self, levels, ax, cmap, equal_aspect, limit_axis, legend_loc, alpha, label, other, other_kwargs):
         """Plot confidence interval(s) for the point."""
         if self.chi2_scores is None:
             msg = "the class needs to be initialised with from_*"
@@ -517,6 +517,7 @@ class BaseUncertainty:
             legend_loc=legend_loc,
             y_label=self.y_label,
             x_label=self.x_label,
+            label=label,
         )
 
         if other is not None:
@@ -532,6 +533,7 @@ class BaseUncertainty:
         limit_axis: bool = True,
         legend_loc: str | None = None,
         alpha: float = 0.8,
+        label: str | None = None,
         other: Union["BaseUncertainty", list["BaseUncertainty"], None] = None,
         other_kwargs: dict | list[dict] | None = None,
     ):
@@ -557,6 +559,9 @@ class BaseUncertainty:
             location of the legend, default is `lower left`
         alpha : float, defualt=0.8
             opacity value of the contours
+        label : str, default=None
+            optional custom label for the primary legend entry. If None, uses
+            default metric symbols (e.g., Precision/Recall, TPR/FPR, PPN/Recall).
         other : BaseUncertainty, List, default=None
             Add other point uncertainty(ies) plot to the plot, by default the
             `Reds` cmap is used for the `other` plot(s).
@@ -580,6 +585,7 @@ class BaseUncertainty:
             limit_axis=limit_axis,
             legend_loc=legend_loc,
             alpha=alpha,
+            label=label,
             other=other,
             other_kwargs=other_kwargs,
         )
