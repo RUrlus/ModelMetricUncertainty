@@ -21,6 +21,7 @@ def _plot_curve_contours(
     y_label="",
     x_label="",
     label=None,
+    linestyle=None,
 ):
     if cmap is None:
         cmap = "Blues"
@@ -41,7 +42,8 @@ def _plot_curve_contours(
     # create contours
     ax.contourf(RX, PY, scores, levels=levels, colors=colors, alpha=alpha)  # type: ignore
     # plot precision recall curve with colormap-matched line color
-    ax.plot(x, y, c=c_line, alpha=0.6, zorder=10)  # type: ignore
+    linestyle_arg = linestyle if linestyle is not None else "-"
+    ax.plot(x, y, c=c_line, alpha=0.6, linestyle=linestyle_arg, zorder=10)  # type: ignore
     ax.set_xlabel(x_label, fontsize=14)  # type: ignore
     ax.set_ylabel(y_label, fontsize=14)  # type: ignore
     ax.tick_params(labelsize=12)  # type: ignore
@@ -58,7 +60,7 @@ def _plot_curve_contours(
     if equal_aspect:
         ax.set_aspect("equal")  # type: ignore
     # create custom legend with the correct colours and labels
-    handles = _create_pr_legend(colors, labels, line_color=c_line, y_label=y_label, x_label=x_label, label=label)
+    handles = _create_pr_legend(colors, labels, line_color=c_line, y_label=y_label, x_label=x_label, label=label, linestyle=linestyle_arg)
     ax.legend(handles=handles, loc=legend_loc, fontsize=12)  # type: ignore
     fig.tight_layout()
     return ax, handles
