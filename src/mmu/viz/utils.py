@@ -26,7 +26,7 @@ def _get_color_hexes(cmap, n_colors=3, n_offset=3, return_marker=False, keep_alp
     return hexes[n_offset : n_offset + n_colors][::-1]
 
 
-def _create_pr_legend(c_hexes, labels, y_label="Precision", x_label="Recall"):
+def _create_pr_legend(c_hexes, labels, line_color="black", y_label="Precision", x_label="Recall"):
     # Map metric names to their LaTeX symbols
     label_to_symbol = {
         "Precision": r"\hat{P}",
@@ -39,7 +39,7 @@ def _create_pr_legend(c_hexes, labels, y_label="Precision", x_label="Recall"):
     x_sym = label_to_symbol.get(x_label, rf"\widehat{{{x_label}}}")
     curve_label = rf"${x_sym}, {y_sym}$"
 
-    line = [Line2D([0], [0], color="black", alpha=0.6, label=curve_label)]
+    line = [Line2D([0], [0], color=line_color, alpha=0.6, label=curve_label)]
     patches = [Patch(facecolor=c, edgecolor=c, label=l) for c, l in zip(c_hexes, labels)]
     return line + patches  # type: ignore
 

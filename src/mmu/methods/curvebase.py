@@ -2,6 +2,7 @@
 
 import warnings
 from itertools import zip_longest
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -424,6 +425,40 @@ class BaseCurveUncertainty:
             msg = "``point_uncertainty`` must be a BaseUncertainty isinstance or a list of BaseUncertainty's."
             raise TypeError(msg)
 
+    def _add_curve_to_plot(self, curve, curve_kwargs):
+        if not isinstance(curve, BaseCurveUncertainty):
+            msg = "``curve`` must be BaseCurveUncertainty isinstance."
+            raise TypeError(msg)
+        if isinstance(curve_kwargs, dict):
+            if "cmap" not in curve_kwargs:
+                curve_kwargs["cmap"] = "Greens"
+            if "ax" in curve_kwargs:
+                curve_kwargs.pop("ax")
+            if "equal_aspect" not in curve_kwargs:
+                curve_kwargs["equal_aspect"] = False
+        elif curve_kwargs is None:
+            curve_kwargs = {"cmap": "Greens"}
+        else:
+            msg_0 = "`curve_kwargs` must be a Dict or None"
+            raise TypeError(msg_0)
+        self._ax = curve.plot(ax=self._ax, **curve_kwargs)
+        self._handles = self._handles + curve._handles
+        self._ax.legend(handles=self._handles, loc="lower center", fontsize=12)  # type: ignore
+
+    def _add_curves_to_plot(self, other, other_kwargs):
+        if isinstance(other, BaseCurveUncertainty):
+            self._add_curve_to_plot(other, other_kwargs)
+        elif isinstance(other, (list, tuple)):
+            if other_kwargs is None:
+                other_kwargs = {}
+            elif isinstance(other_kwargs, dict):
+                other_kwargs = [other_kwargs] * len(other)
+            for curve, kwargs in zip_longest(other, other_kwargs):
+                self._add_curve_to_plot(curve, kwargs)
+        else:
+            msg = "`other` must be a BaseCurveUncertainty instance or a list of those"
+            raise TypeError(msg)
+
     def plot(
         self,
         levels: int | float | np.ndarray | None = None,
@@ -435,6 +470,8 @@ class BaseCurveUncertainty:
         alpha: float = 0.8,
         point_uncertainty: BaseUncertainty | list[BaseUncertainty] | None = None,
         point_kwargs: dict | list[dict] | None = None,
+        other: Union["BaseCurveUncertainty", list["BaseCurveUncertainty"], None] = None,
+        other_kwargs: dict | list[dict] | None = None,
     ):
         """Plot confidence interval(s)
 
@@ -466,6 +503,14 @@ class BaseCurveUncertainty:
             point_uncertainty is None. If `point_uncertainty` is a list and
             `point_kwargs` is a dict the kwargs are used for all point
             uncertainties.
+        other : BaseCurveUncertainty, List, default=None
+            Add other curve uncertainty(ies) plot to the curve plot, by default the
+            `Greens` cmap is used for the `other` plot(s).
+        other_kwargs : dict, list[dict], default=None
+            Keyword arguments passed to `other.plot()`, ignored if
+            `other` is None. If `other` is a list and
+            `other_kwargs` is a dict, the kwargs are used for all curve
+            others.
 
         Returns:
         -------
@@ -525,5 +570,8 @@ class BaseCurveUncertainty:
 
         if point_uncertainty is not None:
             self._add_points_to_plot(point_uncertainty, point_kwargs)
+
+        if other is not None:
+            self._add_curves_to_plot(other, other_kwargs)
 
         return self._ax
