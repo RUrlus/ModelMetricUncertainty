@@ -548,7 +548,7 @@ class BaseCurveUncertainty:
         linestyle : str, default=None
             matplotlib linestyle for the primary curve line (e.g., "-", "--", "-.", ":").
             If None, uses solid line "-". For overlay curves in `other`, linestyles are
-            automatically assigned from the cycle ["-.", "--", ":"] unless explicitly
+            automatically assigned from the cycle ["-.", "--", ":", "-"] unless explicitly
             provided via `other_kwargs`.
         point_uncertainty : BaseUncertainty, List, default=None
             Add a point uncertainty(ies) plot to the curve plot, by default the
@@ -566,7 +566,7 @@ class BaseCurveUncertainty:
             `other` is None. If `other` is a list and
             `other_kwargs` is a dict, the kwargs are used for all curve
             others. Use `linestyle` key to override default automatic linestyle
-            cycling for overlays (default cycle: "-.", "--", ":").
+            cycling for overlays (default cycle: "-.", "--", ":", "-").
 
 
         Returns:
