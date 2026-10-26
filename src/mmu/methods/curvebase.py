@@ -446,7 +446,7 @@ class BaseCurveUncertainty:
         self._ax.legend(handles=self._handles, loc="lower center", fontsize=12)  # type: ignore
 
     def _add_curves_to_plot(self, other, other_kwargs):
-        linestyle_cycle = ["-.","--",":"]  # Cycle for overlay curves
+        linestyle_cycle = ["-.", "--", ":", "-"]  # Cycle for overlay curves
         
         if isinstance(other, BaseCurveUncertainty):
             # Single overlay curve: auto-assign "-." unless explicitly provided
