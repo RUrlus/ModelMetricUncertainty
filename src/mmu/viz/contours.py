@@ -43,7 +43,7 @@ def _plot_curve_contours(
     ax.contourf(RX, PY, scores, levels=levels, colors=colors, alpha=alpha)  # type: ignore
     # plot precision recall curve with colormap-matched line color
     linestyle_arg = linestyle if linestyle is not None else "-"
-    ax.plot(x, y, c=c_line, alpha=0.6, linestyle=linestyle_arg, zorder=10)  # type: ignore
+    ax.plot(x, y, c=c_line, alpha=0.6, linestyle=linestyle_arg)  # type: ignore
     ax.set_xlabel(x_label, fontsize=14)  # type: ignore
     ax.set_ylabel(y_label, fontsize=14)  # type: ignore
     ax.tick_params(labelsize=12)  # type: ignore
