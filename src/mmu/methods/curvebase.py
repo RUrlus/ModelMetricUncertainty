@@ -431,13 +431,13 @@ class BaseCurveUncertainty:
             raise TypeError(msg)
         if isinstance(curve_kwargs, dict):
             if "cmap" not in curve_kwargs:
-                curve_kwargs["cmap"] = "Greens"
+                curve_kwargs["cmap"] = "Reds"
             if "ax" in curve_kwargs:
                 curve_kwargs.pop("ax")
             if "equal_aspect" not in curve_kwargs:
                 curve_kwargs["equal_aspect"] = False
         elif curve_kwargs is None:
-            curve_kwargs = {"cmap": "Greens"}
+            curve_kwargs = {"cmap": "Reds"}
         else:
             msg_0 = "`curve_kwargs` must be a Dict or None"
             raise TypeError(msg_0)
