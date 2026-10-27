@@ -26,7 +26,7 @@ def _get_color_hexes(cmap, n_colors=3, n_offset=3, return_marker=False, keep_alp
     return hexes[n_offset : n_offset + n_colors][::-1]
 
 
-def _create_pr_legend(c_hexes, labels, y_label="Precision", x_label="Recall"):
+def _create_pr_legend(c_hexes, labels, line_color="black", y_label="Precision", x_label="Recall", label=None, linestyle=None):
     # Map metric names to their LaTeX symbols
     label_to_symbol = {
         "Precision": r"\hat{P}",
@@ -35,16 +35,22 @@ def _create_pr_legend(c_hexes, labels, y_label="Precision", x_label="Recall"):
         "FPR": r"\widehat{FPR}",
         "PPN": r"\widehat{PPN}",
     }
-    y_sym = label_to_symbol.get(y_label, rf"\widehat{{{y_label}}}")
-    x_sym = label_to_symbol.get(x_label, rf"\widehat{{{x_label}}}")
-    curve_label = rf"${x_sym}, {y_sym}$"
+    if label is not None:
+        # Use custom label if provided
+        curve_label = label
+    else:
+        # Fallback to existing symbol mapping
+        y_sym = label_to_symbol.get(y_label, rf"\widehat{{{y_label}}}")
+        x_sym = label_to_symbol.get(x_label, rf"\widehat{{{x_label}}}")
+        curve_label = rf"${x_sym}, {y_sym}$"
 
-    line = [Line2D([0], [0], color="black", alpha=0.6, label=curve_label)]
+    linestyle_arg = linestyle if linestyle is not None else "-"
+    line = [Line2D([0], [0], color=line_color, alpha=0.6, linestyle=linestyle_arg, label=curve_label)]
     patches = [Patch(facecolor=c, edgecolor=c, label=l) for c, l in zip(c_hexes, labels)]
     return line + patches  # type: ignore
 
 
-def _create_pr_legend_scatter(c_hexes, c_marker, labels, vals, y_label="Precision", x_label="Recall"):
+def _create_pr_legend_scatter(c_hexes, c_marker, labels, vals, y_label="Precision", x_label="Recall", label=None):
     # Map metric names to their LaTeX symbols
     label_to_symbol = {
         "Precision": r"\hat{P}",
@@ -53,13 +59,18 @@ def _create_pr_legend_scatter(c_hexes, c_marker, labels, vals, y_label="Precisio
         "FPR": r"\widehat{FPR}",
         "PPN": r"\widehat{PPN}",
     }
-    y_sym = label_to_symbol.get(y_label, rf"\widehat{{{y_label}}}")
-    x_sym = label_to_symbol.get(x_label, rf"\widehat{{{x_label}}}")
-
-    if vals:
-        label = rf"${x_sym}$" + f"={round(vals[1], 3)}, " + rf"${y_sym}$" + f"={round(vals[0], 3)}"
+    if label is not None:
+        # Use custom label if provided
+        marker_label = label
     else:
-        label = rf"${x_sym}$, ${y_sym}$"
+        # Fallback to existing symbol mapping
+        y_sym = label_to_symbol.get(y_label, rf"\widehat{{{y_label}}}")
+        x_sym = label_to_symbol.get(x_label, rf"\widehat{{{x_label}}}")
+
+        if vals:
+            marker_label = rf"${x_sym}$" + f"={round(vals[1], 3)}, " + rf"${y_sym}$" + f"={round(vals[0], 3)}"
+        else:
+            marker_label = rf"${x_sym}$, ${y_sym}$"
 
     line = [
         Line2D(
@@ -71,7 +82,7 @@ def _create_pr_legend_scatter(c_hexes, c_marker, labels, vals, y_label="Precisio
             marker="x",
             color=c_marker,
             alpha=0.6,
-            label=label,
+            label=marker_label,
         )
     ]
     patches = [Patch(facecolor=c, edgecolor=c, label=l) for c, l in zip(c_hexes, labels)]

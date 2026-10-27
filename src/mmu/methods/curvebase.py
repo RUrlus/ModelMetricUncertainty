@@ -2,6 +2,7 @@
 
 import warnings
 from itertools import zip_longest
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -424,6 +425,85 @@ class BaseCurveUncertainty:
             msg = "``point_uncertainty`` must be a BaseUncertainty isinstance or a list of BaseUncertainty's."
             raise TypeError(msg)
 
+    def _add_curve_to_plot(self, curve, curve_kwargs):
+        if not isinstance(curve, BaseCurveUncertainty):
+            msg = "``curve`` must be BaseCurveUncertainty isinstance."
+            raise TypeError(msg)
+        if isinstance(curve_kwargs, dict):
+            if "cmap" not in curve_kwargs:
+                curve_kwargs["cmap"] = "Reds"
+            if "ax" in curve_kwargs:
+                curve_kwargs.pop("ax")
+            if "equal_aspect" not in curve_kwargs:
+                curve_kwargs["equal_aspect"] = False
+        elif curve_kwargs is None:
+            curve_kwargs = {"cmap": "Reds"}
+        else:
+            msg_0 = "`curve_kwargs` must be a Dict or None"
+            raise TypeError(msg_0)
+        self._ax = curve.plot(ax=self._ax, **curve_kwargs)
+        self._handles = self._handles + curve._handles
+        self._ax.legend(handles=self._handles, loc="lower center", fontsize=12)  # type: ignore
+
+    def _add_curves_to_plot(self, other, other_kwargs):
+        linestyle_cycle = ["-.", "--", ":", "-"]  # Cycle for overlay curves
+        
+        if isinstance(other, BaseCurveUncertainty):
+            # Single overlay curve: auto-assign "-." unless explicitly provided
+            if other_kwargs is None:
+                other_kwargs = {"linestyle": "-."}
+            elif isinstance(other_kwargs, dict):
+                if "linestyle" not in other_kwargs:
+                    other_kwargs = {**other_kwargs, "linestyle": "-."}
+            else:
+                msg_0 = "`other_kwargs` must be a Dict or None"
+                raise TypeError(msg_0)
+            self._add_curve_to_plot(other, other_kwargs)
+        elif isinstance(other, (list, tuple)):
+            # Multiple overlay curves: handle three branches
+            if other_kwargs is None:
+                # Branch 1: Auto-cycle linestyle for each overlay
+                other_kwargs = [{} for _ in range(len(other))]
+                for i in range(len(other)):
+                    other_kwargs[i]["linestyle"] = linestyle_cycle[i % len(linestyle_cycle)]
+            elif isinstance(other_kwargs, dict):
+                # Branch 2: Single dict broadcast - use shared default or explicit linestyle
+                if "linestyle" not in other_kwargs:
+                    # No explicit linestyle: all overlays get shared "-."
+                    other_kwargs_list = []
+                    for _ in range(len(other)):
+                        new_kwargs = dict(other_kwargs)  # Deep copy to avoid mutation
+                        new_kwargs["linestyle"] = "-."
+                        other_kwargs_list.append(new_kwargs)
+                    other_kwargs = other_kwargs_list
+                else:
+                    # Explicit linestyle: broadcast to all overlays
+                    other_kwargs = [dict(other_kwargs) for _ in range(len(other))]
+            elif isinstance(other_kwargs, (list, tuple)):
+                # Branch 3: List of dicts - auto-fill missing linestyles at each index
+                other_kwargs_list = []
+                for i, kwargs in enumerate(other_kwargs):
+                    if kwargs is None:
+                        new_kwargs = {"linestyle": linestyle_cycle[i % len(linestyle_cycle)]}
+                    elif isinstance(kwargs, dict):
+                        new_kwargs = dict(kwargs)  # Deep copy
+                        if "linestyle" not in new_kwargs:
+                            new_kwargs["linestyle"] = linestyle_cycle[i % len(linestyle_cycle)]
+                    else:
+                        msg_1 = "Each item in `other_kwargs` list must be a Dict or None"
+                        raise TypeError(msg_1)
+                    other_kwargs_list.append(new_kwargs)
+                other_kwargs = other_kwargs_list
+            else:
+                msg_0 = "`other_kwargs` must be a Dict, list, or None"
+                raise TypeError(msg_0)
+            
+            for curve, kwargs in zip_longest(other, other_kwargs):
+                self._add_curve_to_plot(curve, kwargs)
+        else:
+            msg = "`other` must be a BaseCurveUncertainty instance or a list of those"
+            raise TypeError(msg)
+
     def plot(
         self,
         levels: int | float | np.ndarray | None = None,
@@ -433,8 +513,12 @@ class BaseCurveUncertainty:
         limit_axis: bool = True,
         legend_loc: str | None = None,
         alpha: float = 0.8,
+        label: str | None = None,
+        linestyle: str | None = None,
         point_uncertainty: BaseUncertainty | list[BaseUncertainty] | None = None,
         point_kwargs: dict | list[dict] | None = None,
+        other: Union["BaseCurveUncertainty", list["BaseCurveUncertainty"], None] = None,
+        other_kwargs: dict | list[dict] | None = None,
     ):
         """Plot confidence interval(s)
 
@@ -458,6 +542,14 @@ class BaseCurveUncertainty:
             location of the legend, default is `lower center`
         alpha : float, defualt=0.8
             opacity value of the contours
+        label : str, default=None
+            optional custom label for the primary legend entry. If None, uses
+            default metric symbols (e.g., Precision/Recall, TPR/FPR, PPN/Recall).
+        linestyle : str, default=None
+            matplotlib linestyle for the primary curve line (e.g., "-", "--", "-.", ":").
+            If None, uses solid line "-". For overlay curves in `other`, linestyles are
+            automatically assigned from the cycle ["-.", "--", ":", "-"] unless explicitly
+            provided via `other_kwargs`.
         point_uncertainty : BaseUncertainty, List, default=None
             Add a point uncertainty(ies) plot to the curve plot, by default the
             `Reds` cmap is used for the point plot(s).
@@ -466,6 +558,16 @@ class BaseCurveUncertainty:
             point_uncertainty is None. If `point_uncertainty` is a list and
             `point_kwargs` is a dict the kwargs are used for all point
             uncertainties.
+        other : BaseCurveUncertainty, List, default=None
+            Add other curve uncertainty(ies) plot to the curve plot, by default the
+            `Greens` cmap is used for the `other` plot(s).
+        other_kwargs : dict, list[dict], default=None
+            Keyword arguments passed to `other.plot()`, ignored if
+            `other` is None. If `other` is a list and
+            `other_kwargs` is a dict, the kwargs are used for all curve
+            others. Use `linestyle` key to override default automatic linestyle
+            cycling for overlays (default cycle: "-.", "--", ":", "-").
+
 
         Returns:
         -------
@@ -521,9 +623,14 @@ class BaseCurveUncertainty:
             legend_loc=legend_loc,
             y_label=self.y_label,
             x_label=self.x_label,
+            label=label,
+            linestyle=linestyle,
         )
 
         if point_uncertainty is not None:
             self._add_points_to_plot(point_uncertainty, point_kwargs)
+
+        if other is not None:
+            self._add_curves_to_plot(other, other_kwargs)
 
         return self._ax
