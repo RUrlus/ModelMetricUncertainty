@@ -7,10 +7,16 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#if defined(MMU_HAS_OPENMP_SUPPORT)
+#include <omp.h>
+#endif  // MMU_HAS_OPENMP_SUPPORT
+
 #include <algorithm>
+#include <type_traits>
 
 #include <mmu/api/common.hpp>
 #include <mmu/api/numpy.hpp>
+#include <mmu/config.hpp>
 #include <mmu/core/common.hpp>
 #include <mmu/core/confusion_matrix.hpp>
 
@@ -31,6 +37,36 @@ namespace py = pybind11;
 namespace mmu {
 namespace api {
 
+namespace details {
+
+/* Require two arrays to hold the same number of observations. */
+inline void check_equal_length(
+    const int64_t n_a,
+    const int64_t n_b,
+    const char* a_name,
+    const char* b_name) {
+    if (n_a != n_b) {
+        throw std::invalid_argument(
+            std::string(a_name) + " and " + b_name
+            + " must have the same number of observations.");
+    }
+}
+
+/* Require an array to be large enough for the run/observation layout. */
+inline void check_holds_at_least(
+    const int64_t available,
+    const int64_t required,
+    const char* name) {
+    if (available < required) {
+        throw std::invalid_argument(
+            std::string(name) + " is too small for the requested layout: needs "
+            + std::to_string(required) + " elements, has "
+            + std::to_string(available) + ".");
+    }
+}
+
+}  // namespace details
+
 /* Compute the confusion matrix given true labels y and estimated labels yhat.
  *
  * --- Parameters ---
@@ -48,8 +84,8 @@ i64arr confusion_matrix(const py::array_t<T1>& y, const py::array_t<T2>& yhat) {
             "Encountered non-aligned or non-contiguous array.");
     }
 
-    // guard against buffer overruns
-    const int64_t n_obs = std::min(y.size(), yhat.size());
+    details::check_equal_length(y.size(), yhat.size(), "`y`", "`yhat`");
+    const int64_t n_obs = y.size();
 
     auto conf_mat = npy::allocate_confusion_matrix<int64_t>();
     int64_t* const cm_ptr = npy::get_data(conf_mat);
@@ -82,15 +118,15 @@ i64arr confusion_matrix(
             "Encountered non-aligned or non-contiguous array.");
     }
 
-    // guard against buffer overruns
-    const int64_t n_obs = std::min(y.size(), score.size());
+    details::check_equal_length(y.size(), score.size(), "`y`", "`score`");
+    const int64_t n_obs = y.size();
 
     auto conf_mat = npy::allocate_confusion_matrix<int64_t>();
     int64_t* const cm_ptr = npy::get_data(conf_mat);
 
     T1* y_ptr = npy::get_data(y);
     T2* score_ptr = npy::get_data<T2>(score);
-    const double scaled_tol = 1e-8 + 1e-05 * threshold;
+    const T2 scaled_tol = core::scaled_tolerance(threshold);
     core::confusion_matrix<T1, T2>(
         n_obs, y_ptr, score_ptr, threshold, scaled_tol, cm_ptr);
 
@@ -137,6 +173,10 @@ inline i64arr confusion_matrix_runs(
     const int64_t n_obs = n_obs_tmp;
     const int64_t n_runs = n_runs_tmp;
 
+    // `n_obs`/`n_runs` are derived from `y` alone but used to stride through
+    // `score` as well, so the two must agree in size.
+    details::check_equal_length(y.size(), score.size(), "`y`", "`score`");
+
     // get ptr
     T1* y_ptr = npy::get_data(y);
     T2* score_ptr = npy::get_data(score);
@@ -144,12 +184,12 @@ inline i64arr confusion_matrix_runs(
     // allocate confusion_matrix
     auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_runs);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
-    const double scaled_tol = 1e-8 + 1e-05 * threshold;
+    const T2 scaled_tol = core::scaled_tolerance(threshold);
 
-#pragma omp parallel shared( \
-        n_obs, n_runs, y_ptr, score_ptr, threshold, scaled_tol, cm_ptr)
+#pragma omp parallel if (n_runs >= MMU_OMP_MIN_TASKS) \
+    shared(n_obs, n_runs, y_ptr, score_ptr, threshold, scaled_tol, cm_ptr)
     {
-#pragma omp for
+#pragma omp for schedule(static)
         for (int64_t i = 0; i < n_runs; i++) {
             // fill confusion matrix
             core::confusion_matrix<T1, T2>(
@@ -202,6 +242,10 @@ inline i64arr confusion_matrix_runs(
     const int64_t n_obs = n_obs_tmp;
     const int64_t n_runs = n_runs_tmp;
 
+    // `n_obs`/`n_runs` are derived from `y` alone but used to stride through
+    // `yhat` as well, so the two must agree in size.
+    details::check_equal_length(y.size(), yhat.size(), "`y`", "`yhat`");
+
     // get ptr
     T1* y_ptr = npy::get_data(y);
     T2* yhat_ptr = npy::get_data(yhat);
@@ -210,9 +254,10 @@ inline i64arr confusion_matrix_runs(
     auto conf_mat = npy::allocate_n_confusion_matrices<int64_t>(n_runs);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
 
-#pragma omp parallel shared(n_obs, n_runs, y_ptr, yhat_ptr, cm_ptr)
+#pragma omp parallel if (n_runs >= MMU_OMP_MIN_TASKS) \
+    shared(n_obs, n_runs, y_ptr, yhat_ptr, cm_ptr)
     {
-#pragma omp for
+#pragma omp for schedule(static)
         for (int64_t i = 0; i < n_runs; i++) {
             core::confusion_matrix<T1, T2>(
                 n_obs,
@@ -249,7 +294,8 @@ inline i64arr confusion_matrix_thresholds(
     }
 
     // guard against buffer overruns
-    const int64_t n_obs = std::min(y.size(), score.size());
+    details::check_equal_length(y.size(), score.size(), "`y`", "`score`");
+    const int64_t n_obs = y.size();
     const int64_t n_thresholds = thresholds.size();
 
     // allocate confusion_matrix
@@ -259,13 +305,47 @@ inline i64arr confusion_matrix_thresholds(
     T2* score_ptr = npy::get_data(score);
     T2* threshold_ptr = npy::get_data(thresholds);
     int64_t* const cm_ptr = npy::get_data(conf_mat);
-#pragma omp parallel shared( \
-        n_obs, n_thresholds, y_ptr, score_ptr, threshold_ptr, cm_ptr)
+
+#ifdef MMU_HAS_OPENMP_SUPPORT
+    const int n_threads = omp_get_max_threads();
+#else
+    const int n_threads = 1;
+#endif
+
+    /* Dispatch between the O(n_t * n) direct sweep and the O((n + n_t) log n)
+     * sort-based one. See `core::prefer_sorted_sweep`; small sweeps keep the
+     * direct, zero-allocation path.
+     */
+    if (core::prefer_sorted_sweep(n_obs, n_thresholds, n_threads)) {
+        if constexpr (std::is_integral<T1>::value) {
+            core::confusion_matrix_thresholds_sorted(
+                n_obs,
+                n_thresholds,
+                y_ptr,
+                score_ptr,
+                threshold_ptr,
+                cm_ptr,
+                core::details::IntLabelPositive<T1>{});
+        } else {
+            core::confusion_matrix_thresholds_sorted(
+                n_obs,
+                n_thresholds,
+                y_ptr,
+                score_ptr,
+                threshold_ptr,
+                cm_ptr,
+                core::details::FloatLabelPositive<T1>{});
+        }
+        return conf_mat;
+    }
+
+#pragma omp parallel if (n_thresholds >= MMU_OMP_MIN_TASKS) \
+    shared(n_obs, n_thresholds, y_ptr, score_ptr, threshold_ptr, cm_ptr)
     {
-#pragma omp for
+#pragma omp for schedule(static)
         for (int64_t i = 0; i < n_thresholds; i++) {
             // fill confusion matrix
-            double scaled_tol = 1e-8 + 1e-05 * threshold_ptr[i];
+            const T2 scaled_tol = core::scaled_tolerance(threshold_ptr[i]);
             core::confusion_matrix<T1, T2>(
                 n_obs,
                 y_ptr,
@@ -314,8 +394,15 @@ inline i64arr confusion_matrix_runs_thresholds(
 
     const int64_t n_runs = n_obs.size();
     const int64_t n_thresholds = thresholds.size();
-    const int64_t max_obs = *std::max_element(n_obs_ptr, n_obs_ptr + n_runs);
+    const int64_t max_obs
+        = n_runs > 0 ? *std::max_element(n_obs_ptr, n_obs_ptr + n_runs) : 0;
     const int64_t cm_offset = n_thresholds * 4;
+
+    // `y` and `score` are indexed as `ptr + r * max_obs`, so both must hold at
+    // least `n_runs * max_obs` elements. `n_obs` is caller supplied and was
+    // previously trusted outright.
+    details::check_equal_length(y.size(), score.size(), "`y`", "`score`");
+    details::check_holds_at_least(y.size(), n_runs * max_obs, "`y`");
 
     // allocate confusion_matrix
     auto conf_mat
@@ -326,16 +413,16 @@ inline i64arr confusion_matrix_runs_thresholds(
     int64_t* const cm_ptr = npy::get_data(conf_mat);
 
 // Bookkeeping variables
-#pragma omp parallel shared( \
-        n_runs,              \
-            n_thresholds,    \
-            y_ptr,           \
-            score_ptr,       \
-            thresholds_ptr,  \
-            n_obs_ptr,       \
-            cm_ptr)
+#pragma omp parallel if (n_runs >= MMU_OMP_MIN_TASKS) \
+    shared(n_runs,                                    \
+               n_thresholds,                          \
+               y_ptr,                                 \
+               score_ptr,                             \
+               thresholds_ptr,                        \
+               n_obs_ptr,                             \
+               cm_ptr)
     {
-#pragma omp for
+#pragma omp for schedule(static)
         for (int64_t r = 0; r < n_runs; r++) {
             int64_t o_n_obs = n_obs_ptr[r];
             T1* o_y_ptr = y_ptr + (r * max_obs);
@@ -343,8 +430,7 @@ inline i64arr confusion_matrix_runs_thresholds(
             int64_t* o_cm_ptr = cm_ptr + (r * cm_offset);
             for (int64_t i = 0; i < n_thresholds; i++) {
                 // fill confusion matrix
-                //
-                double scaled_tol = 1e-8 + 1e-05 * thresholds_ptr[i];
+                const T2 scaled_tol = core::scaled_tolerance(thresholds_ptr[i]);
                 core::confusion_matrix<T1, T2>(
                     o_n_obs,
                     o_y_ptr,
@@ -391,6 +477,11 @@ inline i64arr confusion_matrix_thresholds_runs(
     const T2* const score_ptr = npy::get_data<T2>(score);
     const T2* const thresholds_ptr = npy::get_data<T2>(thresholds);
 
+    // `n_obs` and `n_runs` are caller supplied and used to stride through both
+    // arrays as `ptr + r * n_obs`.
+    details::check_equal_length(y.size(), score.size(), "`y`", "`score`");
+    details::check_holds_at_least(y.size(), n_runs * n_obs, "`y`");
+
     // allocate confusion_matrix
     const int64_t stride_out = n_runs * 4;
     const int64_t n_thresholds = thresholds.size();
@@ -399,21 +490,21 @@ inline i64arr confusion_matrix_thresholds_runs(
     int64_t* const cm_ptr = npy::get_data(conf_mat);
 
 // Bookkeeping variables
-#pragma omp parallel shared( \
-        n_runs,              \
-            n_obs,           \
-            n_thresholds,    \
-            stride_out,      \
-            y_ptr,           \
-            score_ptr,       \
-            thresholds_ptr,  \
-            cm_ptr)
+#pragma omp parallel if (n_thresholds >= MMU_OMP_MIN_TASKS) \
+    shared(n_runs,                                          \
+               n_obs,                                       \
+               n_thresholds,                                \
+               stride_out,                                  \
+               y_ptr,                                       \
+               score_ptr,                                   \
+               thresholds_ptr,                              \
+               cm_ptr)
     {
-#pragma omp for
+#pragma omp for schedule(static)
         for (int64_t i = 0; i < n_thresholds; i++) {
             int64_t* o_cm_ptr = cm_ptr + (i * stride_out);
             T2 threshold = thresholds_ptr[i];
-            double scaled_tol = 1e-8 + 1e-05 * threshold;
+            const T2 scaled_tol = core::scaled_tolerance(threshold);
             for (int64_t r = 0; r < n_runs; r++) {
                 int64_t run_offset = r * n_obs;
                 // fill confusion matrix
