@@ -237,7 +237,7 @@ def confusion_matrices_thresholds(y, scores, thresholds, return_df=False):
     return conf_mat
 
 
-def confusion_matrices_runs_thresholds(y, scores, thresholds, n_obs=None, fill=0.0, obs_axis=0):
+def confusion_matrices_runs_thresholds(y, scores, thresholds, n_obs=None, obs_axis=0):
     """Compute confusion matrices over runs and thresholds.
 
     `conf_mats_runs_thresh` is an alias for this function.
@@ -258,8 +258,6 @@ def confusion_matrices_runs_thresholds(y, scores, thresholds, n_obs=None, fill=0
     n_obs : np.array[int64], default=None
         the number of observations per run, if None the same number of
         observations are assumed exist for each run.
-    fill : double
-        value to fill when a metric is not defined, e.g. divide by zero.
     obs_axis : {0, 1}, default=0
         0 if the observations for a single run is a column (e.g. from
         pd.DataFrame) and 1 otherwhise
