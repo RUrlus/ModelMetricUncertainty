@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
@@ -58,6 +59,56 @@ inline T clamp(const T v, const T lo, const T hi) {
     return std::min(std::max(v, lo), hi);
 }
 
+/* Index of the first grid point strictly greater than `value`, minus one. */
+inline int64_t lower_index(
+    const double* __restrict grid,
+    const int64_t n_bins,
+    const double value) {
+    const int64_t idx = std::upper_bound(grid, grid + n_bins, value) - grid;
+    if (idx >= n_bins) {
+        return 0;
+    }
+    return idx > 0 ? idx - 1 : 0;
+}
+
+/* Index one past the first grid point strictly greater than `value`.
+ *
+ * Mirrors `lower_index`: returns `n_bins` when no grid point exceeds `value`,
+ * and clamps to `n_bins` otherwise. `from` restricts the search to the
+ * already-determined lower bound, as the original loop did.
+ */
+inline int64_t upper_index(
+    const double* __restrict grid,
+    const int64_t n_bins,
+    const double value,
+    const int64_t from) {
+    const int64_t begin = from > 0 ? from : 0;
+    const int64_t idx
+        = std::upper_bound(grid + begin, grid + n_bins, value) - grid;
+    if (idx >= n_bins) {
+        return n_bins;
+    }
+    return idx + 1 <= n_bins ? idx + 1 : n_bins;
+}
+
+/* Defensive guard against a non-finite grid.
+ *
+ * `Profile::bvn_sigma` is required to return finite values for every possible
+ * confusion matrix. If that contract is ever broken the NaN propagates
+ * silently through the whole chi2 grid and surfaces as an empty plot rather
+ * than an error, so we fail loudly here instead.
+ *
+ * Only safe to call outside an OpenMP region.
+ */
+inline void assert_finite_bounds(const double* __restrict bounds) {
+    if (!(std::isfinite(bounds[0]) && std::isfinite(bounds[1])
+          && std::isfinite(bounds[2]) && std::isfinite(bounds[3]))) {
+        throw std::runtime_error(
+            "Encountered a non-finite grid bound; the confusion matrix is "
+            "likely degenerate.");
+    }
+}
+
 }  // namespace details
 
 // =============================================================================
@@ -89,6 +140,8 @@ inline void get_grid_bounds(
     bounds[1] = std::min(y + ns_y_sigma, 1.0 - max_y_clip);
     bounds[2] = std::max(x - ns_x_sigma, epsilon);
     bounds[3] = std::min(x + ns_x_sigma, 1.0 - max_x_clip);
+
+    details::assert_finite_bounds(bounds);
 }
 
 // =============================================================================
@@ -155,48 +208,15 @@ class GridBounds {
         y_max = std::min(metrics[0] + ns_y_sigma, 1.0 - max_y_clip);
         y_min = std::max(metrics[0] - ns_y_sigma, epsilon);
 
-        y_idx_min = 0;
-        y_idx_max = n_y_bins;
-
-        int64_t i;
-        for (i = 0; i < n_y_bins; ++i) {
-            if (y_min < ys[i]) {
-                y_idx_min = i - 1;
-                break;
-            }
-        }
-        y_idx_min = y_idx_min > 0 ? y_idx_min : 0;
-
-        for (i = y_idx_min; i < n_y_bins; ++i) {
-            if (y_max < ys[i]) {
-                y_idx_max = i + 1;
-                break;
-            }
-        }
-        y_idx_max = y_idx_max <= n_y_bins ? y_idx_max : n_y_bins;
+        y_idx_min = details::lower_index(ys, n_y_bins, y_min);
+        y_idx_max = details::upper_index(ys, n_y_bins, y_max, y_idx_min);
 
         ns_x_sigma = n_sigmas * metrics[3];
         x_max = std::min(metrics[2] + ns_x_sigma, 1.0 - max_x_clip);
         x_min = std::max(metrics[2] - ns_x_sigma, epsilon);
 
-        x_idx_min = 0;
-        x_idx_max = n_x_bins;
-
-        for (i = 0; i < n_x_bins; ++i) {
-            if (x_min < xs[i]) {
-                x_idx_min = i - 1;
-                break;
-            }
-        }
-        x_idx_min = x_idx_min > 0 ? x_idx_min : 0;
-
-        for (i = x_idx_min; i < n_x_bins; ++i) {
-            if (x_max < xs[i]) {
-                x_idx_max = i + 1;
-                break;
-            }
-        }
-        x_idx_max = x_idx_max <= n_x_bins ? x_idx_max : n_x_bins;
+        x_idx_min = details::lower_index(xs, n_x_bins, x_min);
+        x_idx_max = details::upper_index(xs, n_x_bins, x_max, x_idx_min);
     }
 };
 
@@ -221,47 +241,15 @@ inline void get_grid_bounds(
     const double y_max = std::min(metrics[0] + ns_y_sigma, 1.0 - max_y_clip);
     const double y_min = std::max(metrics[0] - ns_y_sigma, epsilon);
 
-    int64_t y_idx_min = 0;
-    int64_t y_idx_max = y_bins;
-
-    for (int64_t i = 0; i < y_bins; ++i) {
-        if (y_min < ys[i]) {
-            y_idx_min = i - 1;
-            break;
-        }
-    }
-    result[0] = y_idx_min > 0 ? y_idx_min : 0;
-
-    for (int64_t i = result[0]; i < y_bins; ++i) {
-        if (y_max < ys[i]) {
-            y_idx_max = i + 1;
-            break;
-        }
-    }
-    result[1] = y_idx_max <= y_bins ? y_idx_max : y_bins;
+    result[0] = details::lower_index(ys, y_bins, y_min);
+    result[1] = details::upper_index(ys, y_bins, y_max, result[0]);
 
     const double ns_x_sigma = n_sigmas * metrics[3];
     const double x_max = std::min(metrics[2] + ns_x_sigma, 1.0 - max_x_clip);
     const double x_min = std::max(metrics[2] - ns_x_sigma, epsilon);
 
-    int64_t x_idx_min = 0;
-    int64_t x_idx_max = x_bins;
-
-    for (int64_t i = 0; i < x_bins; ++i) {
-        if (x_min < xs[i]) {
-            x_idx_min = i - 1;
-            break;
-        }
-    }
-    result[2] = x_idx_min > 0 ? x_idx_min : 0;
-
-    for (int64_t i = result[2]; i < x_bins; ++i) {
-        if (x_max < xs[i]) {
-            x_idx_max = i + 1;
-            break;
-        }
-    }
-    result[3] = x_idx_max <= x_bins ? x_idx_max : x_bins;
+    result[2] = details::lower_index(xs, x_bins, x_min);
+    result[3] = details::upper_index(xs, x_bins, x_max, result[2]);
 }
 
 }  // namespace multn
