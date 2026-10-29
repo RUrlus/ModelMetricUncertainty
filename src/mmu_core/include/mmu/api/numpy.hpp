@@ -137,8 +137,13 @@ inline void zero_array(py::array_t<T>& arr) {
 /* allocate 2x2 shaped array and zero it*/
 template <typename T>
 inline py::array_t<T> allocate_confusion_matrix() {
-    // allocate memory confusion_matrix
-    auto conf_mat = py::array_t<T>({2, 2}, {16, 8});
+    // Strides are derived from `sizeof(T)` rather than hard-coded. The
+    // previous `{16, 8}` was correct only because every instantiation
+    // happened to be an 8-byte type; it would have silently produced a
+    // mis-strided array for any other `T`.
+    constexpr auto row_stride = static_cast<py::ssize_t>(sizeof(T) * 2);
+    constexpr auto col_stride = static_cast<py::ssize_t>(sizeof(T));
+    auto conf_mat = py::array_t<T>({2, 2}, {row_stride, col_stride});
     zero_array<T, 4>(conf_mat);
     return conf_mat;
 }
@@ -162,67 +167,43 @@ inline constexpr bool all_finite(const py::array_t<T>& arr) {
 
 template <typename T, isFloat<T> = true>
 inline bool all_finite_strided(const py::array_t<T>& arr) {
-    /* The array is assumed to be non-contiguous so we move in
-     * strides.
-     * We argsort based on the strides and iterate over the
-     * array in the order of smallest stride to biggest.
+    /* Check every element of a non-contiguous and/or unaligned array.
      *
-     * We account for the non-contiguous memory by jumping
-     * ahead the next biggest strides minus the steps we have
-     * already taken, i.e. say strides are (80, 8) and shape
-     * is (10, 3). We add 8 to the pointer three times and
-     * and than at (80 - (3 * 8)) to jump to the next block.
-     * Add 8 to the pointer three times and etc...
+     * Walks the array with an odometer over the index vector, computing the
+     * byte offset from the strides on each step. This is layout agnostic: it
+     * is correct for any number of dimensions and for any strides, including
+     * the negative ones produced by reversed views.
      */
-    const size_t N = arr.size();
-    const size_t ndim = arr.ndim();
     auto arr_ptr = reinterpret_cast<PyArrayObject*>(arr.ptr());
-    npy_intp* strides = PyArray_STRIDES(arr_ptr);
-    npy_intp* dims = PyArray_DIMS(arr_ptr);
-    // argsort the strides
-    std::vector<size_t> idx(3);
-    std::iota(idx.begin(), idx.end(), 0);
-    std::sort(idx.begin(), idx.begin() + ndim, [&](size_t i1, size_t i2) {
-        return strides[i1] < strides[i2];
-    });
+    const int ndim = PyArray_NDIM(arr_ptr);
+    const npy_intp* strides = PyArray_STRIDES(arr_ptr);
+    const npy_intp* dims = PyArray_DIMS(arr_ptr);
+    const npy_intp N = static_cast<npy_intp>(arr.size());
 
-    int s0 = strides[idx[0]];
-    size_t acc = 0;
-    auto ptr = reinterpret_cast<unsigned char*>(get_data(arr));
+    if (N < 1 || ndim < 1) {
+        return N < 1;
+    }
 
-    if (ndim == 1) {
-        for (size_t i = 0; i < N; i++) {
-            acc += isfinite(*reinterpret_cast<T*>(ptr));
-            ptr += s0;
+    std::vector<npy_intp> counter(static_cast<size_t>(ndim), 0);
+    const auto base = reinterpret_cast<const char*>(get_data(arr));
+    npy_intp acc = 0;
+
+    for (npy_intp i = 0; i < N; ++i) {
+        npy_intp offset = 0;
+        for (int d = 0; d < ndim; ++d) {
+            offset += counter[static_cast<size_t>(d)] * strides[d];
         }
-    } else if (ndim == 2) {
-        const size_t n0 = dims[idx[0]];
-        const size_t n1 = dims[idx[1]];
-        const size_t s1 = strides[idx[1]] - (n0 * s0);
-        for (size_t i = 0; i < n1; i++) {
-            for (size_t j = 0; j < n0; j++) {
-                acc += isfinite(*reinterpret_cast<T*>(ptr));
-                ptr += s0;
-            }  // row loop
-            ptr += s1;
-        }  // column loop
-    } else if (ndim == 3) {
-        const size_t n0 = dims[idx[0]];
-        const size_t n1 = dims[idx[1]];
-        const size_t n2 = dims[idx[2]];
-        const size_t inner_stride_offset = n0 * s0;
-        const size_t s1 = strides[idx[1]] - inner_stride_offset;
-        const size_t s2 = strides[idx[2]] - n1 * inner_stride_offset;
-        for (size_t i = 0; i < n2; i++) {
-            for (size_t j = 0; j < n1; j++) {
-                for (size_t k = 0; k < n0; k++) {
-                    acc += isfinite(*reinterpret_cast<T*>(ptr));
-                    ptr += s0;
-                }  // row loop
-                ptr += s1;
-            }  // column loop
-            ptr += s2;
-        }  // slice loop
+        T value;
+        std::memcpy(&value, base + offset, sizeof(T));
+        acc += isfinite(value);
+
+        for (int d = ndim - 1; d >= 0; --d) {
+            const auto ud = static_cast<size_t>(d);
+            if (++counter[ud] < dims[d]) {
+                break;
+            }
+            counter[ud] = 0;
+        }
     }
     return acc == N;
 }
