@@ -8,6 +8,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 #include <mmu/config.hpp>
 #include <mmu/core/common.hpp>
@@ -69,6 +70,8 @@ inline void multn_chi2_scores(
     }
 }
 
+/* Multi-threaded point evaluation.
+ */
 #ifdef MMU_HAS_OPENMP_SUPPORT
 template <typename Profile>
 inline void multn_chi2_scores_mt(
@@ -87,12 +90,13 @@ inline void multn_chi2_scores_mt(
     const double y_max = 1.0 - max_y_clip;
     const double x_max = 1.0 - max_x_clip;
 
-#pragma omp parallel
+#pragma omp parallel if (n_points > MMU_OMP_MIN_POINTS) \
+    shared(ys, xs, scores, store, n_points, epsilon, y_max, x_max)
     {
         std::array<double, 4> probas;
         double* p = probas.data();
 
-#pragma omp for
+#pragma omp for schedule(static)
         for (int64_t i = 0; i < n_points; ++i) {
             scores[i] = prof_loglike<Profile, false>(
                 mmu::core::details::clamp(ys[i], epsilon, y_max),
@@ -164,7 +168,7 @@ inline void multn_error_mt(
         std::array<double, 4> probas;
         double* p = probas.data();
 
-#pragma omp for
+#pragma omp for schedule(static)
         for (int64_t i = 0; i < n_bins; ++i) {
             const double y = y_start + static_cast<double>(i) * y_delta;
             const int64_t row = i * n_bins;
@@ -254,6 +258,20 @@ inline void multn_grid_curve_error(
 }
 
 #ifdef MMU_HAS_OPENMP_SUPPORT
+
+namespace details {
+
+/* The sub-rectangle of the output grid that one confusion matrix touches. */
+struct GridRegion {
+    int64_t y_min;
+    int64_t y_max;
+    int64_t x_min;
+    int64_t x_max;
+};
+
+}  // namespace details
+
+/* Minimum-chi2 surface over a curve of confusion matrices. */
 template <typename Profile>
 inline void multn_grid_curve_error_mt(
     const int64_t n_y_bins,
@@ -266,70 +284,82 @@ inline void multn_grid_curve_error_mt(
     const double n_sigmas = MULT_DEFAULT_N_SIGMAS,
     double epsilon = MULT_DEFAULT_EPSILON,
     const int64_t n_threads = 4) {
-    const int64_t n_elem = n_y_bins * n_x_bins;
-    const int64_t t_elem = n_elem * n_threads;
+    if (n_conf_mats < 1 || n_y_bins < 1 || n_x_bins < 1) {
+        std::fill(
+            scores, scores + (n_y_bins * n_x_bins), MULT_DEFAULT_CHI2_SCORE);
+        return;
+    }
 
-    auto thread_scores = std::unique_ptr<double[]>(new double[t_elem]);
-    std::fill(
-        thread_scores.get(),
-        thread_scores.get() + t_elem,
-        MULT_DEFAULT_CHI2_SCORE);
+    // -- Phase 1: cache each matrix's grid region and likelihood store.
+    // Every iteration writes only its own slot, so there is no conflict.
+    std::vector<prof_loglike_store> stores(static_cast<size_t>(n_conf_mats));
+    std::vector<details::GridRegion> regions(static_cast<size_t>(n_conf_mats));
 
 #pragma omp parallel num_threads(n_threads) \
-    shared(n_y_bins,                        \
-               n_x_bins,                    \
-               n_conf_mats,                 \
-               y_grid,                      \
-               x_grid,                      \
-               conf_mat,                    \
-               n_sigmas,                    \
-               epsilon)
+    shared(stores, regions, conf_mat, y_grid, x_grid, n_conf_mats)
     {
-        double* thread_block
-            = thread_scores.get() + (omp_get_thread_num() * n_elem);
-
-        std::array<double, 4> probas;
-        double* p = probas.data();
-
-        prof_loglike_store store;
         GridBounds<Profile> bounds(
             n_y_bins, n_x_bins, n_sigmas, epsilon, y_grid, x_grid);
 
-#pragma omp for
+#pragma omp for schedule(static)
         for (int64_t k = 0; k < n_conf_mats; ++k) {
             const int64_t* lcm = conf_mat + (k * 4);
-            set_store<Profile>(lcm, &store);
+            set_store<Profile>(lcm, &stores[k]);
             bounds.compute_bounds(lcm);
+            regions[k] = details::GridRegion{
+                bounds.y_idx_min,
+                bounds.y_idx_max,
+                bounds.x_idx_min,
+                bounds.x_idx_max};
+        }
+    }
 
-            for (int64_t i = bounds.y_idx_min; i < bounds.y_idx_max; ++i) {
-                const double y = y_grid[i];
-                const int64_t row = i * n_x_bins;
-                for (int64_t j = bounds.x_idx_min; j < bounds.x_idx_max; ++j) {
-                    const double score
-                        = prof_loglike<Profile, false>(y, x_grid[j], store, p);
-                    const int64_t idx = row + j;
-                    if (score < thread_block[idx]) {
-                        thread_block[idx] = score;
+    // -- Phase 2: each tile owns a disjoint band of rows and writes directly.
+    const int64_t n_blocks = std::min<int64_t>(n_y_bins, n_threads * 8);
+    const details::GridRegion* const region_ptr = regions.data();
+    const prof_loglike_store* const store_ptr = stores.data();
+
+#pragma omp parallel num_threads(n_threads) \
+    shared(scores, region_ptr, store_ptr, x_grid, y_grid, n_conf_mats)
+    {
+        std::array<double, 4> probas;
+        double* p = probas.data();
+
+#pragma omp for schedule(dynamic)
+        for (int64_t b = 0; b < n_blocks; ++b) {
+            const int64_t row_begin = (b * n_y_bins) / n_blocks;
+            const int64_t row_end = ((b + 1) * n_y_bins) / n_blocks;
+            if (row_begin >= row_end) {
+                continue;
+            }
+
+            std::fill(
+                scores + (row_begin * n_x_bins),
+                scores + (row_end * n_x_bins),
+                MULT_DEFAULT_CHI2_SCORE);
+
+            for (int64_t k = 0; k < n_conf_mats; ++k) {
+                const details::GridRegion& r = region_ptr[k];
+                const int64_t i_lo = r.y_min > row_begin ? r.y_min : row_begin;
+                const int64_t i_hi = r.y_max < row_end ? r.y_max : row_end;
+                if (i_lo >= i_hi) {
+                    continue;
+                }
+
+                const prof_loglike_store& store = store_ptr[k];
+                for (int64_t i = i_lo; i < i_hi; ++i) {
+                    const double y = y_grid[i];
+                    double* __restrict row_ptr = scores + (i * n_x_bins);
+                    for (int64_t j = r.x_min; j < r.x_max; ++j) {
+                        const double score = prof_loglike<Profile, false>(
+                            y, x_grid[j], store, p);
+                        if (score < row_ptr[j]) {
+                            row_ptr[j] = score;
+                        }
                     }
                 }
             }
         }
-    }
-
-    auto offsets = std::unique_ptr<int64_t[]>(new int64_t[n_threads]);
-    for (int64_t j = 0; j < n_threads; ++j) {
-        offsets[j] = j * n_elem;
-    }
-
-    for (int64_t i = 0; i < n_elem; ++i) {
-        double min_score = MULT_DEFAULT_CHI2_SCORE;
-        for (int64_t j = 0; j < n_threads; ++j) {
-            const double tscore = thread_scores[i + offsets[j]];
-            if (tscore < min_score) {
-                min_score = tscore;
-            }
-        }
-        scores[i] = min_score;
     }
 }
 #endif
