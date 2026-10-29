@@ -38,12 +38,56 @@ inline bool neg_clip(
     return true;
 }
 
-inline double safe_ratio(const double num, const double den) {
-    return den > 0.0 ? num / den : 0.0;
+/* Sigma of a ratio carrying no information, i.e. 0-of-0 or 1-of-1.
+ *
+ * Obtained by add-one smoothing: treating the observation as 1-of-2 gives
+ * A = B = 1, n = 2 and therefore sqrt(A * B / n^3) = sqrt(1/8). Combined with
+ * the default `n_sigmas` this widens the grid to the full [0, 1] support,
+ * which is the honest representation of "we have no data".
+ */
+constexpr double k_no_info_sigma = 0.3535533905932737622;  // sqrt(1/8)
+
+/* Point estimate of the ratio p = A / (A + B).
+ *
+ * When A + B == 0 the ratio is undefined; we return 1.0 to match the
+ * convention used by `core::precision_recall_ecc`, where a metric whose
+ * numerator equals its (zero) denominator is reported as 1.
+ */
+inline double ratio_value(const double A, const double B) {
+    const double n = A + B;
+    return n > 0.0 ? A / n : 1.0;
 }
 
-inline double safe_binom_sigma(const double p, const double n) {
-    return n > 0.0 ? std::sqrt((p * (1.0 - p)) / n) : 0.0;
+/* Marginal sigma of the ratio p = A / (A + B) under a binomial model.
+ *
+ * The plug-in variance p * (1 - p) / n collapses to exactly zero at the
+ * p == 0 and p == 1 boundaries, which would yield a zero-width interval and,
+ * downstream, an empty or inverted grid range. At those boundaries we
+ * therefore substitute the nearest interior proportion -- 1/n for p == 0 and
+ * (n - 1)/n for p == 1 -- so the interval keeps a sensible width.
+ *
+ * n <= 1 carries no information and returns `k_no_info_sigma`.
+ *
+ * The return value is always strictly positive and finite, for every possible
+ * confusion matrix.
+ */
+inline double ratio_sigma(const double A, const double B) {
+    const double n = A + B;
+    if (n <= 1.0) {
+        return k_no_info_sigma;
+    }
+    if (A <= 0.0) {
+        // p == 0 boundary
+        const double p = 1.0 / n;
+        return std::sqrt((p * (1.0 - p)) / n);
+    }
+    if (B <= 0.0) {
+        // p == 1 boundary
+        const double p = (n - 1.0) / n;
+        return std::sqrt((p * (1.0 - p)) / n);
+    }
+    // interior
+    return std::sqrt((A * B) / (n * n * n));
 }
 
 }  // namespace details
@@ -62,7 +106,14 @@ struct PrecisionRecallProfile {
     }
 
     /*
-     * Exact old-style BVN sigma logic for Precision-Recall.
+     * BVN sigma logic for Precision-Recall.
+     *
+     * Both metrics are ratios of the form A / (A + B), so the boundary and
+     * no-data handling is delegated to `details::ratio_value` /
+     * `details::ratio_sigma`.
+     *
+     *   Precision = TP / (TP + FP)
+     *   Recall    = TP / (TP + FN)
      *
      * Output layout:
      *   out[0] = Precision
@@ -73,71 +124,17 @@ struct PrecisionRecallProfile {
     static inline void bvn_sigma(
         const int64_t* __restrict conf_mat,
         double* __restrict out) {
-        const int64_t itp = conf_mat[3];
-        const double tp = static_cast<double>(itp);
+        const auto tp = static_cast<double>(conf_mat[3]);
+        const auto fp = static_cast<double>(conf_mat[1]);
+        const auto fn = static_cast<double>(conf_mat[2]);
 
-        const int64_t itp_fn = conf_mat[2] + conf_mat[3];
-        const double tp_fn = static_cast<double>(itp_fn);
-
-        const int64_t itp_fp = conf_mat[1] + conf_mat[3];
-        const double tp_fp = static_cast<double>(itp_fp);
-
-        // ---------------------------------------------------------------------
         // Precision = TP / (TP + FP)
-        // ---------------------------------------------------------------------
-        double prec;
-        double prec_sigma;
+        out[0] = details::ratio_value(tp, fp);
+        out[1] = details::ratio_sigma(tp, fp);
 
-        if (itp == itp_fp) {
-            // precision == 1
-            prec = 1.0;
-            const double prec_for_sigma
-                = static_cast<double>(itp_fp - 1) / tp_fp;
-            prec_sigma
-                = std::sqrt((prec_for_sigma * (1.0 - prec_for_sigma)) / tp_fp);
-        } else if (itp_fp > 0) {
-            prec = tp / tp_fp;
-            prec_sigma = std::sqrt(
-                static_cast<double>(conf_mat[3] * conf_mat[1])
-                / std::pow(tp_fp, 3.0));
-        } else {
-            // precision == 0
-            prec = 0.0;
-            const double prec_for_sigma = 1.0 / tp_fp;
-            prec_sigma
-                = std::sqrt((prec_for_sigma * (1.0 - prec_for_sigma)) / tp_fp);
-        }
-
-        // ---------------------------------------------------------------------
         // Recall = TP / (TP + FN)
-        // ---------------------------------------------------------------------
-        double rec;
-        double rec_sigma;
-
-        if (itp == itp_fn) {
-            // recall == 1
-            rec = 1.0;
-            const double rec_for_sigma
-                = static_cast<double>(itp_fn - 1) / tp_fn;
-            rec_sigma
-                = std::sqrt((rec_for_sigma * (1.0 - rec_for_sigma)) / tp_fn);
-        } else if (itp_fn > 0) {
-            rec = tp / tp_fn;
-            rec_sigma = std::sqrt(
-                static_cast<double>(conf_mat[3] * conf_mat[2])
-                / std::pow(tp_fn, 3.0));
-        } else {
-            // recall == 0
-            rec = 0.0;
-            const double rec_for_sigma = 1.0 / tp_fn;
-            rec_sigma
-                = std::sqrt((rec_for_sigma * (1.0 - rec_for_sigma)) / tp_fn);
-        }
-
-        out[0] = prec;
-        out[1] = prec_sigma;
-        out[2] = rec;
-        out[3] = rec_sigma;
+        out[2] = details::ratio_value(tp, fn);
+        out[3] = details::ratio_sigma(tp, fn);
     }
 
     template <bool Guarded>
@@ -184,7 +181,16 @@ struct ROCProfile {
     }
 
     /*
-     * Exact old-style BVN sigma logic for ROC.
+     * BVN sigma logic for ROC.
+     *
+     *   TPR = TP / (TP + FN)
+     *   FPR = FP / (FP + TN)
+     *
+     * NOTE: this profile smooths the p == 0 / p == 1 boundaries by
+     * substituting a zero term with one, rather than by shifting the
+     * proportion as `details::ratio_sigma` does. The two conventions agree
+     * for the fully undefined 0-of-0 case (both yield sqrt(1/8)) but differ
+     * slightly at the single-sided boundaries.
      *
      * Output layout:
      *   out[0] = TPR
@@ -200,8 +206,7 @@ struct ROCProfile {
         // ---------------------------------------------------------------------
         double term1_y = static_cast<double>(conf_mat[3]);  // TP
         double term2_y = static_cast<double>(conf_mat[2]);  // FN
-        const double sum_y = term1_y + term2_y;
-        const double y = term1_y / sum_y;
+        const double y = details::ratio_value(term1_y, term2_y);
 
         if (term1_y == 0.0) {
             term1_y = 1.0;
@@ -210,16 +215,16 @@ struct ROCProfile {
             term2_y = 1.0;
         }
 
+        const double sum_y = term1_y + term2_y;
         const double y_sigma
-            = std::sqrt((term1_y * term2_y) / std::pow(term1_y + term2_y, 3.0));
+            = std::sqrt((term1_y * term2_y) / (sum_y * sum_y * sum_y));
 
         // ---------------------------------------------------------------------
         // X = FPR = FP / (FP + TN)
         // ---------------------------------------------------------------------
         double term1_x = static_cast<double>(conf_mat[1]);  // FP
         double term2_x = static_cast<double>(conf_mat[0]);  // TN
-        const double sum_x = term1_x + term2_x;
-        const double x = term1_x / sum_x;
+        const double x = details::ratio_value(term1_x, term2_x);
 
         if (term1_x == 0.0) {
             term1_x = 1.0;
@@ -228,8 +233,9 @@ struct ROCProfile {
             term2_x = 1.0;
         }
 
+        const double sum_x = term1_x + term2_x;
         const double x_sigma
-            = std::sqrt((term1_x * term2_x) / std::pow(term1_x + term2_x, 3.0));
+            = std::sqrt((term1_x * term2_x) / (sum_x * sum_x * sum_x));
 
         out[0] = y;
         out[1] = y_sigma;
@@ -281,6 +287,10 @@ struct PPNRecallProfile {
      * Y = PPN    = (TN + FN) / N
      * X = Recall = TP / (TP + FN)
      *
+     * Both are ratios of the form A / (A + B):
+     *   PPN    with A = TN + FN, B = FP + TP   (so A + B == N)
+     *   Recall with A = TP,      B = FN
+     *
      * Output layout:
      *   out[0] = Y = PPN
      *   out[1] = sigma(Y)
@@ -290,74 +300,19 @@ struct PPNRecallProfile {
     static inline void bvn_sigma(
         const int64_t* __restrict conf_mat,
         double* __restrict out) {
+        const auto A = static_cast<double>(conf_mat[0] + conf_mat[2]);  // TN+FN
+        const auto B = static_cast<double>(conf_mat[1] + conf_mat[3]);  // FP+TP
+
         // Y = PPN = (TN + FN) / N
-        // Write as:
-        //   Y = A / (A + B)
-        // with
-        //   A = TN + FN
-        //   B = FP + TP
-        //
-        // Interior variance:
-        //   Var(Y) = A * B / (A + B)^3
-        const int64_t iA = conf_mat[0] + conf_mat[2];  // TN + FN
-        const int64_t iB = conf_mat[1] + conf_mat[3];  // FP + TP
+        out[0] = details::ratio_value(A, B);
+        out[1] = details::ratio_sigma(A, B);
 
-        const double A = static_cast<double>(iA);
-        const double B = static_cast<double>(iB);
-        const double N = A + B;
+        const auto tp = static_cast<double>(conf_mat[3]);
+        const auto fn = static_cast<double>(conf_mat[2]);
 
-        const double ppn = A / N;
-
-        double ppn_sigma;
-        if (iB == 0) {
-            // PPN == 1
-            const double ppn_for_sigma = (N - 1.0) / N;
-            ppn_sigma = std::sqrt((ppn_for_sigma * (1.0 - ppn_for_sigma)) / N);
-        } else if (iA == 0) {
-            // PPN == 0
-            const double ppn_for_sigma = 1.0 / N;
-            ppn_sigma = std::sqrt((ppn_for_sigma * (1.0 - ppn_for_sigma)) / N);
-        } else {
-            // Interior exact ratio variance
-            ppn_sigma = std::sqrt((A * B) / std::pow(N, 3.0));
-        }
-
-        // ---------------------------------------------------------------------
         // X = Recall = TP / (TP + FN)
-        // ---------------------------------------------------------------------
-        const int64_t itp = conf_mat[3];
-        const double tp = static_cast<double>(itp);
-
-        const int64_t itp_fn = conf_mat[2] + conf_mat[3];
-        const double tp_fn = static_cast<double>(itp_fn);
-
-        double recall;
-        double recall_sigma;
-
-        if (itp == itp_fn) {
-            // Recall == 1
-            recall = 1.0;
-            const double recall_for_sigma
-                = static_cast<double>(itp_fn - 1) / tp_fn;
-            recall_sigma = std::sqrt(
-                (recall_for_sigma * (1.0 - recall_for_sigma)) / tp_fn);
-        } else if (itp_fn > 0) {
-            recall = tp / tp_fn;
-            recall_sigma = std::sqrt(
-                static_cast<double>(conf_mat[3] * conf_mat[2])
-                / std::pow(tp_fn, 3.0));
-        } else {
-            // Recall == 0
-            recall = 0.0;
-            const double recall_for_sigma = 1.0 / tp_fn;
-            recall_sigma = std::sqrt(
-                (recall_for_sigma * (1.0 - recall_for_sigma)) / tp_fn);
-        }
-
-        out[0] = ppn;
-        out[1] = ppn_sigma;
-        out[2] = recall;
-        out[3] = recall_sigma;
+        out[2] = details::ratio_value(tp, fn);
+        out[3] = details::ratio_sigma(tp, fn);
     }
 
     template <bool Guarded>
@@ -420,7 +375,6 @@ struct PPNRecallProfile {
             return false;
         }
 
-        // smaller root, stable form
         const double p_tp = (2.0 * c) / denom;
         const double p_fn = k * p_tp;
         const double p_tn = y - p_fn;
