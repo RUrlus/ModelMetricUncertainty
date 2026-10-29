@@ -32,6 +32,19 @@ inline void precision_recall(
     metrics[1] = P_nonzero ? tp / P : fill;
 }  // precision_recall
 
+/* Precision and recall with edge-case corrections.
+ *
+ * --- NOTE ---
+ * This variant deliberately does NOT use the `fill` contract of
+ * `binary_metrics`. A metric whose numerator equals its (zero) denominator is
+ * reported as 1.0, and an otherwise-undefined metric as 0.0.
+ *
+ * It exists for the uncertainty estimators, where the grid must be anchored at
+ * a concrete point in [0, 1] regardless of what sentinel a caller would prefer
+ * for reporting. The same convention is implemented by
+ * `multn::details::ratio_value`. Use `precision_recall` for reporting.
+ * --- NOTE ---
+ */
 inline void precision_recall_ecc(
     const int64_t* __restrict const conf_mat,
     double* __restrict const metrics) {
@@ -102,11 +115,13 @@ inline void ROC(
     double itm = 0.0;
 
     // metrics[1]  - False positive Rate (FPR)
-    itm = tn / N;
-    metrics[1] = N_nonzero ? (1 - itm) : 1.0;
+    // FPR is the complement of TNR, so an undefined TNR (== fill) implies
+    // FPR == 1 - fill. See the `fill` contract on `binary_metrics`.
+    itm = N_nonzero ? tn / N : 0.0;
+    metrics[1] = N_nonzero ? (1 - itm) : (1.0 - fill);
 
     // metrics[0]  - pos.recall aka True Positive Rate (TPR) aka Sensitivity
-    itm = tp / P;
+    itm = P_nonzero ? tp / P : 0.0;
     metrics[0] = P_nonzero ? itm : fill;
 
 }  // ROC
@@ -122,6 +137,26 @@ inline void ROC(
  *    7 - False Negative Rate
  *    8 - Accuracy
  *    9 - MCC
+ *
+ * --- `fill` contract ---
+ * A metric whose denominator is zero is undefined and is set to `fill`.
+ *
+ * The two rate pairs are complements -- TNR + FPR == 1 and TPR + FNR == 1 --
+ * and that identity must hold for every value of `fill`. The complements are
+ * therefore derived rather than filled independently:
+ *
+ *      TNR undefined -> TNR = fill,  FPR = 1 - fill
+ *      TPR undefined -> TPR = fill,  FNR = 1 - fill
+ *
+ * Filling both members of a pair with `fill` would give TNR + FPR == 2 * fill,
+ * i.e. 2.0 for the default fill of 1.0, which is what this contract replaces.
+ *
+ * MCC is the one deliberate exception: it is set to 0.0, never `fill`. Its
+ * denominator vanishes whenever any row or column of the confusion matrix is
+ * empty -- a common case, e.g. a model that predicts a single class -- and
+ * scikit-learn's `matthews_corrcoef` likewise returns 0.0 there. Filling it
+ * with the default `fill` of 1.0 would report perfect correlation for a
+ * degenerate model.
  */
 template <class T, std::enable_if_t<std::is_integral<T>::value, int> = 0>
 inline void binary_metrics(
@@ -181,33 +216,41 @@ inline void binary_metrics(
 
     // metrics[2]  - neg.recall aka True Negative Rate (TNR) & Specificity
     // metrics[6]  - False positive Rate (FPR)
-    itm = tn / N;
+    itm = N_nonzero ? tn / N : 0.0;
     metrics[2] = N_nonzero ? itm : fill;
-    metrics[6] = N_nonzero ? (1 - itm) : 1.0;
+    metrics[6] = N_nonzero ? (1 - itm) : (1.0 - fill);
 
     // metrics[3]  - pos.recall aka True Positive Rate (TPR) aka Sensitivity
     // metrics[7]  - False Negative Rate (FNR)
-    itm = tp / P;
+    itm = P_nonzero ? tp / P : 0.0;
     metrics[3] = P_nonzero ? itm : fill;
-    metrics[7] = P_nonzero ? (1 - itm) : 1.0;
+    metrics[7] = P_nonzero ? (1 - itm) : (1.0 - fill);
 
     // metrics[4]  - Negative F1 score
+    // The denominator 2*TN + FP + FN is zero exactly when TN, FP and FN are
+    // all zero, i.e. when neither N_nonzero nor tn_fn_nonzero holds.
     itm_alt = 2 * tn;
-    itm = itm_alt / (itm_alt + fp_fn);
-    metrics[4] = (N_nonzero || tn_fn_nonzero) ? itm : fill;
+    itm = itm_alt + fp_fn;
+    metrics[4] = itm > 0.0 ? itm_alt / itm : fill;
 
     // metrics[5]  - Positive F1 score
+    // The denominator 2*TP + FP + FN is zero exactly when TP, FP and FN are
+    // all zero, i.e. when neither P_nonzero nor tp_fp_nonzero holds.
     itm_alt = 2 * tp;
-    itm = itm_alt / (itm_alt + fp_fn);
-    metrics[5] = (P_nonzero || tp_fp_nonzero) ? itm : fill;
+    itm = itm_alt + fp_fn;
+    metrics[5] = itm > 0.0 ? itm_alt / itm : fill;
 
     // metrics[8]  - Accuracy
-    metrics[8] = tp_tn / K;
+    metrics[8] = K > 0.0 ? tp_tn / K : fill;
 
     // metrics[9]  - MCC
+    // Deliberately 0.0 rather than `fill`
     static constexpr double limit = std::numeric_limits<double>::epsilon();
     itm = tp_fp * P * N * tn_fn;
-    metrics[9] = (itm > limit) ? (tp * tn - fp * fn) / std::sqrt(itm) : 0.0;
+    const auto mcc_numerator = static_cast<double>(
+        static_cast<long double>(tp) * static_cast<long double>(tn)
+        - static_cast<long double>(fp) * static_cast<long double>(fn));
+    metrics[9] = (itm > limit) ? mcc_numerator / std::sqrt(itm) : 0.0;
 }  // binary_metrics
 
 }  // namespace core
