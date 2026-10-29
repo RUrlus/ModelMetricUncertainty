@@ -30,11 +30,9 @@ constexpr double MULT_DEFAULT_CHI2_SCORE = 65.0;
  * Observed counts:
  *   x_tn, x_fp, x_fn, x_tp
  *
- * Unconstrained multinomial probabilities:
+ * Unconstrained multinomial (MLE) probabilities, x_i / n. These are the
+ * denominators of the likelihood ratio formed in `prof_loglike`:
  *   p_tn, p_fp, p_fn, p_tp
- *
- * Cached unconstrained deviance:
- *   nll_h0 = -2 log L(unconstrained)
  */
 struct prof_loglike_store {
     int64_t total_n = 0;
@@ -52,8 +50,6 @@ struct prof_loglike_store {
     double p_fp = 0.0;
     double p_fn = 0.0;
     double p_tp = 0.0;
-
-    double nll_h0 = 0.0;
 };
 
 }  // namespace multn
