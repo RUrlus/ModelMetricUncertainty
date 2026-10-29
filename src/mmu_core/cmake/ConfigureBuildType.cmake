@@ -111,6 +111,37 @@ if(MMU_COVERAGE)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
 endif()
 
+# ##############################################################################
+# Interprocedural optimisation (LTO)
+# ##############################################################################
+# The hot kernels are header-only templates instantiated across several
+# translation units in src/, so cross-TU inlining is worth having. Enabled for
+# Release only, and only when the toolchain actually supports it.
+#
+# Deliberately NOT paired with -ffast-math: the code relies on well-defined
+# NaN behaviour (`xlogy`'s isnan check in core/common.hpp, and the
+# divide-then-select pattern in core/metrics.hpp).
+#
+# Disabled under coverage and Asan, where it interferes with instrumentation
+# and symbolisation.
+option(MMU_ENABLE_LTO "Enable interprocedural optimisation for Release builds" ON)
+
+if(MMU_ENABLE_LTO
+   AND NOT MMU_COVERAGE
+   AND NOT CMAKE_BUILD_TYPE STREQUAL "Asan"
+   AND NOT MMU_VALGRIND_MODE)
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT MMU_IPO_SUPPORTED OUTPUT MMU_IPO_ERROR)
+  if(MMU_IPO_SUPPORTED)
+    message(STATUS "mmu: Interprocedural optimisation enabled for Release")
+  else()
+    message(STATUS "mmu: Interprocedural optimisation not supported: ${MMU_IPO_ERROR}")
+  endif()
+else()
+  set(MMU_IPO_SUPPORTED FALSE)
+  message(STATUS "mmu: Interprocedural optimisation disabled")
+endif()
+
 if(CMAKE_BUILD_TYPE STREQUAL "Asan")
   set(CMAKE_C_FLAGS_ASAN
       "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer"

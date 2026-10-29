@@ -59,6 +59,14 @@ set_property(TARGET _mmu_core PROPERTY CXX_STANDARD ${MMU_CPP_STANDARD})
 set_property(TARGET _mmu_core PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET _mmu_core PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+# Cross-TU inlining of the header-only kernels; see ConfigureBuildType.cmake.
+if(MMU_IPO_SUPPORTED)
+  set_property(
+    TARGET _mmu_core
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
+  )
+endif()
+
 if(OpenMP_CXX_FOUND AND APPLE)
   include(SetHomebrew)
   # Keep the extension loadable on macOS by rewriting the linked OpenMP path.
