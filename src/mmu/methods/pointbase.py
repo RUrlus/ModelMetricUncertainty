@@ -9,7 +9,7 @@ import pandas as pd
 import scipy.stats as sts
 
 from mmu.commons import _convert_to_float, _convert_to_int, check_array
-from mmu.commons.checks import _check_n_threads
+from mmu.commons.checks import _check_conf_mat_not_empty, _check_n_threads, _check_threshold
 from mmu.lib import _MMU_MT_SUPPORT
 from mmu.metrics.confmat import confusion_matrix, confusion_matrix_to_dataframe
 from mmu.viz.contours import _plot_contours
@@ -89,12 +89,13 @@ class BaseUncertainty:
         self.x_label = None
 
     def _parse_threshold(self, threshold):
-        if not isinstance(threshold, float) or not (0.0 < threshold < 1.0):
-            msg = "`threshold` must be a float in [0, 1]"
-            raise TypeError(msg)
-        self.threshold = threshold
+        """Validate and store the classification threshold.
 
+        """
+        self.threshold = _check_threshold(threshold)
     def _compute_scores(self, n_bins, n_sigmas, epsilon, n_threads):
+        # -- validate the confusion matrix carries observations
+        _check_conf_mat_not_empty(self.conf_mat)
         # -- validate n_bins arg
         if n_bins is None:
             self.n_bins = 100

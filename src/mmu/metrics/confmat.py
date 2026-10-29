@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 
 from mmu.commons import _convert_to_ext_types, _convert_to_float, check_array
+from mmu.commons.checks import _check_threshold
 from mmu.lib import _core
+
 
 
 def confusion_matrix_to_dataframe(conf_mat):
@@ -270,6 +272,7 @@ def confusion_matrices_runs_thresholds(y, scores, thresholds, n_obs=None, fill=0
         a run
 
     """
+
     thresholds = check_array(thresholds, max_dim=1, dtype_check=_convert_to_float)
 
     scores = check_array(
@@ -279,9 +282,11 @@ def confusion_matrices_runs_thresholds(y, scores, thresholds, n_obs=None, fill=0
     n_runs = scores.shape[1 - obs_axis]
     max_obs = scores.shape[obs_axis]
 
+    y = np.asarray(y)
+
     if y.ndim == 1:
         y = np.tile(y[:, None], n_runs)
-    elif y.shape[1] == 1 and y.shape[0] >= 2:
+    elif y.ndim == 2 and y.shape[1] == 1 and y.shape[0] >= 2:
         y = np.tile(y, n_runs)
 
     y = check_array(

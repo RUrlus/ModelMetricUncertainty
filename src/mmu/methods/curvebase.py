@@ -9,7 +9,7 @@ import pandas as pd
 import scipy.stats as sts
 
 from mmu.commons import _convert_to_float, _convert_to_int, check_array
-from mmu.commons.checks import _check_n_threads
+from mmu.commons.checks import _check_conf_mat_not_empty, _check_n_threads
 from mmu.lib import _MMU_MT_SUPPORT
 from mmu.methods.pointbase import BaseUncertainty
 from mmu.metrics.confmat import confusion_matrices_thresholds, confusion_matrices_to_dataframe
@@ -90,6 +90,9 @@ class BaseCurveUncertainty:
         self.x_label = None
 
     def _compute_scores(self, n_sigmas, epsilon, n_threads):
+        # -- validate the confusion matrices carry observations
+        _check_conf_mat_not_empty(self.conf_mats)
+
         n_threads = _check_n_threads(n_threads)
 
         # -- validate n_sigmas arg
