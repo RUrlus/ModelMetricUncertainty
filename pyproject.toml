@@ -34,9 +34,7 @@ test = [
     "pytest>=8.4.2",
 ]
 
-all = [
-    "mmu[test,viz]",
-]
+all = ["mmu[test]", ]
 
 [project.urls]
 Homepage = "https://github.com/RUrlus/ModelMetricUncertainty"
@@ -189,5 +187,5 @@ skip-magic-trailing-comma = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra -q -vv"
+addopts = "-ra -q -vv --ignore=tests/dev"
 testpaths = ["tests"]
