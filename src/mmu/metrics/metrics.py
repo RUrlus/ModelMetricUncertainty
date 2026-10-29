@@ -3,7 +3,9 @@ import pandas as pd
 
 import mmu.lib._mmu_core as _core
 from mmu.commons import _convert_to_ext_types, _convert_to_float, _convert_to_int, check_array
+from mmu.commons.checks import _check_threshold
 from mmu.metrics.confmat import confusion_matrices_to_dataframe, confusion_matrix_to_dataframe
+from mmu.metrics.utils import auto_thresholds
 
 col_index = {
     "neg.precision": 0,
@@ -615,9 +617,10 @@ def precision_recall_curve(y, scores, thresholds=None, fill=1.0, return_df=False
     scores : np.ndarray[float32, float64]
         the classifier scores to be evaluated against the `threshold`, i.e.
         `yhat` = `scores` >= `threshold`
-    threshold : np.ndarray[float32, float64]
+    thresholds : np.ndarray[float32, float64], default=None
         the classification thresholds to which the classifier scores is evaluated,
-        is inclusive.
+        is inclusive. If None, `auto_thresholds(scores)` is used, which yields
+        the thresholds that each produce a distinct confusion matrix.
     fill : float, default=1.0
         value to fill when a metric is not defined, e.g. divide by zero.
     return_df : bool, default=False
@@ -639,6 +642,8 @@ def precision_recall_curve(y, scores, thresholds=None, fill=1.0, return_df=False
 
     scores = check_array(scores, max_dim=1, dtype_check=_convert_to_float)
 
+    if thresholds is None:
+        thresholds = auto_thresholds(scores)
     thresholds = check_array(thresholds, max_dim=1, dtype_check=_convert_to_float)
 
     if scores.size != y.size:
@@ -732,9 +737,10 @@ def ROC_curve(y, scores, thresholds=None, fill=1.0, return_df=False):
     scores : np.ndarray[float32, float64]
         the classifier scores to be evaluated against the `threshold`, i.e.
         `yhat` = `scores` >= `threshold`
-    threshold : np.ndarray[float32, float64]
+    thresholds : np.ndarray[float32, float64], default=None
         the classification thresholds to which the classifier scores is evaluated,
-        is inclusive.
+        is inclusive. If None, `auto_thresholds(scores)` is used, which yields
+        the thresholds that each produce a distinct confusion matrix.
     fill : float, default=1.0
         value to fill when a metric is not defined, e.g. divide by zero.
     return_df : bool, default=False
@@ -756,6 +762,8 @@ def ROC_curve(y, scores, thresholds=None, fill=1.0, return_df=False):
 
     scores = check_array(scores, max_dim=1, dtype_check=_convert_to_float)
 
+    if thresholds is None:
+        thresholds = auto_thresholds(scores)
     thresholds = check_array(thresholds, max_dim=1, dtype_check=_convert_to_float)
 
     if scores.size != y.size:
