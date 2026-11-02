@@ -1,4 +1,4 @@
-# MMU v0.2.0rc5
+# MMU v0.2.0
 
 ## Breaking changes
 
