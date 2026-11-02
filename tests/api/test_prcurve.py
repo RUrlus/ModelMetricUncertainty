@@ -1,4 +1,6 @@
 import os
+import sys
+
 import numpy as np
 import pytest
 import sklearn.metrics as skm
@@ -8,6 +10,12 @@ from sklearn.model_selection import train_test_split
 
 import mmu
 from mmu.commons._testing import PRCU_skm, ROCCU_skm, generate_test_labels, greater_equal_tol
+
+# covers weird matplotlib error on 310 windows runners:
+# FAILED tests/api/test_prpoint.py::test_PRMU_plot_integration[PrecisionRecallUncertainty] - _tkinter.TclError: Can't find a usable init.tcl in the following directories:
+skip_windows_py310 = pytest.mark.skipif(
+    sys.platform == "win32" and sys.version_info[:2] == (3, 10), reason="Skipped on Windows with Python 3.10"
+)
 
 
 def test_PR_MU_reference():
@@ -97,6 +105,7 @@ def test_MU_from_classifier(curve_class, skm_func):
     assert np.array_equal(err.conf_mats[100], sk_conf_mat.flatten())
 
 
+@skip_windows_py310
 @pytest.mark.parametrize("curve_class", [mmu.PRCU, mmu.ROCCU])
 def test_curve_plot_with_other_single_curve(curve_class):
     """Test adding a single other curve to a curve plot."""
@@ -114,6 +123,7 @@ def test_curve_plot_with_other_single_curve(curve_class):
     assert legend is not None
 
 
+@skip_windows_py310
 @pytest.mark.parametrize("curve_class", [mmu.PRCU, mmu.ROCCU])
 def test_curve_plot_with_other_list(curve_class):
     """Test adding multiple other curves (list) to a curve plot."""
@@ -132,6 +142,7 @@ def test_curve_plot_with_other_list(curve_class):
     assert legend is not None
 
 
+@skip_windows_py310
 def test_curve_plot_with_other_invalid_type():
     """Test that invalid other type raises TypeError."""
     np.random.seed(412)
@@ -142,6 +153,7 @@ def test_curve_plot_with_other_invalid_type():
         curve_1.plot(other="invalid")
 
 
+@skip_windows_py310
 @pytest.mark.parametrize("curve_class", [mmu.PRCU, mmu.ROCCU])
 def test_curve_plot_backward_compatibility(curve_class):
     """Test that existing plot() calls without other still work."""
@@ -155,6 +167,7 @@ def test_curve_plot_backward_compatibility(curve_class):
     assert legend is not None
 
 
+@skip_windows_py310
 @pytest.mark.parametrize("curve_class", [mmu.PRCU, mmu.ROCCU])
 def test_curve_plot_with_default_label(curve_class):
     """Test that default label behavior uses auto-generated symbol labels."""
@@ -170,6 +183,7 @@ def test_curve_plot_with_default_label(curve_class):
     assert any("$" in text for text in legend_texts), "Expected LaTeX symbols in legend"
 
 
+@skip_windows_py310
 @pytest.mark.parametrize("curve_class", [mmu.PRCU, mmu.ROCCU])
 def test_curve_plot_with_custom_label(curve_class):
     """Test that custom label overrides default legend text."""
@@ -186,6 +200,7 @@ def test_curve_plot_with_custom_label(curve_class):
     assert custom_label in legend_texts, f"Expected '{custom_label}' in legend texts: {legend_texts}"
 
 
+@skip_windows_py310
 @pytest.mark.parametrize("curve_class", [mmu.PRCU, mmu.ROCCU])
 def test_curve_plot_with_custom_label_and_overlay(curve_class):
     """Test that custom labels work with overlaid curves."""

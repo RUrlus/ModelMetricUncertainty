@@ -1,6 +1,7 @@
-import os
-import pytest
 import itertools
+import os
+import sys
+
 import numpy as np
 import pytest
 import scipy.stats as sts
@@ -9,59 +10,29 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 
-
 import mmu
-from mmu.commons._testing import generate_test_labels
-from mmu.commons._testing import greater_equal_tol
-from mmu.commons._testing import PRCU_skm
-from mmu.commons._testing import ROCCU_skm
+from mmu.commons._testing import PRCU_skm, ROCCU_skm, generate_test_labels, greater_equal_tol
 
-Y_DTYPES = [
-    bool,
-    np.bool_,
-    int,
-    np.int32,
-    np.int64,
-    float,
-    np.float32,
-    np.float64,
-]
-
-YHAT_DTYPES = [
-    bool,
-    np.bool_,
-    int,
-    np.int32,
-    np.int64,
-    float,
-    np.float32,
-    np.float64,
-]
-
-PROBA_DTYPES = [
-    float,
-    np.float32,
-    np.float64,
-]
-
-
-@pytest.mark.parametrize(
-    "curve_class,skm_func",
-    [
-        (mmu.PRU, PRCU_skm),
-        (mmu.ROCU, ROCCU_skm),
-    ],
+# covers weird matplotlib error on 310 windows runners:
+# FAILED tests/api/test_prpoint.py::test_PRMU_plot_integration[PrecisionRecallUncertainty] - _tkinter.TclError: Can't find a usable init.tcl in the following directories:
+skip_windows_py310 = pytest.mark.skipif(
+    sys.platform == "win32" and sys.version_info[:2] == (3, 10), reason="Skipped on Windows with Python 3.10"
 )
+
+Y_DTYPES = [bool, np.bool_, int, np.int32, np.int64, float, np.float32, np.float64]
+
+YHAT_DTYPES = [bool, np.bool_, int, np.int32, np.int64, float, np.float32, np.float64]
+
+PROBA_DTYPES = [float, np.float32, np.float64]
+
+
+@pytest.mark.parametrize("curve_class,skm_func", [(mmu.PRU, PRCU_skm), (mmu.ROCU, ROCCU_skm)])
 def test_PRMU_from_scores(curve_class, skm_func):
     """Test BaseUncertainty.from_scores"""
     np.random.seed(412)
     thresholds = np.random.uniform(1e-6, 1 - 1e-6, 10)
-    for y_dtype, proba_dtype, threshold in itertools.product(
-        Y_DTYPES, PROBA_DTYPES, thresholds
-    ):
-        proba, _, y = generate_test_labels(
-            N=1000, y_dtype=y_dtype, proba_dtype=proba_dtype
-        )
+    for y_dtype, proba_dtype, threshold in itertools.product(Y_DTYPES, PROBA_DTYPES, thresholds):
+        proba, _, y = generate_test_labels(N=1000, y_dtype=y_dtype, proba_dtype=proba_dtype)
         yhat = greater_equal_tol(proba, threshold)
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
@@ -75,24 +46,15 @@ def test_PRMU_from_scores(curve_class, skm_func):
         assert np.isclose(err.y, y[1])
         assert np.isclose(err.x, x[1])
         assert np.array_equal(err.conf_mat, sk_conf_mat), (
-            f"test failed for dtypes: {y_dtype}, {proba_dtype}"
-            f" and threshold: {threshold}"
+            f"test failed for dtypes: {y_dtype}, {proba_dtype} and threshold: {threshold}"
         )
 
 
-@pytest.mark.parametrize(
-    "curve_class,skm_func",
-    [
-        (mmu.PRU, PRCU_skm),
-        (mmu.ROCU, ROCCU_skm),
-    ],
-)
+@pytest.mark.parametrize("curve_class,skm_func", [(mmu.PRU, PRCU_skm), (mmu.ROCU, ROCCU_skm)])
 def test_PRMU_from_predictions(curve_class, skm_func):
     """Test PRMU.from_predictions"""
     for y_dtype, yhat_dtype in itertools.product(Y_DTYPES, YHAT_DTYPES):
-        _, yhat, y = generate_test_labels(
-            N=1000, y_dtype=y_dtype, yhat_dtype=yhat_dtype
-        )
+        _, yhat, y = generate_test_labels(N=1000, y_dtype=y_dtype, yhat_dtype=yhat_dtype)
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
         err = curve_class.from_predictions(y=y, yhat=yhat)
@@ -104,24 +66,14 @@ def test_PRMU_from_predictions(curve_class, skm_func):
         assert err.chi2_scores.shape == (err.n_bins, err.n_bins)
         assert np.isclose(err.y, y[1])
         assert np.isclose(err.x, x[1])
-        assert np.array_equal(err.conf_mat, sk_conf_mat), (
-            f"test failed for dtypes: {y_dtype}, {yhat_dtype}"
-        )
+        assert np.array_equal(err.conf_mat, sk_conf_mat), f"test failed for dtypes: {y_dtype}, {yhat_dtype}"
 
 
-@pytest.mark.parametrize(
-    "curve_class,skm_func",
-    [
-        (mmu.PRU, PRCU_skm),
-        (mmu.ROCU, ROCCU_skm),
-    ],
-)
+@pytest.mark.parametrize("curve_class,skm_func", [(mmu.PRU, PRCU_skm), (mmu.ROCU, ROCCU_skm)])
 def test_PRMU_from_confusion_matrix(curve_class, skm_func):
     """Test PRMU.from_confusion_matrix"""
     for y_dtype, yhat_dtype in itertools.product(Y_DTYPES, YHAT_DTYPES):
-        _, yhat, y = generate_test_labels(
-            N=1000, y_dtype=y_dtype, yhat_dtype=yhat_dtype
-        )
+        _, yhat, y = generate_test_labels(N=1000, y_dtype=y_dtype, yhat_dtype=yhat_dtype)
         sk_conf_mat = skm.confusion_matrix(y, yhat)
 
         err = curve_class.from_confusion_matrix(sk_conf_mat)
@@ -130,18 +82,10 @@ def test_PRMU_from_confusion_matrix(curve_class, skm_func):
         assert err.chi2_scores.shape == (err.n_bins, err.n_bins)
         assert np.isclose(err.y, y[1])
         assert np.isclose(err.x, x[1])
-        assert np.array_equal(err.conf_mat, sk_conf_mat.flatten()), (
-            f"test failed for dtypes: {y_dtype}, {yhat_dtype}"
-        )
+        assert np.array_equal(err.conf_mat, sk_conf_mat.flatten()), f"test failed for dtypes: {y_dtype}, {yhat_dtype}"
 
 
-@pytest.mark.parametrize(
-    "curve_class,skm_func",
-    [
-        (mmu.PRU, PRCU_skm),
-        (mmu.ROCU, ROCCU_skm),
-    ],
-)
+@pytest.mark.parametrize("curve_class,skm_func", [(mmu.PRU, PRCU_skm), (mmu.ROCU, ROCCU_skm)])
 def test_PRMU_from_classifier(curve_class, skm_func):
     """Test PRMU.from_classifier"""
     # generate seeds to be used by sklearn
@@ -153,9 +97,7 @@ def test_PRMU_from_classifier(curve_class, skm_func):
     X, y = make_classification(n_samples=1000, n_classes=2, random_state=seeds())
 
     # split into train/test sets
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.5, random_state=seeds()
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=seeds())
     # fit a model
     model = LogisticRegression(solver="lbfgs")
     model.fit(X_train, y_train)
@@ -175,23 +117,13 @@ def test_PRMU_from_classifier(curve_class, skm_func):
         assert err.chi2_scores.shape == (err.n_bins, err.n_bins)
         assert np.isclose(err.y, y[1])
         assert np.isclose(err.x, x[1])
-        assert np.array_equal(err.conf_mat, sk_conf_mat), (
-            f"test failed for threshold: {threshold}"
-        )
+        assert np.array_equal(err.conf_mat, sk_conf_mat), f"test failed for threshold: {threshold}"
 
 
-@pytest.mark.parametrize(
-    "curve_class,skm_func",
-    [
-        (mmu.PRU, PRCU_skm),
-        (mmu.ROCU, ROCCU_skm),
-    ],
-)
+@pytest.mark.parametrize("curve_class,skm_func", [(mmu.PRU, PRCU_skm), (mmu.ROCU, ROCCU_skm)])
 def test_PRMU_exceptions(curve_class, skm_func):
     """Test PRMU exceptions"""
-    proba, _, y = generate_test_labels(
-        N=1000,
-    )
+    proba, _, y = generate_test_labels(N=1000)
     yhat = greater_equal_tol(proba, 0.5)
 
     err = curve_class.from_scores(y=y, scores=proba, threshold=0.5, n_bins=40)
@@ -213,30 +145,18 @@ def test_PRMU_exceptions(curve_class, skm_func):
     err = curve_class.from_scores(y=y, scores=proba, threshold=0.5, n_sigmas=1.0)
 
     with pytest.raises(TypeError):
-        err = curve_class.from_scores(
-            y=y,
-            scores=proba,
-            threshold=0.5,
-            n_sigmas=[
-                1.0,
-            ],
-        )
+        err = curve_class.from_scores(y=y, scores=proba, threshold=0.5, n_sigmas=[1.0])
 
 
 @pytest.mark.parametrize(
     "curve_class,multn_chi2_scores_filename",
-    [
-        (mmu.PRU, "pr_multn_chi2_scores.npy"),
-        (mmu.ROCU, "roc_multn_chi2_scores.npy"),
-    ],
+    [(mmu.PRU, "pr_multn_chi2_scores.npy"), (mmu.ROCU, "roc_multn_chi2_scores.npy")],
 )
 def test_PRMU_ref_chi2(curve_class, multn_chi2_scores_filename):
     X, y = make_classification(n_samples=1000, n_classes=2, random_state=1949933174)
 
     # split into train/test sets
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.5, random_state=3437779408
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=3437779408)
     # fit a model
     model = LogisticRegression(solver="lbfgs")
     model.fit(X_train, y_train)
@@ -244,15 +164,9 @@ def test_PRMU_ref_chi2(curve_class, multn_chi2_scores_filename):
     # predict probabilities, for the positive outcome only
     y_score = model.predict_proba(X_test)[:, 1]
 
-    err = curve_class.from_scores(
-        y_test,
-        scores=y_score,
-        threshold=0.5,
-    )
+    err = curve_class.from_scores(y_test, scores=y_score, threshold=0.5)
 
-    ref_path = os.path.join(
-        os.path.abspath(os.path.dirname(__file__)), multn_chi2_scores_filename
-    )
+    ref_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), multn_chi2_scores_filename)
     ref_chi2_scores = np.load(ref_path)
     assert np.allclose(err.chi2_scores, ref_chi2_scores)
 
@@ -261,20 +175,14 @@ def test_PRMU_ref_chi2(curve_class, multn_chi2_scores_filename):
     "curve_class,multn_chi2_scores_filename,ref_yx",
     [
         (mmu.PRU, "pr_multn_chi2_scores.npy", (0.7852763945527024, 0.8305165343173831)),
-        (
-            mmu.ROCU,
-            "roc_multn_chi2_scores.npy",
-            (0.8305165343173831, 0.2163994844947491),
-        ),
+        (mmu.ROCU, "roc_multn_chi2_scores.npy", (0.8305165343173831, 0.2163994844947491)),
     ],
 )
 def test_PRMU_compute_score_for(curve_class, multn_chi2_scores_filename, ref_yx):
     X, y = make_classification(n_samples=1000, n_classes=2, random_state=1949933174)
 
     # split into train/test sets
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.5, random_state=3437779408
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=3437779408)
     # fit a model
     model = LogisticRegression(solver="lbfgs")
     model.fit(X_train, y_train)
@@ -282,17 +190,11 @@ def test_PRMU_compute_score_for(curve_class, multn_chi2_scores_filename, ref_yx)
     # predict probabilities, for the positive outcome only
     y_score = model.predict_proba(X_test)[:, 1]
 
-    err = curve_class.from_scores(
-        y_test,
-        scores=y_score,
-        threshold=0.5,
-    )
+    err = curve_class.from_scores(y_test, scores=y_score, threshold=0.5)
     # check the the profile loglikelihood with itself is zero
     assert err.compute_score_for(err.y, err.x) < 1e-12
 
-    ref_path = os.path.join(
-        os.path.abspath(os.path.dirname(__file__)), multn_chi2_scores_filename
-    )
+    ref_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), multn_chi2_scores_filename)
     ref_chi2_scores = np.load(ref_path)
     ref_score = err.compute_score_for(*ref_yx)
     # np.unravel_index(np.argmin(ref_chi2_scores, axis=None), ref_chi2_scores.shape)
@@ -314,20 +216,14 @@ def test_PRMU_compute_score_for(curve_class, multn_chi2_scores_filename, ref_yx)
     "curve_class,multn_chi2_scores_filename,ref_yx",
     [
         (mmu.PRU, "pr_multn_chi2_scores.npy", (0.7852763945527024, 0.8305165343173831)),
-        (
-            mmu.ROCU,
-            "roc_multn_chi2_scores.npy",
-            (0.8305165343173831, 0.2163994844947491),
-        ),
+        (mmu.ROCU, "roc_multn_chi2_scores.npy", (0.8305165343173831, 0.2163994844947491)),
     ],
 )
 def test_PRMU_compute_pvalue_for(curve_class, multn_chi2_scores_filename, ref_yx):
     X, y = make_classification(n_samples=1000, n_classes=2, random_state=1949933174)
 
     # split into train/test sets
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.5, random_state=3437779408
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=3437779408)
     # fit a model
     model = LogisticRegression(solver="lbfgs")
     model.fit(X_train, y_train)
@@ -335,17 +231,11 @@ def test_PRMU_compute_pvalue_for(curve_class, multn_chi2_scores_filename, ref_yx
     # predict probabilities, for the positive outcome only
     y_score = model.predict_proba(X_test)[:, 1]
 
-    err = curve_class.from_scores(
-        y_test,
-        scores=y_score,
-        threshold=0.5,
-    )
+    err = curve_class.from_scores(y_test, scores=y_score, threshold=0.5)
     # check the the profile loglikelihood with itself is zero
     assert abs(err.compute_pvalue_for(err.y, err.x) - 1) < 1e-12
 
-    ref_path = os.path.join(
-        os.path.abspath(os.path.dirname(__file__)), multn_chi2_scores_filename
-    )
+    ref_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), multn_chi2_scores_filename)
     ref_chi2_scores = np.load(ref_path)
     ref_score = err.compute_pvalue_for(*ref_yx)
     assert np.isclose(ref_score, sts.chi2.sf(ref_chi2_scores.min(), 2))
@@ -357,20 +247,13 @@ def test_PRMU_compute_pvalue_for(curve_class, multn_chi2_scores_filename, ref_yx
     assert np.isnan(scores).sum() == 0
 
 
-@pytest.mark.parametrize(
-    "curve_class",
-    [
-        (mmu.PRU),
-        (mmu.ROCU),
-    ],
-)
+@skip_windows_py310
+@pytest.mark.parametrize("curve_class", [(mmu.PRU), (mmu.ROCU)])
 def test_PRMU_plot_integration(curve_class):
     X, y = make_classification(n_samples=1000, n_classes=2, random_state=1949933174)
 
     # split into train/test sets
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.5, random_state=3437779408
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=3437779408)
     # fit a model
     model = LogisticRegression(solver="lbfgs")
     model.fit(X_train, y_train)
@@ -378,13 +261,10 @@ def test_PRMU_plot_integration(curve_class):
     # predict probabilities, for the positive outcome only
     y_score = model.predict_proba(X_test)[:, 1]
 
-    curve_class.from_scores(
-        y_test,
-        scores=y_score,
-        threshold=0.5,
-    ).plot()
+    curve_class.from_scores(y_test, scores=y_score, threshold=0.5).plot()
 
 
+@skip_windows_py310
 @pytest.mark.parametrize("point_class", [mmu.PRU, mmu.ROCU])
 def test_point_plot_with_default_label(point_class):
     """Test that default label behavior uses auto-generated symbol labels for point plots."""
@@ -400,6 +280,7 @@ def test_point_plot_with_default_label(point_class):
     assert len(legend_texts) > 0, "Expected legend entries"
 
 
+@skip_windows_py310
 @pytest.mark.parametrize("point_class", [mmu.PRU, mmu.ROCU])
 def test_point_plot_with_custom_label(point_class):
     """Test that custom label overrides default legend text for point plots."""
@@ -416,6 +297,7 @@ def test_point_plot_with_custom_label(point_class):
     assert custom_label in legend_texts, f"Expected '{custom_label}' in legend texts: {legend_texts}"
 
 
+@skip_windows_py310
 @pytest.mark.parametrize("point_class", [mmu.PRU, mmu.ROCU])
 def test_point_plot_with_custom_label_and_overlay(point_class):
     """Test that custom labels work with overlaid point plots."""
