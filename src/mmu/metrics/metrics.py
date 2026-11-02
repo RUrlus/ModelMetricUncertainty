@@ -136,13 +136,10 @@ def binary_metrics(y, yhat=None, scores=None, threshold=None, fill=1.0, return_d
 
     if scores is not None:
         scores = check_array(scores, max_dim=1, dtype_check=_convert_to_float)
-        if not isinstance(threshold, float):
-            msg_0 = "`threshold` must be a float if scores is not None"
-            raise TypeError(msg_0)
         if scores.size != y.size:
             msg_1 = "`scores` and `y` must have equal length."
             raise ValueError(msg_1)
-        conf_mat = _core.confusion_matrix_score(y, scores, threshold)
+        conf_mat = _core.confusion_matrix_score(y, scores, _check_threshold(threshold))
 
     elif yhat is not None:
         yhat = check_array(yhat, max_dim=1, dtype_check=_convert_to_ext_types)
