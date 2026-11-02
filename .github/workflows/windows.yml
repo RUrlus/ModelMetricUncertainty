@@ -33,6 +33,4 @@ jobs:
       - name: Test
         env:
           MPLBACKEND: Agg
-        run: |
-          cd tests
-          pytest -vv
+        run: pytest
