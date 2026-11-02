@@ -65,11 +65,9 @@ The ``binary_metrics`` functions compute the 10 most commonly used metrics:
 Uncertainty estimators
 **********************
 
-MMU provides two methods for modelling the joint uncertainty on precision and recall: Multinomial uncertainty and Bivariate-Normal.
+MMU models the joint uncertainty on classification metrics, such as precision and recall, ROC and PPN-Recall, using a Multinomial profile-likelihood approach.
 
-The Multinomial approach estimates the uncertainty by computing the profile log-likelihoods scores for a grid around the precision and recall. The scores are chi2 distributed with 2 degrees of freedom which can be used to determine the confidence interval.
-
-The Bivariate-Normal approach models the statistical uncertainty over the linearly propagated errors of the confusion matrix and the analytical covariance matrix. The resulting joint uncertainty is elliptical in nature.
+The Multinomial approach estimates the uncertainty by computing the profile log-likelihoods scores for a grid around the metric point (e.g. precision and recall). The scores are chi2 distributed with 2 degrees of freedom which can be used to determine the confidence interval.
 
 Installation
 ------------
@@ -80,13 +78,14 @@ Installation
 
     pip install mmu
 
-We provide wheels for:
+We provide wheels with pre-compiled binaries, vendoring OpenMP for
+multithreading, for Python 3.10 - 3.14 on:
 
-* MacOS [x86, ARM]
+* MacOS [x86_64, ARM]
 * Linux
 * Windows 
 
-Installing the package from source requires a C++ compiler with support for C++14.
+Installing the package from source requires a C++ compiler with support for C++17.
 If you have a compiler available it is advised to install without
 the wheel as this enables architecture specific optimisations.
 

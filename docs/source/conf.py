@@ -36,7 +36,12 @@ copyright = "2022, R. Urlus"
 author = "R. Urlus, M. Baak"
 
 # The full version, including alpha/beta/rc tags
-release = "0.1.2"
+try:
+    import importlib.metadata
+
+    release = importlib.metadata.version("mmu")
+except importlib.metadata.PackageNotFoundError:
+    release = "0.2.0rc5"
 
 
 # -- General configuration ---------------------------------------------------
@@ -49,9 +54,16 @@ extensions = [
     "autoapi.extension",
     "sphinx.ext.napoleon",
     "sphinx.ext.autosectionlabel",
+    "myst_parser",
 ]
-autoapi_dirs = ["../../mmu"]
+autoapi_dirs = ["../../src/mmu"]
 autoapi_generate_api_docs = False
+
+# Allow .md files (used to single-source CHANGELOG.md into changelog.rst)
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

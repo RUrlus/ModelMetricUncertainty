@@ -123,8 +123,8 @@ with thresholds.
 Estimators
 ----------
 
-MMU currently only supports joint statistical uncertainty estimators for precision and recall. 
-We are working on adding more estimators.
+MMU currently supports joint statistical uncertainty estimators for
+Precision-Recall, ROC and PPN-Recall.
 
 The estimators are classes that are instantiated from class methods, following
 the scikit API.
@@ -140,11 +140,12 @@ For example ``pr_err = mmu.PRU.from_scores(y, scores, threshold=0.82)``.
 Precision-Recall
 ****************
 
-MMU provides two methods for modelling the joint uncertainty on precision and recall: Multinomial uncertainty and Bivariate-Normal.
+MMU models the joint uncertainty on precision and recall using the Multinomial
+approach.
 
 **Threshold vs curve uncertainty**
 
-Both methods can be applied for a specific threshold or over the precision recall curve. The curve uncertainty represents a conservative view on the uncertainty.
+The uncertainty can be computed for a specific threshold or over the precision recall curve. The curve uncertainty represents a conservative view on the uncertainty.
 The precision-recall grid is divided into, by default, 1000 bins per axis.
 For each bin in the two dimensional grid we retain the minimum score, highest probability, over the thresholds. This means that for any threshold, the curve's CI will never be smaller than the CI of the corresponding threshold.
 Hence, the curve uncertainty can slightly over-cover the true confidence interval.
@@ -156,9 +157,7 @@ Multinomial approach
 The Multinomial approach computes the profile log-likelihoods scores for a grid around the precision and recall. The bounds of the grid are determined by ``n_sigmas`` times the standard deviation of the marginals. The scores are chi2 distributed with 2 degrees of freedom.
 
 The Multinomial approach is usually robust for relatively low statistics tests.
-Additionally it is valid for the extreme values of precision and recall, which the Bivariate-Normal approach is not. However, the Multinomial approach does not allow the statistical uncertainty of the train set to be incorporated which the Bivariate-Normal does.
-
-The multinomial approach is the default approach.
+Additionally it is valid for the extreme values of precision and recall.
 
 .. code-block:: python3
 
@@ -201,33 +200,42 @@ we compute them with :func:`mmu.auto_thresholds`.
 
 See :class:`mmu.PrecisionRecallUncertainty` for details.
 
-Bivariate-Normal approach
-+++++++++++++++++++++++++
+PPN-Recall
+**********
 
-The statistical/sampling uncertainty over the Precision and Recall are modelled
-as a Bivariate-Normal over the linearly propagated errors of the confusion
-matrix. For a threshold/confusion matrix a covariance matrix is computed which is used to determine the elliptical uncertainty.
-The curve uncertainty computes chi2 scores in a similar manner to Multinomial approach.
-
-Note that the Bivariate-Normal (Elliptical) approach is only valid for medium to high statistic datasets. A warning is raised when the Normal approximation to the Binomial may not be valid. Additionally, the estimation is not valid for the extremes of precision/recall. However, the train set uncertainty can be added to the test uncertainty.
-
-The bivariate threshold/point uncertainty can be computed using setting
-``method`` to one of: ``'bivariate'``, ``'bvn'`` or , ``'elliptical'``.
+MMU also provides the joint uncertainty on Recall and Proportion Predicted
+Negative (PPN) -- the proportion of observations predicted negative,
+``PPN = (TN + FN) / N``. The estimators mirror those for Precision-Recall
+and are also based on the Multinomial profile-likelihood approach.
 
 .. code-block:: python3
 
     import mmu
-    
+
     # we use generated data for this example
     scores, yhat, y = mmu.generate_data(n_samples=1000)
 
-    # mmu.PRU is an alias
-    pr_err = mmu.PrecisionRecallUncertainty.from_scores(y, scores, 0.85, method='bvn')
+    # mmu.PPNRU is an alias of PPNRecallUncertainty
+    ppn_err = mmu.PPNRU.from_scores(y, scores, 0.85)
 
-    # PRCU is an alias of PrecisionRecallCurveUncertainty
-    pr_err_curve = mmu.PRCU.from_scores(y, scores, method='bvn')
+    # get the confusion matrix as a DataFrame
+    ppn_err.get_conf_mat()
 
-See :class:`mmu.PrecisionRecallUncertainty` for details.
+    # plot the PPN-Recall joint uncertainty for 1, 2, and 3 standard deviations
+    ppn_err.plot()
+
+You can also compute and plot the uncertainty over the PPN-Recall curve, here
+we overlay the threshold uncertainty computed above.
+
+.. code-block:: python3
+
+    # PPNRCU is an alias of PPNRecallCurveUncertainty
+    ppn_err_curve = mmu.PPNRCU.from_scores(y, scores)
+
+    # we add the threshold uncertainty using point_uncertainty argument
+    ax = ppn_err_curve.plot(point_uncertainty=ppn_err)
+
+See :class:`mmu.PPNRecallUncertainty` for details.
 
 Comparing two precision-recall scores
 +++++++++++++++++++++++++++++++++++++

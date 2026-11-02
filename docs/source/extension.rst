@@ -157,4 +157,67 @@ The binary metrics functions only operate on confusion matrices.
 
     `conf_mat` should be aligned and contiguous and have shape (N * 4).
 
+PPN-Recall bindings
++++++++++++++++++++
+
+.. function:: py::array_t<double> ppn_recall(const py::array_t<int64_t>& conf_mat)
+
+    Compute PPN (Proportion Predicted Negative) and Recall from a confusion
+    matrix. Used by :class:`mmu.PPNRecallUncertainty`.
+
+.. function:: py::array_t<double> ppn_recall_2d(const py::array_t<int64_t>& conf_mat)
+
+    Compute PPN and Recall for a two-dimensional array of confusion matrices,
+    e.g. over multiple thresholds. Used by
+    :class:`mmu.PPNRecallCurveUncertainty`.
+
+.. function:: tuple ppn_recall_multn_error(const int64_t n_bins, const py::array_t<int64_t>& conf_mat, const double n_sigmas, const double epsilon)
+
+    Compute the Multinomial profile log-likelihood grid of chi2 scores
+    around the PPN/Recall point of a single confusion matrix on a uniform
+    grid of ``n_bins`` x ``n_bins``.
+
+.. function:: tuple ppn_recall_multn_error_mt(const int64_t n_bins, const py::array_t<int64_t>& conf_mat, const double n_sigmas, const double epsilon, const int n_threads)
+
+    Multithreaded variant of ``ppn_recall_multn_error``. Only available when
+    ``mmu.lib._MMU_MT_SUPPORT`` is ``True``.
+
+.. function:: double ppn_recall_multn_chi2_score(const double ppn, const double recall, const py::array_t<int64_t>& conf_mat, const double epsilon)
+
+    Compute the chi2 score of a given PPN/Recall pair relative to the
+    observed confusion matrix.
+
+.. function:: py::array_t<double> ppn_recall_multn_chi2_scores(const py::array_t<double>& ppns, const py::array_t<double>& recalls, const py::array_t<int64_t>& conf_mat, const double epsilon)
+
+    Compute the chi2 scores for arrays of PPN/Recall pairs relative to the
+    observed confusion matrix.
+
+.. function:: py::array_t<double> ppn_recall_multn_chi2_scores_mt(const py::array_t<double>& ppns, const py::array_t<double>& recalls, const py::array_t<int64_t>& conf_mat, const double epsilon)
+
+    Multithreaded variant of ``ppn_recall_multn_chi2_scores``. Only available
+    when ``mmu.lib._MMU_MT_SUPPORT`` is ``True``.
+
+.. function:: py::array_t<double> ppn_recall_multn_grid_curve_error(const int64_t n_conf_mats, const py::array_t<double>& ppn_grid, const py::array_t<double>& recall_grid, const py::array_t<int64_t>& conf_mat, const double n_sigmas, const double epsilon)
+
+    Compute the conservative (minimum chi2 score per grid bin, over
+    thresholds) Multinomial profile log-likelihood on a user-provided
+    PPN/Recall grid for multiple confusion matrices. Used by
+    :class:`mmu.PPNRecallCurveUncertainty`.
+
+.. function:: py::array_t<double> ppn_recall_multn_grid_curve_error_mt(const int64_t n_conf_mats, const py::array_t<double>& ppn_grid, const py::array_t<double>& recall_grid, const py::array_t<int64_t>& conf_mat, const double n_sigmas, const double epsilon, const int n_threads)
+
+    Multithreaded variant of ``ppn_recall_multn_grid_curve_error``. Only
+    available when ``mmu.lib._MMU_MT_SUPPORT`` is ``True``.
+
+.. note::
+
+    ``mmu.lib._MMU_MT_SUPPORT`` indicates whether the installed extension was
+    built with multithreading support (OpenMP). The ``_mt`` suffixed variants
+    of the functions above (and their Precision-Recall/ROC equivalents,
+    ``pr_multn_*_mt``/``roc_multn_*_mt``) are only present on the extension
+    module when this flag is ``True``. The PyPi wheels vendor OpenMP so this
+    is ``True`` out-of-the-box; a source install may need
+    ``CMAKE_ARGS="-DMMU_ENABLE_OPENMP=ON"`` to guarantee it, see
+    :doc:`installation`.
+
 .. _pybind11: https://pybind11.readthedocs.io/en/stable/#

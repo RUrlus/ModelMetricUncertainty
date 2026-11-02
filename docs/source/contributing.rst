@@ -50,9 +50,14 @@ If you only want to recompile the extension you can do so with:
 This requires that you have the following pip packages installed:
 
 * cmake
-* scikit-build
+* scikit-build-core
 * pybind11
 * numpy
+
+Note that this manual ``mbuild`` flow is independent from the
+``scikit-build-core``-managed build triggered by ``pip install -e .``, which
+places its build artefacts under ``build/{wheel_tag}`` (see
+``tool.scikit-build.build-dir`` in ``pyproject.toml``).
 
 Extension specific tests
 ++++++++++++++++++++++++
@@ -98,9 +103,9 @@ CICD
 
 There are a number of Github Actions that are triggered on pull requests:
 
-- Windows - Python 3.7 - 3.10
-- Linux - Python 3.7 - 3.10
-- MacOS - Python 3.7 - 3.10
+- Windows - Python 3.10 - 3.14
+- Linux - Python 3.10 - 3.14
+- MacOS - Python 3.10 - 3.14
 - Valgrind
 - Asan
 
@@ -127,18 +132,21 @@ Commits
 
 Please prepend your commit messages with:
 
-* ``ENH:`` the commit introduces new functionality
-* ``CHG:`` the commit changes existing functionality
+* ``ENH:``/``FEAT:`` the commit introduces new functionality
+* ``CHG:``/``CHANGE:`` the commit changes existing functionality
+* ``BREAK:`` the commit introduces a breaking change
 * ``FIX:`` the commit fixes incorrect behaviour of existing functionality
+* ``PERF:`` the commit improves performance without changing behaviour
 * ``STY:`` the commit improves the readability of the code but not the functioning of the code
 * ``DOC:`` the commit only relates to the documentation
 * ``TST:`` the commit only relates to the tests
-* ``BLD:`` changes related to setup files or build instructions (``BLD: [CPP] ...``)
+* ``BLD:`` changes related to setup files or build instructions (``BLD: [C++] ...``)
+* ``DEP:`` changes to dependency version bounds
 * ``CICD:`` the commit only relates to the CI/CD templates
 
-Additionally use ``[CPP]`` after the prefix when your commit touches C++ code or build instructions.
+Additionally use ``[C++]`` after the prefix when your commit touches C++ code or build instructions.
 
-For example, ``FIX: [CPP] Fix stride offset in foo``.
+For example, ``FIX: [C++] Fix stride offset in foo``.
 
 Clang format
 ++++++++++++
@@ -149,7 +157,7 @@ For example:
 
 .. code-block::
 
-   clang-format -i include/mmu/core/*.hpp
+   clang-format -i src/mmu_core/include/mmu/core/*.hpp
 
 .. _pybind11: https://pybind11.readthedocs.io/en/stable/#
 .. _scikit-build: https://scikit-build.readthedocs.io/en/latest/index.html
