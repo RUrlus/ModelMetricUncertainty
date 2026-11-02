@@ -16,6 +16,11 @@ The ``binary_metrics`` functions compute the 10 most commonly used metrics:
 
 Most other metrics should be computable from these.
 
+``threshold`` accepts any finite real scalar -- it is not restricted to
+``[0, 1]`` -- so raw ``decision_function``/logit-style scores can be used
+directly. Passing a non-numeric value raises a ``TypeError``, and a
+non-finite (``NaN``/``inf``) value raises a ``ValueError``.
+
 .. autoapifunction:: mmu.auto_thresholds
 .. autoapifunction:: mmu.binary_metrics
 .. autoapifunction:: mmu.binary_metrics_thresholds
@@ -29,6 +34,8 @@ Most other metrics should be computable from these.
 .. autoapifunction:: mmu.confusion_matrices_runs_thresholds
 .. autoapifunction:: mmu.precision_recall
 .. autoapifunction:: mmu.precision_recall_curve
+.. autoapifunction:: mmu.metrics.col_index
+.. autoapifunction:: mmu.metrics.col_names
 .. autoapifunction:: mmu.metrics.confusion_matrix_to_dataframe
 .. autoapifunction:: mmu.metrics.confusion_matrices_to_dataframe
 .. autoapifunction:: mmu.metrics.metrics_to_dataframe
