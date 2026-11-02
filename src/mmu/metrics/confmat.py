@@ -6,7 +6,6 @@ from mmu.commons.checks import _check_threshold
 from mmu.lib import _core
 
 
-
 def confusion_matrix_to_dataframe(conf_mat):
     """Create dataframe with confusion matrix.
 
@@ -164,13 +163,10 @@ def confusion_matrices(y, yhat=None, scores=None, threshold=0.5, obs_axis=0, ret
             max_dim=2,
             dtype_check=_convert_to_float,
         )
-        if not isinstance(threshold, float):
-            msg = "`threshold` must be a float if scores is not None"
-            raise TypeError(msg)
         if scores.size != y.size:
             msg_0 = "`scores` and `y` must have equal length."
             raise ValueError(msg_0)
-        conf_mat = _core.confusion_matrix_score_runs(y, scores, threshold, obs_axis=obs_axis)
+        conf_mat = _core.confusion_matrix_score_runs(y, scores, _check_threshold(threshold), obs_axis=obs_axis)
     elif yhat is not None:
         yhat = check_array(
             yhat,
