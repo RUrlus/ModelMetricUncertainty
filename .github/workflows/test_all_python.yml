@@ -41,6 +41,4 @@ jobs:
           "MPLBACKEND=Agg" >> $env:GITHUB_ENV
 
       - name: Test
-        run: |
-          cd tests
-          pytest -vv
+        run: pytest
