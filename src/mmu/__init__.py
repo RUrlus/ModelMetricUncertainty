@@ -97,4 +97,5 @@ __all__ = [
     "pr_curve",
     "precision_recall",
     "precision_recall_curve",
+    "predictions",
 ]

@@ -4,6 +4,7 @@ from mmu.metrics.confmat import confusion_matrices_thresholds
 from mmu.metrics.confmat import confusion_matrices_runs_thresholds
 from mmu.metrics.confmat import confusion_matrix_to_dataframe
 from mmu.metrics.confmat import confusion_matrices_to_dataframe
+from mmu.metrics.confmat import predictions
 from mmu.metrics.metrics import col_index
 from mmu.metrics.metrics import col_names
 from mmu.metrics.metrics import metrics_to_dataframe
@@ -36,6 +37,7 @@ __all__ = [
     "confusion_matrices_to_dataframe",
     "metrics_to_dataframe",
     "precision_recall",
+    "predictions",
     "precision_recall_curve",
     "ROC_curve",
 ]
