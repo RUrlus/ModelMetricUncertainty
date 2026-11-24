@@ -34,6 +34,7 @@ non-finite (``NaN``/``inf``) value raises a ``ValueError``.
 .. autoapifunction:: mmu.confusion_matrices_runs_thresholds
 .. autoapifunction:: mmu.precision_recall
 .. autoapifunction:: mmu.precision_recall_curve
+.. autoapifunction:: mmu.predictions
 .. autoapifunction:: mmu.metrics.col_index
 .. autoapifunction:: mmu.metrics.col_names
 .. autoapifunction:: mmu.metrics.confusion_matrix_to_dataframe

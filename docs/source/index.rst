@@ -31,6 +31,7 @@ MMU - Model Metric Uncertainty
     :maxdepth: 3
 
     metrics
+    intervals
     estimators
 
 .. toctree::
