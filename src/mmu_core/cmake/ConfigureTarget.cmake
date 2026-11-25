@@ -30,6 +30,8 @@ set(MMU_SRC_FILES
     ${MMU_BINDINGS_PATH}/extension.cpp
     ${MMU_BINDINGS_PATH}/utils.cpp
     ${MMU_BINDINGS_PATH}/confusion_matrix.cpp
+    ${MMU_API_PATH}/delong.cpp
+    ${MMU_BINDINGS_PATH}/delong.cpp
     ${MMU_API_PATH}/metrics.cpp
     ${MMU_BINDINGS_PATH}/metrics.cpp
     ${MMU_API_PATH}/pr_multn_loglike.cpp

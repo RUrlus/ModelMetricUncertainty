@@ -1,3 +1,16 @@
+# MMU v0.3.0
+
+## Features
+
+* FEAT: Add DeLong's test for comparing correlated ROC AUCs using the fast
+  algorithm of Sun & Xu (2014): `delong_test` (paired, two- or one-sided),
+  `delong_contrast_test` (general linear contrasts, chi-square for multiple
+  rows), `auc_confidence_interval` (Wald or logit DeLong intervals) and
+  `delong_covariance`. Results are validated against R's `pROC`.
+* FEAT: [C++] DeLong core with a single sort per model, released GIL and
+  optional OpenMP parallelism over models (`n_threads`); results are
+  independent of the number of threads.
+
 # MMU v0.2.3
 
 And old yanked release that was incorrectly versioned with 0.2.2 may be picked when intending to install 0.2.0.
