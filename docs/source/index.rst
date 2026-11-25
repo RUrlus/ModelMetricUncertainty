@@ -32,6 +32,7 @@ MMU - Model Metric Uncertainty
 
     metrics
     estimators
+    delong
 
 .. toctree::
     :caption: Advanced
