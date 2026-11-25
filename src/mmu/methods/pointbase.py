@@ -10,6 +10,7 @@ import scipy.stats as sts
 
 from mmu.commons import _convert_to_float, _convert_to_int, check_array
 from mmu.commons.checks import _check_conf_mat_not_empty, _check_n_threads, _check_threshold
+from mmu.commons.levels import _plot_levels, _std_to_probability
 from mmu.lib import _MMU_MT_SUPPORT
 from mmu.metrics.confmat import confusion_matrix, confusion_matrix_to_dataframe
 from mmu.viz.contours import _plot_contours
@@ -333,12 +334,12 @@ class BaseUncertainty:
         return np.sqrt(sts.chi2.ppf(alphas, 2))
 
     def _get_scaling_factor_std(self, stds):
-        alphas = 2.0 * (sts.norm.cdf(stds) - 0.5)
+        alphas = _std_to_probability(stds)
         return np.sqrt(sts.chi2.ppf(alphas, 2))
 
     def _get_critical_values_std(self, n_std):
         """Compute the critical values for a chi2 with 2df using the continuity correction"""
-        alphas = 2.0 * (sts.norm.cdf(n_std) - 0.5)
+        alphas = _std_to_probability(n_std)
         # confidence limits in two dimensions
         return sts.chi2.ppf(alphas, 2)
 
@@ -474,31 +475,7 @@ class BaseUncertainty:
             msg = "the class needs to be initialised with from_*"
             raise RuntimeError(msg)
 
-        # quick catch for list and tuples
-        if isinstance(levels, (list, tuple)):
-            levels = np.asarray(levels)
-
-        # transform levels into scaling factors for the ellipse
-        if levels is None:
-            levels = self._get_critical_values_std(np.array((1, 2, 3)))
-            labels = [r"$1\sigma$ CI", r"$2\sigma$ CI", r"$3\sigma$ CI"]
-        elif isinstance(levels, int):
-            labels = [f"{levels}" + r"$\sigma$ CI"]
-            levels = self._get_critical_values_std(np.array((levels,)))
-        elif isinstance(levels, np.ndarray) and np.issubdtype(levels.dtype, np.integer):
-            levels = np.sort(np.unique(levels))
-            labels = [f"{l}" + r"$\sigma$ CI" for l in levels]
-            levels = self._get_critical_values_std(levels)
-        elif isinstance(levels, float):
-            labels = [f"{round(levels * 100, 3)}% CI"]
-            levels = self._get_critical_values_alpha(np.array((levels,)))
-        elif isinstance(levels, np.ndarray) and np.issubdtype(levels.dtype, np.floating):
-            levels = np.sort(np.unique(levels))
-            labels = [f"{round(l * 100, 3)}% CI" for l in levels]
-            levels = self._get_critical_values_alpha(levels)
-        else:
-            msg_0 = "`levels` must be a int, float, array-like or None"
-            raise TypeError(msg_0)
+        levels, labels = _plot_levels(levels)
 
         self.critical_values_plot = levels
 
@@ -548,6 +525,9 @@ class BaseUncertainty:
             If float(s) it is taken to be the density to be contained in the
             confidence interval
             By default we plot 1, 2 and 3 std deviations
+            Values must be finite and positive; probabilities must be below
+            one, and sigma levels must not round to probability one. Arrays
+            must be nonempty and one-dimensional.
         ax : matplotlib.axes.Axes, default=None
             Pre-existing axes for the plot
         cmap : str, default='Blues'

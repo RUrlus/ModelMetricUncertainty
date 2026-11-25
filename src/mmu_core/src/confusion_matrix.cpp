@@ -620,5 +620,42 @@ void bind_confusion_matrix_thresholds_runs(py::module& m) {
         py::arg("thresholds"));
 }
 
+void bind_predictions(py::module& m) {
+    m.def(
+        "predictions",
+        [](const py::array_t<double>& score,
+           const py::array_t<double>& thresholds) {
+            return api::predictions<double>(score, thresholds);
+        },
+        R"pbdoc(Compute binary predictions given classifier scores and thresholds.
+
+        Uses the same inclusive tolerance-aware comparison as the confusion
+        matrix functions, i.e. ``score >= threshold - (atol + rtol * |threshold|)``.
+
+        Parameters
+        ----------
+        score : np.array[np.float32 / np.float64]
+            the classifier scores, must be contiguous
+        thresholds : np.array[np.float32 / np.float64]
+            the classification thresholds, must have the same dtype as score
+
+        Returns
+        -------
+        predictions : np.array[np.int64]
+            array with shape (n_thresholds, n_obs) where row ``i`` contains
+            the predictions for ``thresholds[i]`` in the memory order of ``score``
+        )pbdoc",
+        py::arg("score").noconvert(),
+        py::arg("thresholds").noconvert());
+    m.def(
+        "predictions",
+        [](const py::array_t<float>& score,
+           const py::array_t<float>& thresholds) {
+            return api::predictions<float>(score, thresholds);
+        },
+        py::arg("score").noconvert(),
+        py::arg("thresholds").noconvert());
+}
+
 }  // namespace bindings
 }  // namespace mmu

@@ -67,6 +67,61 @@ inline void check_holds_at_least(
 
 }  // namespace details
 
+/* Compute binary predictions given classifier scores and thresholds.
+ *
+ * The comparison is the same inclusive, tolerance-aware comparison used for
+ * the confusion matrices. Every score is compared against every threshold.
+ *
+ * --- Parameters ---
+ * - score : classifier scores, contiguous, the memory order is preserved in
+ *   the output
+ * - thresholds : inclusive classification thresholds
+ *
+ * --- Returns ---
+ * - predictions with shape (n_thresholds, n_obs) where row `i` contains the
+ *   predictions for `thresholds[i]` in the memory order of `score`
+ */
+template <typename T, isFloat<T> = true>
+inline i64arr predictions(
+    const py::array_t<T>& score,
+    const py::array_t<T>& thresholds) {
+    if (!(npy::is_well_behaved(score) && npy::is_well_behaved(thresholds))) {
+        throw std::runtime_error(
+            "Encountered non-aligned or non-contiguous array.");
+    }
+
+    const int64_t n_obs = score.size();
+    const int64_t n_thresholds = thresholds.size();
+
+    auto yhat = i64arr({n_thresholds, n_obs});
+    int64_t* const yhat_ptr = npy::get_data(yhat);
+    const T* const score_ptr = npy::get_data(score);
+    const T* const threshold_ptr = npy::get_data(thresholds);
+
+    // Split each threshold's row into blocks so that a single threshold over
+    // many observations is parallelised as well as many thresholds.
+    constexpr int64_t block_size = 1 << 16;
+    const int64_t n_blocks = std::max<int64_t>(
+        (n_obs + block_size - 1) / block_size, 1);
+    const int64_t n_tasks = n_thresholds * n_blocks;
+
+#pragma omp parallel for schedule(static) if (n_tasks >= MMU_OMP_MIN_TASKS) \
+    shared(n_obs, n_blocks, n_tasks, score_ptr, threshold_ptr, yhat_ptr)
+    for (int64_t task = 0; task < n_tasks; task++) {
+        const int64_t t = task / n_blocks;
+        const int64_t start = (task % n_blocks) * block_size;
+        const int64_t len = std::min(block_size, n_obs - start);
+        const T threshold = threshold_ptr[t];
+        core::predictions<T, int64_t>(
+            len,
+            score_ptr + start,
+            threshold,
+            core::scaled_tolerance(threshold),
+            yhat_ptr + (t * n_obs) + start);
+    }
+    return yhat;
+}
+
 /* Compute the confusion matrix given true labels y and estimated labels yhat.
  *
  * --- Parameters ---

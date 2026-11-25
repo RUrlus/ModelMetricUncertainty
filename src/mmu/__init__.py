@@ -20,6 +20,11 @@ from mmu.methods import (
     PrecisionRecallUncertainty,
     ROCCurveUncertainty,
     ROCUncertainty,
+    binary_metrics_confidence_intervals,
+    bmetrics_ci,
+    clopper_pearson,
+    jeffreys,
+    wilson,
 )
 from mmu.metrics import (
     ROC_curve,
@@ -39,6 +44,7 @@ from mmu.metrics import (
     metrics_to_dataframe,
     precision_recall,
     precision_recall_curve,
+    predictions,
 )
 
 # aliases
@@ -75,6 +81,13 @@ __all__ = [
     "PrecisionRecallUncertainty",
     "ROCCurveUncertainty",
     "ROCUncertainty",
+
+    "binary_metrics_confidence_intervals",
+    "bmetrics_ci",
+    "clopper_pearson",
+    "jeffreys",
+    "wilson",
+
     "ROC_curve",
     "__version__",
     "auto_thresholds",
@@ -97,4 +110,5 @@ __all__ = [
     "pr_curve",
     "precision_recall",
     "precision_recall_curve",
+    "predictions",
 ]

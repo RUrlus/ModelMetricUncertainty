@@ -8,7 +8,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "mmu"
-version = "0.2.3"
+version = "0.3.0dev0"
 description = "Fast binary classification metrics with uncertainty quantification"
 readme = "README.rst"
 requires-python = ">=3.10"
@@ -23,7 +23,7 @@ classifiers = [
 ]
 dependencies = [
     "numpy>=2.0.2",
-    "scipy>=1.5.2",
+    "scipy>=1.7",
     "pandas>=2.3.3",
     "matplotlib>=2.2.3",
     "scikit-learn>=1.6.1",

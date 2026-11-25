@@ -127,6 +127,37 @@ struct ScoreAboveThresholdTol {
 
 }  // namespace details
 
+/* Fill binary predictions based on classifier scores and a threshold.
+ *
+ * Uses the same inclusive, tolerance-aware comparison as the confusion matrix
+ * functions: yhat[i] = score[i] >= threshold - scaled_tol.
+ *
+ * --- NOTE ---
+ * - this function:
+ * * does not handle nullptrs
+ * * expects all memory to be contiguous
+ * --- NOTE ---
+ *
+ * --- Parameters ---
+ * - n_obs : number of observations in score and yhat
+ * - score : classifier scores
+ * - threshold : inclusive classification threshold
+ * - scaled_tol : pre-computed tolerance, see `scaled_tolerance`
+ * - yhat : allocated memory where the predictions will be written
+ */
+template <typename T1, typename T2, isFloat<T1> = true>
+inline void predictions(
+    const int64_t n_obs,
+    const T1* __restrict score,
+    const T1 threshold,
+    const T1 scaled_tol,
+    T2* __restrict const yhat) {
+    const details::ScoreAboveThresholdTol<T1> is_positive{threshold, scaled_tol};
+    for (int64_t i = 0; i < n_obs; ++i) {
+        yhat[i] = static_cast<T2>(is_positive(score[i]));
+    }
+}
+
 /* Fill binary confusion matrix based on true labels y and estimated labels yhat
  *
  * --- NOTE ---

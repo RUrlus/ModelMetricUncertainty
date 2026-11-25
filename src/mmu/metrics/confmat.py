@@ -44,6 +44,81 @@ def confusion_matrices_to_dataframe(conf_mat):
     return pd.DataFrame(conf_mat, columns=["TN", "FP", "FN", "TP"])
 
 
+def predictions(scores, thresholds):
+    """Compute binary predictions from classifier scores and threshold(s).
+
+    The comparison is identical to the one used by the confusion matrix
+    functions, i.e. the threshold is inclusive and floating point noise is
+    accounted for: ``yhat = scores >= threshold - (1e-8 + 1e-5 * |threshold|)``.
+
+    Parameters
+    ----------
+    scores : np.ndarray[float32, float64]
+        the classifier scores, e.g. shape (N, ) for a single run or (N, K) for
+        K runs stored as columns. Other dtypes are converted to float64.
+    thresholds : float, np.ndarray[float32, float64]
+        the inclusive classification threshold(s). Thresholds are cast to the
+        dtype of `scores`.
+
+    Raises:
+    ------
+    TypeError
+        if `thresholds` is not a real number or a one dimensional array
+    ValueError
+        if `scores` or `thresholds` contain non-finite values
+
+    Returns:
+    -------
+    yhat : np.ndarray[int64]
+        the predictions in {0, 1}. If `thresholds` is a scalar the shape is
+        equal to that of `scores`. If `thresholds` is an array of length T, every
+        score is compared to every threshold and the shape is
+        ``scores.shape + (T, )``, e.g. (N, K, T) where ``yhat[:, k, t]``
+        contains the predictions for column ``k`` and threshold ``t``.
+
+    """
+    scores = np.asarray(scores)
+    if scores.ndim < 1:
+        msg = "`scores` must be at least one dimensional"
+        raise ValueError(msg)
+    if scores.dtype not in (np.float32, np.float64):
+        scores = scores.astype(np.float64)
+    if not (scores.flags.c_contiguous or scores.flags.f_contiguous) or not scores.flags.aligned:
+        scores = np.ascontiguousarray(scores)
+    if not _core.all_finite(scores):
+        msg_0 = "Non-finite values encountered in `scores`"
+        raise ValueError(msg_0)
+
+    is_scalar = np.ndim(thresholds) == 0
+    if is_scalar:
+        thresholds = np.asarray([_check_threshold(thresholds)], dtype=scores.dtype)
+    else:
+        thresholds = np.asarray(thresholds)
+        if thresholds.ndim != 1:
+            msg_1 = "`thresholds` must be a real number or a one dimensional array"
+            raise TypeError(msg_1)
+        if not np.issubdtype(thresholds.dtype, np.number) or np.issubdtype(thresholds.dtype, np.complexfloating):
+            msg_2 = "`thresholds` must contain real numbers"
+            raise TypeError(msg_2)
+        thresholds = np.ascontiguousarray(thresholds, dtype=scores.dtype)
+        if not _core.all_finite(thresholds):
+            msg_3 = "Non-finite values encountered in `thresholds`"
+            raise ValueError(msg_3)
+
+    # flat array of shape (n_thresholds, scores.size) where each row follows
+    # the memory order of `scores`
+    yhat = _core.predictions(scores, thresholds)
+    shape = scores.shape
+    if scores.flags.c_contiguous:
+        yhat = np.moveaxis(yhat.reshape((thresholds.size, *shape)), 0, -1)
+    else:
+        yhat = yhat.ravel().reshape((*shape, thresholds.size), order="F")
+
+    if is_scalar:
+        return yhat[..., 0]
+    return yhat
+
+
 def confusion_matrix(y, yhat=None, scores=None, threshold=0.5, return_df=False):
     """Compute binary confusion matrix.
 

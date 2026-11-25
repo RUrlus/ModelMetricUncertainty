@@ -1,6 +1,9 @@
 Uncertainty Estimators
 ======================
 
+For marginal binomial intervals on individual metrics, see :doc:`intervals`.
+These differ from the joint confidence regions described here.
+
 MMU can compute uncertainty for three difference curves:
 
 - ROC curve where points are described by:
